@@ -20,7 +20,6 @@ const ENEMY_SPEED      = 60;   // px/s
 const PLAYER_SPEED     = 200;  // px/s
 const BULLET_SPEED     = 400;  // px/s
 const ENEMY_BULLET_SPD = 250;  // px/s
-const BARRIER_HP       = 30;
 const POWERUP_TIMES    = [10, 30, 50]; // seconds into total game time
 
 const WEAPONS = [
@@ -209,7 +208,7 @@ function generateBarriers(lvl) {
       if (bx < ob.x + ob.w + 10 && bx + bw + 10 > ob.x &&
           by < ob.y + ob.h + 10 && by + bh + 10 > ob.y) { ok = false; break; }
     }
-    if (ok) barriers.push({ x: bx, y: by, w: bw, h: bh, hp: BARRIER_HP, maxHp: BARRIER_HP });
+    if (ok) barriers.push({ x: bx, y: by, w: bw, h: bh });
   }
 }
 
@@ -386,16 +385,11 @@ function update(ts) {
 
     let removed = false;
 
-    // Barrier hit
-    for (let j = barriers.length - 1; j >= 0; j--) {
+    // Barrier hit — indestructible; bullet is consumed on contact
+    for (let j = 0; j < barriers.length; j++) {
       const bar = barriers[j];
       if (circleRect(b.x, b.y, b.size, bar.x, bar.y, bar.w, bar.h)) {
-        bar.hp -= b.damage;
         addParticles(b.x, b.y, '#8888ff', 5);
-        if (bar.hp <= 0) {
-          addParticles(bar.x + bar.w / 2, bar.y + bar.h / 2, '#8888ff', 25);
-          barriers.splice(j, 1);
-        }
         playerBullets.splice(i, 1);
         removed = true;
         break;
@@ -509,19 +503,14 @@ function drawScanlines() {
 
 function drawBarriers() {
   for (const b of barriers) {
-    const t = b.hp / b.maxHp;
     ctx.save();
     ctx.shadowBlur  = 10;
-    ctx.shadowColor = `rgba(80,120,255,${0.4 + t * 0.5})`;
-    ctx.fillStyle   = `rgba(20,50,140,${0.4 + t * 0.5})`;
-    ctx.strokeStyle = `rgba(80,180,255,${0.5 + t * 0.4})`;
+    ctx.shadowColor = 'rgba(80,120,255,0.9)';
+    ctx.fillStyle   = 'rgba(20,50,140,0.9)';
+    ctx.strokeStyle = 'rgba(80,180,255,0.9)';
     ctx.lineWidth   = 2;
     ctx.fillRect  (b.x, b.y, b.w, b.h);
     ctx.strokeRect(b.x, b.y, b.w, b.h);
-    if (b.hp < b.maxHp) {
-      ctx.fillStyle = '#222';                        ctx.fillRect(b.x, b.y - 7, b.w,       4);
-      ctx.fillStyle = `hsl(${t * 120},100%,50%)`; ctx.fillRect(b.x, b.y - 7, b.w * t, 4);
-    }
     ctx.restore();
   }
 }
