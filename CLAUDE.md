@@ -22,13 +22,15 @@ open snake.html
 open shooter.html
 ```
 
-After changes, commit and push to keep the GitHub backup current:
+**After every change — no exceptions — commit and push to GitHub:**
 
 ```
 git add <file>
 git commit -m "..."
 git push
 ```
+
+This applies to every session: any file created or modified must be committed and pushed before the session is considered complete. GitHub is the primary backup.
 
 ## Architecture conventions
 
