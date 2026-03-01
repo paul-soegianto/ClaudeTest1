@@ -274,11 +274,10 @@ function startLevel(lvl) {
 
 // ─── Shooting ─────────────────────────────────────────────────────────────────
 function playerShoot() {
-  const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-  const w     = WEAPONS[player.weaponTier];
-  for (let i = 0; i < w.bullets; i++) {
-    const offset = w.bullets > 1 ? (i - (w.bullets - 1) / 2) * w.spread : 0;
-    const a      = angle + offset;
+  const w = WEAPONS[player.weaponTier];
+  // Always fire in 8 evenly-spaced directions (every 45°)
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
     playerBullets.push({
       x: player.x, y: player.y,
       vx: Math.cos(a) * BULLET_SPEED, vy: Math.sin(a) * BULLET_SPEED,
