@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #080d14;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      color: #eee;
+      gap: 14px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: #4ade80;
+      letter-spacing: 0.25em;
+      text-shadow: 0 0 24px #4ade8066;
+    }
+
+    #hud {
+      display: flex;
+      gap: 30px;
+      font-size: 0.85rem;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    #hud .val {
+      color: #4ade80;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    #canvas-wrap { position: relative; }
+
+    canvas {
+      display: block;
+      cursor: none;
+      border: 2px solid #0f2a1a;
+      border-radius: 6px;
+    }
+
+    #bar-wrap {
+      width: 100%;
+      height: 5px;
+      background: #0a0f1a;
+      border-radius: 0 0 4px 4px;
+      overflow: hidden;
+    }
+
+    #grow-bar {
+      height: 100%;
+      width: 100%;
+      border-radius: 3px;
+    }
+
+    #restart {
+      padding: 0.55rem 1.8rem;
+      font-size: 0.95rem;
+      font-weight: bold;
+      background: #4ade80;
+      color: #080d14;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    #restart:hover { background: #22c55e; transform: scale(1.04); }
+
+    #tip { font-size: 0.78rem; color: #2a3a2a; }
+  </style>
+</head>
+<body>
+
+<h1>S N A K E</h1>
+
+<div id="hud">
+  <span>Score <span class="val" id="h-score">0</span></span>
+  <span>Length <span class="val" id="h-len">4</span></span>
+  <span>Grows in <span class="val" id="h-timer">10</span>s</span>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="game"></canvas>
+  <div id="bar-wrap"><div id="grow-bar"></div></div>
+</div>
+
+<button id="restart">&#9654; Restart</button>
+<div id="tip">Move your mouse inside the arena to steer &nbsp;·&nbsp; Space to restart</div>
+
+<script>
+(() => {
+  const CELL  = 20;
+  const COLS  = 30;
+  const ROWS  = 30;
+  const W     = CELL * COLS;   // 600
+  const H     = CELL * ROWS;   // 600
+  const GROW_EVERY  = 10;      // seconds
+  const GROW_BY     = 3;       // segments per event
+  const BASE_SPEED  = 7;       // cells/sec
+  const SPEED_GAIN  = 0.4;     // added per growth
+
+  const canvas = document.getElementById('game');
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // ── state ────────────────────────────────────────────
+  let snake, dir, wantDir, dead, score, growCd, speed;
+  let lastTs, moveAcc, flashT;
+  let mx = W / 2, my = H / 2;
+
+  function reset() {
+    snake   = Array.from({length: 4}, (_, i) => ({ x: 17 - i, y: 15 }));
+    dir     = { x: 1, y: 0 };
+    wantDir = { x: 1, y: 0 };
+    dead    = false;
+    score   = 0;
+    growCd  = GROW_EVERY;
+    speed   = BASE_SPEED;
+    lastTs  = null;
+    moveAcc = 0;
+    flashT  = 0;
+  }
+
+  // ── mouse → direction ────────────────────────────────
+  canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    mx = e.clientX - r.left;
+    my = e.clientY - r.top;
+  });
+
+  function refreshDir() {
+    const hx = (snake[0].x + 0.5) * CELL;
+    const hy = (snake[0].y + 0.5) * CELL;
+    const dx = mx - hx;
+    const dy = my - hy;
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+
+    const c = Math.abs(dx) >= Math.abs(dy)
+      ? { x: dx > 0 ? 1 : -1, y: 0 }
+      : { x: 0, y: dy > 0 ? 1 : -1 };
+
+    // forbid 180° reverse
+    if (c.x !== -dir.x || c.y !== -dir.y) wantDir = c;
+  }
+
+  // ── advance one cell ─────────────────────────────────
+  function advance() {
+    dir = { ...wantDir };
+    const nx = snake[0].x + dir.x;
+    const ny = snake[0].y + dir.y;
+
+    // wall
+    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { dead = true; return; }
+
+    // self (skip last segment — it vacates this step)
+    for (let i = 0; i < snake.length - 1; i++) {
+      if (snake[i].x === nx && snake[i].y === ny) { dead = true; return; }
+    }
+
+    snake.unshift({ x: nx, y: ny });
+    snake.pop();
+  }
+
+  function grow() {
+    const tail = snake[snake.length - 1];
+    for (let i = 0; i < GROW_BY; i++) snake.push({ ...tail });
+    score++;
+    speed += SPEED_GAIN;
+    flashT = 0.45;
+  }
+
+  // ── draw helpers ─────────────────────────────────────
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y,   x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ── render ────────────────────────────────────────────
+  function draw() {
+    // background
+    ctx.fillStyle = '#080d14';
+    ctx.fillRect(0, 0, W, H);
+
+    // grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.022)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= COLS; i++) {
+      ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, H); ctx.stroke();
+    }
+    for (let j = 0; j <= ROWS; j++) {
+      ctx.beginPath(); ctx.moveTo(0, j * CELL); ctx.lineTo(W, j * CELL); ctx.stroke();
+    }
+
+    // grow flash
+    if (flashT > 0) {
+      ctx.fillStyle = `rgba(74,222,128,${flashT * 0.13})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    const n = snake.length;
+
+    // body — render tail→head so head paints last
+    for (let i = n - 1; i >= 1; i--) {
+      const t = i / (n - 1 || 1);
+      const g = Math.round(55 + 110 * (1 - t));
+      ctx.fillStyle = `rgb(12, ${g}, 28)`;
+      roundRect(snake[i].x * CELL + 2, snake[i].y * CELL + 2, CELL - 4, CELL - 4, 3);
+      ctx.fill();
+    }
+
+    // head
+    const headColor = flashT > 0 ? '#86efac' : '#4ade80';
+    ctx.fillStyle = headColor;
+    roundRect(snake[0].x * CELL + 1, snake[0].y * CELL + 1, CELL - 2, CELL - 2, 5);
+    ctx.fill();
+
+    // head glow
+    ctx.save();
+    ctx.shadowColor = '#4ade80';
+    ctx.shadowBlur  = 12;
+    ctx.fillStyle   = 'rgba(74,222,128,0.25)';
+    roundRect(snake[0].x * CELL + 1, snake[0].y * CELL + 1, CELL - 2, CELL - 2, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // eyes
+    {
+      const cx = (snake[0].x + 0.5) * CELL;
+      const cy = (snake[0].y + 0.5) * CELL;
+      const px = -dir.y, py = dir.x; // perpendicular
+      [
+        [cx + px * 4 + dir.x * 3, cy + py * 4 + dir.y * 3],
+        [cx - px * 4 + dir.x * 3, cy - py * 4 + dir.y * 3]
+      ].forEach(([ex, ey]) => {
+        ctx.fillStyle = '#080d14';
+        ctx.beginPath(); ctx.arc(ex, ey, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(ex + 0.7, ey - 0.7, 1, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+
+    // mouse crosshair
+    if (!dead) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(74,222,128,0.5)';
+      ctx.lineWidth = 1.5;
+      const s = 7;
+      ctx.beginPath();
+      ctx.moveTo(mx - s, my); ctx.lineTo(mx + s, my);
+      ctx.moveTo(mx, my - s); ctx.lineTo(mx, my + s);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(74,222,128,0.7)';
+      ctx.beginPath(); ctx.arc(mx, my, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // game-over overlay
+    if (dead) {
+      ctx.fillStyle = 'rgba(8,13,20,0.82)';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.textAlign = 'center';
+      ctx.save();
+      ctx.shadowColor = '#e9456099';
+      ctx.shadowBlur  = 22;
+      ctx.fillStyle   = '#e94560';
+      ctx.font        = 'bold 56px Segoe UI';
+      ctx.fillText('GAME OVER', W / 2, H / 2 - 24);
+      ctx.restore();
+
+      ctx.fillStyle = '#4ade80';
+      ctx.font      = 'bold 26px Segoe UI';
+      ctx.fillText(`Score ${score}  ·  Length ${n}`, W / 2, H / 2 + 24);
+
+      ctx.fillStyle = '#3a4a3a';
+      ctx.font      = '17px Segoe UI';
+      ctx.fillText('Click RESTART or press Space', W / 2, H / 2 + 64);
+    }
+  }
+
+  // ── HUD ──────────────────────────────────────────────
+  function updateHUD() {
+    document.getElementById('h-score').textContent = score;
+    document.getElementById('h-len').textContent   = snake.length;
+    document.getElementById('h-timer').textContent = Math.ceil(growCd);
+
+    const pct = (growCd / GROW_EVERY) * 100;
+    const bar = document.getElementById('grow-bar');
+    bar.style.width      = pct + '%';
+    bar.style.background = pct > 50
+      ? 'linear-gradient(90deg,#4ade80,#22c55e)'
+      : pct > 25
+      ? 'linear-gradient(90deg,#facc15,#eab308)'
+      : 'linear-gradient(90deg,#e94560,#be123c)';
+  }
+
+  // ── game loop ─────────────────────────────────────────
+  function loop(ts) {
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min((ts - lastTs) / 1000, 0.1);
+    lastTs = ts;
+
+    if (!dead) {
+      refreshDir();
+
+      if (flashT > 0) flashT -= dt;
+
+      growCd -= dt;
+      if (growCd <= 0) { grow(); growCd += GROW_EVERY; }
+
+      moveAcc += dt * speed;
+      while (moveAcc >= 1 && !dead) { moveAcc -= 1; advance(); }
+    }
+
+    draw();
+    updateHUD();
+    requestAnimationFrame(loop);
+  }
+
+  // ── controls ─────────────────────────────────────────
+  document.getElementById('restart').addEventListener('click', reset);
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); reset(); }
+  });
+
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
