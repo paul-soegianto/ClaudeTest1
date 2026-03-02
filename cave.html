@@ -95,7 +95,7 @@ function platformAt(wx, hw) {
 
 // ─── Game objects ─────────────────────────────────────────────────────────────
 let player, enemies, pBullets, eBullets, particles;
-let cameraX, score, gameState = 'menu', lastTime = 0;
+let cameraX = 0, score, gameState = 'menu', lastTime = 0;
 
 function makePlayer() {
   player = {
