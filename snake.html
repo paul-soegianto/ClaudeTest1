@@ -165,9 +165,28 @@
   // ── advance one cell ─────────────────────────────────
   function advance() {
     dir = { ...wantDir };
-    // Boundary wraps — snake comes out the other side
-    const nx = (snake[0].x + dir.x + COLS) % COLS;
-    const ny = (snake[0].y + dir.y + ROWS) % ROWS;
+    let nx = snake[0].x + dir.x;
+    let ny = snake[0].y + dir.y;
+
+    // Edge hit → auto-turn to a random in-bounds direction (not 180° reverse)
+    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) {
+      const options = [
+        { x: 1, y: 0 }, { x: -1, y: 0 },
+        { x: 0, y: 1 }, { x: 0, y: -1 },
+      ].filter(d =>
+        // not a 180° reversal
+        (d.x !== -dir.x || d.y !== -dir.y) &&
+        // stays in bounds
+        snake[0].x + d.x >= 0 && snake[0].x + d.x < COLS &&
+        snake[0].y + d.y >= 0 && snake[0].y + d.y < ROWS
+      );
+      if (options.length === 0) return; // completely cornered, skip step
+      const newDir = options[Math.floor(Math.random() * options.length)];
+      dir = newDir;
+      wantDir = newDir; // player can override with arrow keys next step
+      nx = snake[0].x + dir.x;
+      ny = snake[0].y + dir.y;
+    }
 
     // barrier — blocked, snake stays put this step (no death)
     for (const b of barriers) {
