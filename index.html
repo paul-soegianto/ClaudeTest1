@@ -3,13 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe</title>
+  <title>Tic Tac Toe 9×9</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       min-height: 100vh;
@@ -17,97 +13,39 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 12px;
       background: #1a1a2e;
       font-family: 'Segoe UI', sans-serif;
       color: #eee;
+      padding: 16px;
     }
 
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-      letter-spacing: 0.1em;
+      font-size: 2rem;
+      letter-spacing: 0.12em;
       color: #e94560;
     }
 
-    #status {
-      font-size: 1.2rem;
-      margin-bottom: 1.5rem;
-      min-height: 1.8rem;
-      color: #a8dadc;
-    }
+    /* ── Mode selector ── */
+    #mode-select { display: flex; gap: 10px; }
 
-    #board {
-      display: grid;
-      grid-template-columns: repeat(3, 110px);
-      grid-template-rows: repeat(3, 110px);
-      gap: 8px;
-    }
-
-    .cell {
-      width: 110px;
-      height: 110px;
-      background: #16213e;
+    .mode-btn {
+      padding: 0.45rem 1.4rem;
+      font-size: 0.88rem;
+      font-weight: bold;
       border: 2px solid #0f3460;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-      user-select: none;
-    }
-
-    .cell:hover:not(.taken) {
-      background: #0f3460;
-      transform: scale(1.05);
-    }
-
-    .cell.x {
-      color: #e94560;
-    }
-
-    .cell.o {
-      color: #a8dadc;
-    }
-
-    .cell.win {
-      background: #0f3460;
-      border-color: #e94560;
-      animation: pulse 0.5s ease-in-out infinite alternate;
-    }
-
-    @keyframes pulse {
-      from { transform: scale(1); }
-      to   { transform: scale(1.08); }
-    }
-
-    #restart {
-      margin-top: 2rem;
-      padding: 0.7rem 2rem;
-      font-size: 1rem;
-      font-weight: bold;
-      background: #e94560;
-      color: #fff;
-      border: none;
       border-radius: 8px;
+      background: #16213e;
+      color: #888;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
       letter-spacing: 0.05em;
+      transition: all 0.18s;
     }
+    .mode-btn.active        { background: #0f3460; border-color: #e94560; color: #fff; }
+    .mode-btn:hover:not(.active) { border-color: #a8dadc; color: #a8dadc; }
 
-    #restart:hover {
-      background: #c73652;
-      transform: scale(1.05);
-    }
-
-    #scores {
-      display: flex;
-      gap: 2rem;
-      margin-bottom: 1.5rem;
-      font-size: 1rem;
-    }
+    /* ── Scores ── */
+    #scores { display: flex; gap: 1.5rem; }
 
     .score-box {
       display: flex;
@@ -116,19 +54,80 @@
       background: #16213e;
       border: 1px solid #0f3460;
       border-radius: 8px;
-      padding: 0.5rem 1.2rem;
+      padding: 0.4rem 1rem;
+      min-width: 72px;
     }
-
-    .score-label { color: #888; font-size: 0.8rem; text-transform: uppercase; }
-    .score-val   { font-size: 1.5rem; font-weight: bold; }
+    .score-label { color: #888; font-size: 0.72rem; text-transform: uppercase; }
+    .score-val   { font-size: 1.3rem; font-weight: bold; }
     .score-val.x { color: #e94560; }
     .score-val.o { color: #a8dadc; }
-    .score-val.d { color: #888; }
+    .score-val.d { color: #666; }
+
+    /* ── Status ── */
+    #status { font-size: 1rem; min-height: 1.5rem; color: #a8dadc; }
+
+    /* ── Board ── */
+    #board {
+      display: grid;
+      grid-template-columns: repeat(9, 48px);
+      grid-template-rows:    repeat(9, 48px);
+      gap: 4px;
+    }
+
+    .cell {
+      width: 48px; height: 48px;
+      background: #16213e;
+      border: 1.5px solid #0f3460;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.1s;
+      user-select: none;
+    }
+    .cell:hover:not(.taken) { background: #0f3460; transform: scale(1.07); }
+    .cell.x   { color: #e94560; }
+    .cell.o   { color: #a8dadc; }
+    .cell.win {
+      background: #0f3460;
+      border-color: #e94560;
+      animation: pulse 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to   { transform: scale(1.1); }
+    }
+
+    /* ── Restart ── */
+    #restart {
+      padding: 0.6rem 2rem;
+      font-size: 0.95rem;
+      font-weight: bold;
+      background: #e94560;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: background 0.2s, transform 0.1s;
+    }
+    #restart:hover { background: #c73652; transform: scale(1.04); }
+
+    /* ── Hint ── */
+    #hint { font-size: 0.75rem; color: #2a3060; }
   </style>
 </head>
 <body>
 
-<h1>Tic Tac Toe</h1>
+<h1>Tic Tac Toe <span style="font-size:1.2rem;color:#a8dadc">9×9</span></h1>
+
+<div id="mode-select">
+  <button class="mode-btn active" data-mode="2p">2 Players</button>
+  <button class="mode-btn"        data-mode="ai">vs Computer</button>
+</div>
 
 <div id="scores">
   <div class="score-box">
@@ -140,95 +139,222 @@
     <span class="score-val d" id="score-d">0</span>
   </div>
   <div class="score-box">
-    <span class="score-label">O Wins</span>
+    <span class="score-label" id="o-label">O Wins</span>
     <span class="score-val o" id="score-o">0</span>
   </div>
 </div>
 
 <div id="status">Player X's turn</div>
 
-<div id="board">
-  <div class="cell" data-i="0"></div>
-  <div class="cell" data-i="1"></div>
-  <div class="cell" data-i="2"></div>
-  <div class="cell" data-i="3"></div>
-  <div class="cell" data-i="4"></div>
-  <div class="cell" data-i="5"></div>
-  <div class="cell" data-i="6"></div>
-  <div class="cell" data-i="7"></div>
-  <div class="cell" data-i="8"></div>
-</div>
+<div id="board"></div>
 
 <button id="restart">New Game</button>
+<div id="hint">Get 5 in a row to win</div>
 
 <script>
-  const WINS = [
-    [0,1,2],[3,4,5],[6,7,8], // rows
-    [0,3,6],[1,4,7],[2,5,8], // cols
-    [0,4,8],[2,4,6],          // diagonals
-  ];
+  const GRID = 9;
+  const WIN  = 5;
+  const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
 
-  let board = Array(9).fill(null);
-  let current = 'X';
-  let gameOver = false;
+  let board, current, gameOver, thinking, aiGen;
+  let mode = '2p';
   const scores = { X: 0, O: 0, D: 0 };
 
-  const cells   = document.querySelectorAll('.cell');
-  const status  = document.getElementById('status');
-  const scoreX  = document.getElementById('score-x');
-  const scoreO  = document.getElementById('score-o');
-  const scoreD  = document.getElementById('score-d');
+  // ── DOM ───────────────────────────────────────────────────────────
+  const boardEl  = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const oLabel   = document.getElementById('o-label');
+  const scoreX   = document.getElementById('score-x');
+  const scoreO   = document.getElementById('score-o');
+  const scoreD   = document.getElementById('score-d');
 
-  cells.forEach(cell => cell.addEventListener('click', () => {
-    const i = +cell.dataset.i;
-    if (gameOver || board[i]) return;
+  // Build 81 cells dynamically
+  const cells = [];
+  for (let i = 0; i < GRID * GRID; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.addEventListener('click', () => onCellClick(i));
+    boardEl.appendChild(cell);
+    cells.push(cell);
+  }
 
-    board[i] = current;
-    cell.textContent = current;
-    cell.classList.add(current.toLowerCase(), 'taken');
+  // ── Mode buttons ─────────────────────────────────────────────────
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      mode = btn.dataset.mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      oLabel.textContent = mode === 'ai' ? 'Computer' : 'O Wins';
+      reset();
+    });
+  });
+
+  // ── Game logic ───────────────────────────────────────────────────
+  function reset() {
+    aiGen    = (aiGen || 0) + 1; // cancel any in-flight AI callback
+    board    = Array(GRID * GRID).fill(null);
+    current  = 'X';
+    gameOver = false;
+    thinking = false;
+    cells.forEach(c => { c.textContent = ''; c.className = 'cell'; });
+    statusEl.textContent = "Player X's turn";
+  }
+
+  function onCellClick(i) {
+    if (gameOver || board[i] || thinking) return;
+    place(i, current);
+  }
+
+  function place(i, player) {
+    board[i] = player;
+    cells[i].textContent = player;
+    cells[i].classList.add(player.toLowerCase(), 'taken');
 
     const winLine = checkWin();
     if (winLine) {
       winLine.forEach(idx => cells[idx].classList.add('win'));
-      status.textContent = `Player ${current} wins! 🎉`;
-      scores[current]++;
+      const name = (mode === 'ai' && player === 'O') ? 'Computer' : `Player ${player}`;
+      statusEl.textContent = `${name} wins! 🎉`;
+      scores[player]++;
       updateScores();
       gameOver = true;
-    } else if (board.every(Boolean)) {
-      status.textContent = "It's a draw!";
+      return;
+    }
+
+    if (board.every(Boolean)) {
+      statusEl.textContent = "It's a draw!";
       scores.D++;
       updateScores();
       gameOver = true;
-    } else {
-      current = current === 'X' ? 'O' : 'X';
-      status.textContent = `Player ${current}'s turn`;
+      return;
     }
-  }));
 
-  document.getElementById('restart').addEventListener('click', reset);
+    current = current === 'X' ? 'O' : 'X';
 
-  function checkWin() {
-    return WINS.find(([a,b,c]) =>
-      board[a] && board[a] === board[b] && board[a] === board[c]
-    ) || null;
+    if (mode === 'ai' && current === 'O') {
+      thinking = true;
+      statusEl.textContent = 'Computer is thinking…';
+      const gen = ++aiGen;
+      setTimeout(() => {
+        if (aiGen !== gen) return; // superseded by reset
+        const move = aiMove();
+        thinking = false;
+        place(move, 'O');
+        if (!gameOver) statusEl.textContent = "Player X's turn";
+      }, 350);
+    } else {
+      const label = mode === 'ai' ? 'Player X' : `Player ${current}`;
+      statusEl.textContent = `${label}'s turn`;
+    }
   }
 
+  // ── Win detection ─────────────────────────────────────────────────
+  function checkWin() {
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const p = board[r * GRID + c];
+        if (!p) continue;
+        for (const [dr, dc] of DIRS) {
+          const line = [];
+          for (let k = 0; k < WIN; k++) {
+            const nr = r + dr * k, nc = c + dc * k;
+            if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) break;
+            if (board[nr * GRID + nc] !== p) break;
+            line.push(nr * GRID + nc);
+          }
+          if (line.length === WIN) return line;
+        }
+      }
+    }
+    return null;
+  }
+
+  // ── AI ────────────────────────────────────────────────────────────
+  // Scores an empty cell for a given player based on connected sequences.
+  function evalCell(idx, player) {
+    const r = Math.floor(idx / GRID), c = idx % GRID;
+    let score = 0;
+    for (const [dr, dc] of DIRS) {
+      let count = 1, openEnds = 0;
+      // Positive direction
+      for (let k = 1; k < WIN; k++) {
+        const nr = r + dr * k, nc = c + dc * k;
+        if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) break;
+        const ni = nr * GRID + nc;
+        if      (board[ni] === player) count++;
+        else if (!board[ni])           { openEnds++; break; }
+        else                           break;
+      }
+      // Negative direction
+      for (let k = 1; k < WIN; k++) {
+        const nr = r - dr * k, nc = c - dc * k;
+        if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) break;
+        const ni = nr * GRID + nc;
+        if      (board[ni] === player) count++;
+        else if (!board[ni])           { openEnds++; break; }
+        else                           break;
+      }
+      if      (count >= WIN)                      score += 100000;
+      else if (count === WIN - 1 && openEnds >= 1) score += 10000;
+      else if (count === WIN - 2 && openEnds >= 2) score += 1000;
+      else if (count === WIN - 2 && openEnds >= 1) score += 200;
+      else if (count === WIN - 3 && openEnds >= 2) score += 50;
+      else                                         score += count * openEnds;
+    }
+    return score;
+  }
+
+  function aiMove() {
+    const total = GRID * GRID;
+    const center = Math.floor(GRID / 2);
+
+    // 1. Take a winning move immediately
+    for (let i = 0; i < total; i++) {
+      if (!board[i]) {
+        board[i] = 'O';
+        const w = checkWin();
+        board[i] = null;
+        if (w) return i;
+      }
+    }
+
+    // 2. Block opponent from winning
+    for (let i = 0; i < total; i++) {
+      if (!board[i]) {
+        board[i] = 'X';
+        const w = checkWin();
+        board[i] = null;
+        if (w) return i;
+      }
+    }
+
+    // 3. Heuristic: attack score × 2 + defence score × 3 + centre proximity
+    let best = -1, bestScore = -Infinity;
+    for (let i = 0; i < total; i++) {
+      if (board[i]) continue;
+      const r = Math.floor(i / GRID), c = i % GRID;
+      const proximity = (center + 1) - Math.max(Math.abs(r - center), Math.abs(c - center));
+      const s = evalCell(i, 'O') * 2 + evalCell(i, 'X') * 3 + proximity;
+      if (s > bestScore) { bestScore = s; best = i; }
+    }
+    if (best !== -1) return best;
+
+    // 4. Fallback: centre then first empty
+    const mid = center * GRID + center;
+    return !board[mid] ? mid : board.findIndex(x => !x);
+  }
+
+  // ── Scores ────────────────────────────────────────────────────────
   function updateScores() {
     scoreX.textContent = scores.X;
     scoreO.textContent = scores.O;
     scoreD.textContent = scores.D;
   }
 
-  function reset() {
-    board = Array(9).fill(null);
-    current = 'X';
-    gameOver = false;
-    status.textContent = "Player X's turn";
-    cells.forEach(cell => {
-      cell.textContent = '';
-      cell.className = 'cell';
-    });
-  }
+  // ── Init ─────────────────────────────────────────────────────────
+  document.getElementById('restart').addEventListener('click', reset);
+  aiGen = 0;
+  reset();
 </script>
 
 </body>
