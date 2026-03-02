@@ -124,7 +124,7 @@
   let barriers = [];
 
   function reset() {
-    snake   = Array.from({length: 4}, (_, i) => ({ x: 14 - i, y: 10 }));
+    snake   = Array.from({length: 20}, (_, i) => ({ x: 20 - i, y: 10 }));
     dir     = { x: 1, y: 0 };
     wantDir = { x: 1, y: 0 };
     dead    = false;
@@ -138,21 +138,45 @@
   }
 
   // ── barrier generation (new layout each level) ────────
+  // Each barrier is a connected multi-cell shape (1–7 cells),
+  // grown organically from a random seed cell.
   function generateBarriers(lvl) {
     barriers = [];
-    const count = lvl === 0 ? 0 : Math.min(8, lvl + 2);
-    if (count === 0) return;
+    if (lvl === 0) return;
+    const shapeCount = Math.min(5, lvl + 1);
+    const DIRS = [{ x:1,y:0 },{ x:-1,y:0 },{ x:0,y:1 },{ x:0,y:-1 }];
     const occupied = new Set(snake.map(s => `${s.x},${s.y}`));
-    let tries = 0;
-    while (barriers.length < count && tries < count * 30) {
-      tries++;
-      const bx = Math.floor(Math.random() * COLS);
-      const by = Math.floor(Math.random() * ROWS);
-      const key = `${bx},${by}`;
-      if (occupied.has(key)) continue;
-      if (barriers.some(b => b.x === bx && b.y === by)) continue;
-      occupied.add(key);
-      barriers.push({ x: bx, y: by });
+
+    for (let s = 0; s < shapeCount; s++) {
+      // Find a free seed cell
+      let sx, sy, found = false;
+      for (let a = 0; a < 60; a++) {
+        sx = Math.floor(Math.random() * COLS);
+        sy = Math.floor(Math.random() * ROWS);
+        if (!occupied.has(`${sx},${sy}`)) { found = true; break; }
+      }
+      if (!found) continue;
+
+      // Grow a connected shape of random size 1–7
+      const size  = 1 + Math.floor(Math.random() * 7);
+      const shape = [{ x: sx, y: sy }];
+      occupied.add(`${sx},${sy}`);
+
+      let tries = 0;
+      while (shape.length < size && tries < size * 20) {
+        tries++;
+        const base = shape[Math.floor(Math.random() * shape.length)];
+        const d    = DIRS[Math.floor(Math.random() * 4)];
+        const nx   = base.x + d.x;
+        const ny   = base.y + d.y;
+        const key  = `${nx},${ny}`;
+        if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && !occupied.has(key)) {
+          shape.push({ x: nx, y: ny });
+          occupied.add(key);
+        }
+      }
+
+      for (const cell of shape) barriers.push(cell);
     }
   }
 
