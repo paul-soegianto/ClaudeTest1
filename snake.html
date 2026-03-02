@@ -138,16 +138,23 @@
   }
 
   // ── barrier generation (new layout each level) ────────
-  // Each barrier is a connected multi-cell shape (1–7 cells),
-  // grown organically from a random seed cell.
+  // Target: 10% of grid cells per level (capped at 50%).
+  // Shapes are connected blobs of 1–7 cells grown from a random seed.
   function generateBarriers(lvl) {
     barriers = [];
     if (lvl === 0) return;
-    const shapeCount = Math.min(5, lvl + 1);
-    const DIRS = [{ x:1,y:0 },{ x:-1,y:0 },{ x:0,y:1 },{ x:0,y:-1 }];
+    const totalCells = COLS * ROWS;                            // 484
+    const target     = Math.min(
+      Math.floor(totalCells * 0.50),                          // max 50%
+      Math.floor(totalCells * 0.10 * lvl)                     // 10% × level
+    );
+    const DIRS    = [{ x:1,y:0 },{ x:-1,y:0 },{ x:0,y:1 },{ x:0,y:-1 }];
     const occupied = new Set(snake.map(s => `${s.x},${s.y}`));
+    let placed = 0, shapeAttempts = 0;
 
-    for (let s = 0; s < shapeCount; s++) {
+    while (placed < target && shapeAttempts < 300) {
+      shapeAttempts++;
+
       // Find a free seed cell
       let sx, sy, found = false;
       for (let a = 0; a < 60; a++) {
@@ -155,10 +162,10 @@
         sy = Math.floor(Math.random() * ROWS);
         if (!occupied.has(`${sx},${sy}`)) { found = true; break; }
       }
-      if (!found) continue;
+      if (!found) break;
 
-      // Grow a connected shape of random size 1–7
-      const size  = 1 + Math.floor(Math.random() * 7);
+      // Grow a connected shape, size 1–7 (never exceeds remaining target)
+      const size  = 1 + Math.floor(Math.random() * Math.min(7, target - placed));
       const shape = [{ x: sx, y: sy }];
       occupied.add(`${sx},${sy}`);
 
@@ -177,6 +184,7 @@
       }
 
       for (const cell of shape) barriers.push(cell);
+      placed += shape.length;
     }
   }
 
