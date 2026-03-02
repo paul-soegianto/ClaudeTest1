@@ -169,9 +169,9 @@
     const nx = (snake[0].x + dir.x + COLS) % COLS;
     const ny = (snake[0].y + dir.y + ROWS) % ROWS;
 
-    // barrier collision → die
+    // barrier — blocked, snake stays put this step (no death)
     for (const b of barriers) {
-      if (b.x === nx && b.y === ny) { dead = true; return; }
+      if (b.x === nx && b.y === ny) return;
     }
 
     // self (skip last segment — it vacates this step)
