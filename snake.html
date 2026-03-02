@@ -45,7 +45,6 @@
 
     canvas {
       display: block;
-      cursor: none;
       border: 2px solid #0f2a1a;
       border-radius: 6px;
     }
@@ -88,6 +87,7 @@
 <h1>S N A K E</h1>
 
 <div id="hud">
+  <span>Level <span class="val" id="h-level">1</span></span>
   <span>Score <span class="val" id="h-score">0</span></span>
   <span>Length <span class="val" id="h-len">4</span></span>
   <span>Grows in <span class="val" id="h-timer">10</span>s</span>
@@ -99,15 +99,15 @@
 </div>
 
 <button id="restart">&#9654; Restart</button>
-<div id="tip">Move your mouse inside the arena to steer &nbsp;·&nbsp; Space to restart</div>
+<div id="tip">Arrow keys to steer &nbsp;·&nbsp; Space to restart</div>
 
 <script>
 (() => {
   const CELL  = 20;
-  const COLS  = 30;
-  const ROWS  = 30;
-  const W     = CELL * COLS;   // 600
-  const H     = CELL * ROWS;   // 600
+  const COLS  = 22;  // 25% smaller boundary (30 × 0.75 ≈ 22)
+  const ROWS  = 22;
+  const W     = CELL * COLS;   // 440
+  const H     = CELL * ROWS;   // 440
   const GROW_EVERY  = 10;      // seconds
   const GROW_BY     = 3;       // segments per event
   const BASE_SPEED  = 7;       // cells/sec
@@ -121,10 +121,10 @@
   // ── state ────────────────────────────────────────────
   let snake, dir, wantDir, dead, score, growCd, speed;
   let lastTs, moveAcc, flashT;
-  let mx = W / 2, my = H / 2;
+  let barriers = [];
 
   function reset() {
-    snake   = Array.from({length: 4}, (_, i) => ({ x: 17 - i, y: 15 }));
+    snake   = Array.from({length: 4}, (_, i) => ({ x: 14 - i, y: 10 }));
     dir     = { x: 1, y: 0 };
     wantDir = { x: 1, y: 0 };
     dead    = false;
@@ -134,26 +134,30 @@
     lastTs  = null;
     moveAcc = 0;
     flashT  = 0;
+    barriers = [];
   }
 
-  // ── mouse → direction ────────────────────────────────
-  canvas.addEventListener('mousemove', e => {
-    const r = canvas.getBoundingClientRect();
-    mx = e.clientX - r.left;
-    my = e.clientY - r.top;
-  });
+  // ── barrier generation (new layout each level) ────────
+  function generateBarriers(lvl) {
+    barriers = [];
+    const count = lvl === 0 ? 0 : Math.min(8, lvl + 2);
+    if (count === 0) return;
+    const occupied = new Set(snake.map(s => `${s.x},${s.y}`));
+    let tries = 0;
+    while (barriers.length < count && tries < count * 30) {
+      tries++;
+      const bx = Math.floor(Math.random() * COLS);
+      const by = Math.floor(Math.random() * ROWS);
+      const key = `${bx},${by}`;
+      if (occupied.has(key)) continue;
+      if (barriers.some(b => b.x === bx && b.y === by)) continue;
+      occupied.add(key);
+      barriers.push({ x: bx, y: by });
+    }
+  }
 
-  function refreshDir() {
-    const hx = (snake[0].x + 0.5) * CELL;
-    const hy = (snake[0].y + 0.5) * CELL;
-    const dx = mx - hx;
-    const dy = my - hy;
-    if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
-
-    const c = Math.abs(dx) >= Math.abs(dy)
-      ? { x: dx > 0 ? 1 : -1, y: 0 }
-      : { x: 0, y: dy > 0 ? 1 : -1 };
-
+  // ── arrow key → direction ─────────────────────────────
+  function tryDir(c) {
     // forbid 180° reverse
     if (c.x !== -dir.x || c.y !== -dir.y) wantDir = c;
   }
@@ -161,11 +165,14 @@
   // ── advance one cell ─────────────────────────────────
   function advance() {
     dir = { ...wantDir };
-    const nx = snake[0].x + dir.x;
-    const ny = snake[0].y + dir.y;
+    // Boundary wraps — snake comes out the other side
+    const nx = (snake[0].x + dir.x + COLS) % COLS;
+    const ny = (snake[0].y + dir.y + ROWS) % ROWS;
 
-    // wall
-    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { dead = true; return; }
+    // barrier collision → die
+    for (const b of barriers) {
+      if (b.x === nx && b.y === ny) { dead = true; return; }
+    }
 
     // self (skip last segment — it vacates this step)
     for (let i = 0; i < snake.length - 1; i++) {
@@ -182,6 +189,7 @@
     score++;
     speed += SPEED_GAIN;
     flashT = 0.45;
+    generateBarriers(score); // new barrier layout each level
   }
 
   // ── draw helpers ─────────────────────────────────────
@@ -220,6 +228,24 @@
       ctx.fillStyle = `rgba(74,222,128,${flashT * 0.13})`;
       ctx.fillRect(0, 0, W, H);
     }
+
+    // barriers
+    ctx.save();
+    ctx.shadowBlur  = 8;
+    ctx.shadowColor = '#f97316';
+    ctx.fillStyle   = '#7c2d12';
+    for (const b of barriers) {
+      roundRect(b.x * CELL + 1, b.y * CELL + 1, CELL - 2, CELL - 2, 3);
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth   = 1.5;
+    ctx.shadowBlur  = 0;
+    for (const b of barriers) {
+      roundRect(b.x * CELL + 1, b.y * CELL + 1, CELL - 2, CELL - 2, 3);
+      ctx.stroke();
+    }
+    ctx.restore();
 
     const n = snake.length;
 
@@ -263,21 +289,6 @@
       });
     }
 
-    // mouse crosshair
-    if (!dead) {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(74,222,128,0.5)';
-      ctx.lineWidth = 1.5;
-      const s = 7;
-      ctx.beginPath();
-      ctx.moveTo(mx - s, my); ctx.lineTo(mx + s, my);
-      ctx.moveTo(mx, my - s); ctx.lineTo(mx, my + s);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(74,222,128,0.7)';
-      ctx.beginPath(); ctx.arc(mx, my, 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
     // game-over overlay
     if (dead) {
       ctx.fillStyle = 'rgba(8,13,20,0.82)';
@@ -294,7 +305,7 @@
 
       ctx.fillStyle = '#4ade80';
       ctx.font      = 'bold 26px Segoe UI';
-      ctx.fillText(`Score ${score}  ·  Length ${n}`, W / 2, H / 2 + 24);
+      ctx.fillText(`Level ${score + 1}  ·  Score ${score}  ·  Length ${n}`, W / 2, H / 2 + 24);
 
       ctx.fillStyle = '#3a4a3a';
       ctx.font      = '17px Segoe UI';
@@ -304,6 +315,7 @@
 
   // ── HUD ──────────────────────────────────────────────
   function updateHUD() {
+    document.getElementById('h-level').textContent = score + 1;
     document.getElementById('h-score').textContent = score;
     document.getElementById('h-len').textContent   = snake.length;
     document.getElementById('h-timer').textContent = Math.ceil(growCd);
@@ -325,8 +337,6 @@
     lastTs = ts;
 
     if (!dead) {
-      refreshDir();
-
       if (flashT > 0) flashT -= dt;
 
       growCd -= dt;
@@ -344,7 +354,13 @@
   // ── controls ─────────────────────────────────────────
   document.getElementById('restart').addEventListener('click', reset);
   document.addEventListener('keydown', e => {
-    if (e.code === 'Space') { e.preventDefault(); reset(); }
+    switch (e.code) {
+      case 'ArrowUp':    e.preventDefault(); tryDir({ x: 0,  y: -1 }); break;
+      case 'ArrowDown':  e.preventDefault(); tryDir({ x: 0,  y:  1 }); break;
+      case 'ArrowLeft':  e.preventDefault(); tryDir({ x: -1, y:  0 }); break;
+      case 'ArrowRight': e.preventDefault(); tryDir({ x:  1, y:  0 }); break;
+      case 'Space':      e.preventDefault(); reset(); break;
+    }
   });
 
   reset();
