@@ -15,7 +15,7 @@ canvas { display:block; image-rendering:pixelated; touch-action:none; }
 <canvas id="c"></canvas>
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const W=800, H=620;
+const W=960, H=620;
 const QUEUE_SEC=3;
 const TOTAL_TIME=60;
 const PSPEED=140;
@@ -82,6 +82,8 @@ const STALL_DEFS=[
      {name:'Jus Kedongdong',     price:20000,cal:400,nutrients:['fiber'],          cat:'drink'},
      {name:'Jus Jeruk',          price:20000,cal:300,nutrients:['fiber'],          cat:'drink'},
      {name:'Jus Jambu',          price:25000,cal:450,nutrients:['fiber'],          cat:'drink'},
+     {name:'Teh Tawar',          price:10000,cal:  0,nutrients:[],                cat:'drink'},
+     {name:'Teh Manis',          price:15000,cal:200,nutrients:['carb'],           cat:'drink'},
    ]},
   // ── DESSERT (pink) ────────────────────────────────────────────────────────
   {id:'rumahes',  name:'Rumah Es',           color:'#aa2888', vendor:'man',   queueBase:2, cat:'dessert',
@@ -191,31 +193,35 @@ isMobile='ontouchstart' in window||screen.width<700;
 if(isMobile){canvas.style.width='100%';canvas.style.height='auto';}
 
 // ─── MARKET LAYOUT ────────────────────────────────────────────────────────────
-// 12 stalls in 3 rows + side columns
-// Market floor: x=50 y=HUD_H w=700 h=(H-HUD_H-30)
-// Top row (4, facing down):  y=HUD_H+4
-// Row A (4, mixed):          y=HUD_H+130
-// Row B (4, mixed):          y=HUD_H+260
-const MY=HUD_H+2;   // market top y (just below HUD)
+// 12 stalls on perimeter:
+//   4 top  (facing down)   — evenly across top
+//   4 left (facing right)  — evenly down left wall
+//   4 right(facing left)   — evenly down right wall (same y as left)
+// Market floor: x=50 y=HUD_H w=700 h=(H-HUD_H-28)
+// Left-col right edge=145, Right-col left edge=655
+// Top-row stalls: x=181..529, leaving 36px gap to each wall column
+const MY=HUD_H+2;   // market top y
+const LY0=MY+80;    // first left/right stall y (below top row + gap)
+const LYS=110;      // vertical step between left/right stalls
 
 const STALL_LAYOUT=[
-  // Top row — 4 stalls facing down (x: 118,276,434,592 width=90)
-  {x:118,y:MY+2,  w:90,h:55,facing:'down', defIdx:0 },  // nasiuduk
-  {x:276,y:MY+2,  w:90,h:55,facing:'down', defIdx:1 },  // ayamandi
-  {x:434,y:MY+2,  w:90,h:55,facing:'down', defIdx:2 },  // warteg
-  {x:592,y:MY+2,  w:90,h:55,facing:'down', defIdx:3 },  // dimsum
+  // ── Top row (4, facing down, y=MY+2) ─────────────────────────────────────
+  {x:181,y:MY+2,  w:90,h:55,facing:'down', defIdx:0 },  // nasiuduk
+  {x:297,y:MY+2,  w:90,h:55,facing:'down', defIdx:1 },  // ayamandi
+  {x:413,y:MY+2,  w:90,h:55,facing:'down', defIdx:2 },  // warteg
+  {x:529,y:MY+2,  w:90,h:55,facing:'down', defIdx:3 },  // dimsum
 
-  // Row A — left wall + 2 interior + right wall
-  {x:55, y:MY+130,w:90,h:55,facing:'right',defIdx:4 },  // bakso
-  {x:240,y:MY+130,w:90,h:55,facing:'down', defIdx:8 },  // kolak (dessert)
-  {x:400,y:MY+130,w:90,h:55,facing:'down', defIdx:9 },  // jus (drink)
-  {x:655,y:MY+130,w:90,h:55,facing:'left', defIdx:11},  // bebek
+  // ── Left column (4, facing right, x=55) ──────────────────────────────────
+  {x:55, y:LY0,      w:90,h:55,facing:'right',defIdx:4 },  // bakso
+  {x:55, y:LY0+LYS,  w:90,h:55,facing:'right',defIdx:5 },  // padang
+  {x:55, y:LY0+LYS*2,w:90,h:55,facing:'right',defIdx:6 },  // gadogado
+  {x:55, y:LY0+LYS*3,w:90,h:55,facing:'right',defIdx:7 },  // sate
 
-  // Row B — left wall + 2 interior + right wall
-  {x:55, y:MY+260,w:90,h:55,facing:'right',defIdx:5 },  // padang
-  {x:240,y:MY+260,w:90,h:55,facing:'down', defIdx:6 },  // gadogado
-  {x:400,y:MY+260,w:90,h:55,facing:'down', defIdx:10},  // rumahes (dessert)
-  {x:655,y:MY+260,w:90,h:55,facing:'left', defIdx:7 },  // sate
+  // ── Right column (4, facing left, x=655) ─────────────────────────────────
+  {x:655,y:LY0,      w:90,h:55,facing:'left', defIdx:8 },  // kolak (dessert)
+  {x:655,y:LY0+LYS,  w:90,h:55,facing:'left', defIdx:9 },  // jus (drink)
+  {x:655,y:LY0+LYS*2,w:90,h:55,facing:'left', defIdx:10},  // rumahes (dessert)
+  {x:655,y:LY0+LYS*3,w:90,h:55,facing:'left', defIdx:11},  // bebek
 ];
 
 function generateMarket(){
@@ -406,7 +412,7 @@ canvas.addEventListener('click',e=>{
 
 // ─── TOUCH / MOBILE ───────────────────────────────────────────────────────────
 const DPAD_CX=75,DPAD_CY=H-100,DPAD_R=55;
-const BUY_CX=W-80,BUY_CY=H-90,BUY_R=38;
+const BUY_CX=700,BUY_CY=H-90,BUY_R=38;  // right of market, left of cart
 
 function hitDpad(tx,ty){
   const dx=tx-DPAD_CX,dy=ty-DPAD_CY;
@@ -519,6 +525,10 @@ function drawStall(s){
 
   if(isNear)ctx.restore();
 
+  // Dark name band at top of awning — keeps name clearly visible
+  ctx.fillStyle='rgba(0,0,0,0.52)';
+  ctx.fillRect(s.x+2,s.y+2,s.w-4,26);
+
   // Stall name (two lines if needed)
   ctx.fillStyle='#fff';
   ctx.font='bold 9px sans-serif';ctx.textAlign='center';
@@ -530,7 +540,7 @@ function drawStall(s){
     ctx.fillText(l1,s.x+s.w/2,s.y+12);
     ctx.fillText(l2,s.x+s.w/2,s.y+22);
   } else {
-    ctx.fillText(name,s.x+s.w/2,s.y+14);
+    ctx.fillText(name,s.x+s.w/2,s.y+16);
   }
 
   // Queue display (directly at counter face)
@@ -590,7 +600,7 @@ function drawQueueDots(s){
 }
 
 function drawVendor(s){
-  const cx=s.x+s.w/2,cy=s.y+s.h*0.52;
+  const cx=s.x+s.w/2,cy=s.y+s.h*0.78;  // shifted to bottom 2/3 of awning
   if(s.vendor==='woman'){
     ctx.fillStyle='#1a0a00';ctx.beginPath();ctx.ellipse(cx,cy-8,8,9,0,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#e8b490';ctx.beginPath();ctx.arc(cx,cy-8,6,0,Math.PI*2);ctx.fill();
@@ -606,7 +616,7 @@ function drawVendor(s){
 }
 
 function drawEquipment(s){
-  const cx=s.x+s.w/2,cy=s.y+s.h*0.35;
+  const cx=s.x+s.w/2,cy=s.y+s.h*0.72;  // shifted to bottom half of awning
   const id=s.defId;
   if(id==='nasiuduk'||id==='warteg'){
     ctx.fillStyle='rgba(255,220,80,0.5)';ctx.beginPath();ctx.ellipse(cx,cy+4,10,3,0,0,Math.PI*2);ctx.fill();
@@ -824,8 +834,9 @@ function drawMissionBar(){
 }
 
 // ─── DRAW CART SIDEBAR ────────────────────────────────────────────────────────
+// Placed at x=760, outside the market floor (x=50–750)
 function drawCart(){
-  const sx=W-185,sy=HUD_H+4,sw=180,sh=H-HUD_H-60;
+  const sx=760,sy=HUD_H+4,sw=192,sh=H-HUD_H-20;
   ctx.fillStyle='rgba(0,0,0,0.55)';
   rp(sx,sy,sw,sh,6);ctx.fill();
 
