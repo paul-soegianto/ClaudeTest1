@@ -22,6 +22,27 @@ const WORLD_LEN  = 9000;
 const CEIL_Y     = 55;   // cave ceiling Y
 const DEATH_Y    = 490;  // fall below this = lose a life
 
+// ─── Zone / level config ──────────────────────────────────────────────────────
+const MAX_LEVEL = 5;
+let level = 1;
+const ZONE_CONFIG = [
+  { name:'CAVE ENTRANCE',      bgTop:'#0c0608', bgBot:'#180c04',
+    pool:['snake','dwarf','bird'],
+    lakeFire:0,    trapFreq:0,    spacing:680 },
+  { name:'UNDERGROUND FOREST', bgTop:'#04100a', bgBot:'#081808',
+    pool:['snake','dwarf','bird','hairwhip'],
+    lakeFire:0.08, trapFreq:0.05, spacing:615 },
+  { name:'CROC SWAMP',         bgTop:'#080e08', bgBot:'#0f1408',
+    pool:['snake','bird','hairwhip','flycroc'],
+    lakeFire:0.20, trapFreq:0.10, spacing:550 },
+  { name:"GIANT'S LAIR",       bgTop:'#120606', bgBot:'#1e0808',
+    pool:['dwarf','hairwhip','flycroc','giant'],
+    lakeFire:0.15, trapFreq:0.18, spacing:500 },
+  { name:'FINAL CHAMBER',      bgTop:'#0a0410', bgBot:'#140818',
+    pool:['snake','dwarf','bird','hairwhip','flycroc','giant'],
+    lakeFire:0.25, trapFreq:0.22, spacing:440 },
+];
+
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
 
@@ -53,11 +74,16 @@ let stalactites = []; // { wx, w, h }
 let lakes      = []; // { x, w, py }
 let fires      = []; // { x, w, py }
 let ledges     = []; // { x, w, y, aboveLake? }
+let fireLakes  = []; // { x, w, py } — lose 1 life on contact
+let traps      = []; // { wx, y, triggered } — pressure plates
 let prisoner   = { wx: WORLD_LEN - 400, rescued: false };
 
 function generateWorld() {
-  platforms = []; stalactites = []; lakes = []; fires = []; ledges = [];
+  platforms = []; stalactites = []; lakes = []; fires = [];
+  ledges = []; fireLakes = []; traps = [];
   prisoner.rescued = false;
+
+  const cfg = ZONE_CONFIG[level - 1];
 
   // ── Platforms (varying heights, occasional gaps) ──────────────────────────
   let x = 0, y = 370;
@@ -70,10 +96,11 @@ function generateWorld() {
     y = Math.max(215, Math.min(415, y + dy));
     const w = 110 + Math.random() * 230;
 
-    // Hazards on some platforms
+    // Hazards — zone-aware
     const rng = Math.random();
-    if      (rng < 0.12 && w > 160) lakes.push({ x: x + 20, w: Math.min(w - 40, 110), py: y });
-    else if (rng < 0.22 && w > 120) fires.push({ x: x + 10, w: 55 + Math.random() * 40, py: y });
+    if      (rng < cfg.lakeFire && w > 160)          fireLakes.push({ x: x + 20, w: Math.min(w - 40, 140), py: y });
+    else if (rng < cfg.lakeFire + 0.12 && w > 160)   lakes.push({ x: x + 20, w: Math.min(w - 40, 110), py: y });
+    else if (rng < cfg.lakeFire + 0.22 && w > 120)   fires.push({ x: x + 10, w: 55 + Math.random() * 40, py: y });
 
     platforms.push({ x, w, y }); x += w;
   }
@@ -88,9 +115,16 @@ function generateWorld() {
   for (let wx = 900; wx < WORLD_LEN - 900; wx += 380 + Math.random() * 520) {
     ledges.push({ x: wx, w: 75 + Math.random() * 140, y: 195 + Math.random() * 95 });
   }
-  // ── Pond ledges — above every lake so hazards are bypassable ─────────
+  // ── Pond ledges — above every blue lake so hazards are bypassable ─────
   for (const l of lakes) {
     ledges.push({ x: l.x - 35, w: l.w + 70, y: l.py - 88, aboveLake: true });
+  }
+
+  // ── Pressure-plate traps on platforms ─────────────────────────────────
+  for (const p of platforms) {
+    if (p.w > 80 && Math.random() < cfg.trapFreq) {
+      traps.push({ wx: p.x + 30 + Math.random() * (p.w - 60), y: p.y, triggered: false });
+    }
   }
 }
 
@@ -124,30 +158,38 @@ function makePlayer() {
 
 function spawnEnemies() {
   enemies = [];
-  for (let wx = 1100; wx < WORLD_LEN - 750; wx += 320 + Math.random() * 360) {
-    const type  = ['snake','dwarf','bird'][Math.floor(Math.random() * 3)];
-    const isBird = type === 'bird';
-    const py = platformAt(wx, 12);
+  const cfg = ZONE_CONFIG[level - 1];
+  const D   = 1 + 0.1 * (level - 1);
+  const HP  = { snake:2, dwarf:1, bird:2, hairwhip:2, flycroc:3, giant:5 };
+  const BVX = { snake:55, dwarf:130, hairwhip:45, giant:40 };
+  const BCD = { snake:95, bird:77, flycroc:90 };
+
+  for (let wx = 1100; wx < WORLD_LEN - 750; wx += cfg.spacing + Math.random() * 360) {
+    const type   = cfg.pool[Math.floor(Math.random() * cfg.pool.length)];
+    const flying = type === 'bird' || type === 'flycroc';
+    const py     = platformAt(wx, 12);
     enemies.push({
-      wx,
-      y:         isBird ? CEIL_Y + 85 + Math.random() * 70 : (py < DEATH_Y ? py : 370),
-      type,
-      active:    false,
-      hp:        type === 'snake' ? 2 : type === 'dwarf' ? 1 : 2,
-      maxHp:     type === 'snake' ? 2 : type === 'dwarf' ? 1 : 2,
-      vy:        0,
-      vx:        type === 'dwarf' ? -130 : type === 'snake' ? -55 : 0,
-      grounded:  !isBird,
-      shootCD:   80 + Math.random() * 90,
-      phase:     Math.random() * Math.PI * 2,
+      wx, type, active: false,
+      y:        flying ? CEIL_Y + 85 + Math.random() * 70 : (py < DEATH_Y ? py : 370),
+      hp:       HP[type], maxHp: HP[type],
+      vy: 0,    vx: (BVX[type] || 0) * D * (Math.random() < 0.5 ? -1 : 1),
+      grounded: !flying,
+      shootCD:  BCD[type] ? Math.floor(BCD[type] / D) + Math.floor(Math.random() * 45) : 0,
+      phase:    Math.random() * Math.PI * 2,
+      // hairwhip state
+      whipPhase: 0, whipTimer: 0, whipLen: 0,
+      // giant state
+      smashPhase: 0, smashTimer: 0,
     });
   }
 }
 
-function startGame() {
-  score = 0;
+function startGame(keepProgress) {
+  if (!keepProgress) { level = 1; score = 0; }
   generateWorld();
+  const prevLives = keepProgress && player ? player.lives : 3;
   makePlayer();
+  player.lives = prevLives;
   spawnEnemies();
   pBullets = []; eBullets = []; particles = [];
   cameraX  = 0;
@@ -333,6 +375,77 @@ function update(dt) {
         const ang = Math.atan2((player.y - player.h/2) - e.y, player.wx - e.wx);
         eBullets.push({ wx: e.wx, y: e.y + 15, vx: Math.cos(ang) * 230, vy: Math.sin(ang) * 230, color: '#ff8800' });
       }
+
+    // ── HAIR-WHIP WOMAN: slow walker, extends hair whip when player is near ──
+    } else if (e.type === 'hairwhip') {
+      const D = 1 + 0.1 * (level - 1);
+      if (e.whipPhase === 0) {
+        // Walk toward player, stop at edge
+        const hwdir = player.wx < e.wx ? -1 : 1;
+        e.vx = hwdir * 45 * D; e.wx += e.vx * dt;
+        const hahead = platformAt(e.wx + hwdir * 30, 5);
+        if (hahead >= DEATH_Y) { e.wx -= e.vx * dt * 2; e.vx *= -1; }
+        const hefy = platformAt(e.wx, 10);
+        if (hefy < DEATH_Y) e.y = hefy;
+        // Trigger whip when player close
+        if (Math.abs(player.wx - e.wx) < 180 && Math.abs(player.y - e.y) < 65) {
+          e.whipPhase = 1; e.whipTimer = 0; e.whipLen = 0;
+        }
+      } else if (e.whipPhase === 1) { // Extending
+        e.whipTimer += dt; e.whipLen = Math.min(85, e.whipLen + 215 * dt);
+        if (e.whipTimer > 0.4) { e.whipPhase = 2; e.whipTimer = 0; }
+        const wdir = player.wx >= e.wx ? 1 : -1;
+        if (player.invincible <= 0 && Math.abs(player.wx - (e.wx + wdir * e.whipLen)) < 22 && Math.abs(player.y - e.y) < 30) hurtPlayer();
+      } else if (e.whipPhase === 2) { // Holding
+        e.whipTimer += dt;
+        const wdir = player.wx >= e.wx ? 1 : -1;
+        if (player.invincible <= 0 && Math.abs(player.wx - (e.wx + wdir * e.whipLen)) < 26 && Math.abs(player.y - e.y) < 30) hurtPlayer();
+        if (e.whipTimer > 0.35) { e.whipPhase = 3; e.whipTimer = 0; }
+      } else { // Retracting
+        e.whipLen = Math.max(0, e.whipLen - 170 * dt);
+        if (e.whipLen <= 0) { e.whipPhase = 0; e.whipTimer = 0; }
+      }
+
+    // ── FLYING CROC: hovers, tracks player, shoots fireballs ──────────────
+    } else if (e.type === 'flycroc') {
+      const D = 1 + 0.1 * (level - 1);
+      e.phase += dt * 1.2;
+      e.wx += (player.wx + 60 - e.wx) * 0.45 * dt - 35 * dt;
+      e.y   = CEIL_Y + 95 + Math.sin(e.phase) * 42;
+      e.shootCD--;
+      if (e.shootCD <= 0 && Math.abs(player.wx - e.wx) < 320) {
+        e.shootCD = Math.floor(88 / D) + Math.floor(Math.random() * 40);
+        const ang = Math.atan2((player.y - player.h / 2) - e.y, player.wx - e.wx);
+        eBullets.push({ wx: e.wx + Math.cos(ang) * 28, y: e.y + Math.sin(ang) * 16,
+                        vx: Math.cos(ang) * 270 * D, vy: Math.sin(ang) * 270 * D,
+                        color: '#ff4400', r: 8 });
+      }
+
+    // ── GIANT: slow walk, smash attack when player near ───────────────────
+    } else if (e.type === 'giant') {
+      const D = 1 + 0.1 * (level - 1);
+      const gdir = player.wx < e.wx ? -1 : 1;
+      if (e.smashPhase === 0) {
+        e.vx = gdir * 48 * D; e.wx += e.vx * dt;
+        const gahead = platformAt(e.wx + gdir * 55, 10);
+        if (gahead >= DEATH_Y) e.wx -= e.vx * dt * 2;
+        const gefy = platformAt(e.wx, 18);
+        if (gefy < DEATH_Y) e.y = gefy;
+        // Contact damage while walking
+        if (player.invincible <= 0 && Math.abs(player.wx - e.wx) < 32 && Math.abs(player.y - e.y) < 60) hurtPlayer();
+        // Trigger smash
+        if (Math.abs(player.wx - e.wx) < 82 && Math.abs(player.y - e.y) < 95) { e.smashPhase = 1; e.smashTimer = 0; }
+      } else if (e.smashPhase === 1) { // Arms raising (warn)
+        e.smashTimer += dt;
+        if (e.smashTimer > 0.65) { e.smashPhase = 2; e.smashTimer = 0; }
+      } else if (e.smashPhase === 2) { // Smashing down
+        e.smashTimer += dt;
+        if (player.invincible <= 0 && Math.abs(player.wx - e.wx) < 88 && Math.abs(player.y - e.y) < 95) hurtPlayer();
+        if (e.smashTimer > 0.3) { e.smashPhase = 3; e.smashTimer = 0; }
+      } else { // Cooldown
+        e.smashTimer += dt;
+        if (e.smashTimer > 0.9) { e.smashPhase = 0; e.smashTimer = 0; }
+      }
     }
   }
 
@@ -342,20 +455,30 @@ function update(dt) {
     b.wx += b.vx * dt;
     b.y  += b.vy * dt;
     if (b.wx < cameraX - 80 || b.wx > cameraX + W + 80 || b.y > H + 40) { eBullets.splice(i, 1); continue; }
-    if (player.invincible <= 0 && Math.abs(b.wx - player.wx) < 15 && Math.abs(b.y - (player.y - player.h/2)) < 20) {
+    const bhr = (b.r || 5) + 10;
+    if (player.invincible <= 0 && Math.abs(b.wx - player.wx) < bhr && Math.abs(b.y - (player.y - player.h/2)) < bhr) {
       eBullets.splice(i, 1); hurtPlayer();
     }
   }
 
-  // ── Hazards (lakes, fire) ─────────────────────────────────────────────────
+  // ── Hazards (lakes, fire, fire-lakes, traps) ─────────────────────────────
   if (player.invincible <= 0 && player.grounded) {
-    for (const l of lakes) { if (player.wx > l.x && player.wx < l.x + l.w) { hurtPlayer(); break; } }
-    for (const f of fires) { if (player.wx > f.x && player.wx < f.x + f.w) { hurtPlayer(); break; } }
+    for (const l of lakes)     { if (player.wx > l.x && player.wx < l.x + l.w) { hurtPlayer(); break; } }
+    for (const f of fires)     { if (player.wx > f.x && player.wx < f.x + f.w) { hurtPlayer(); break; } }
+    for (const fl of fireLakes){ if (player.wx > fl.x && player.wx < fl.x + fl.w) { hurtPlayer(); break; } }
+    if (player.invincible <= 0) {
+      for (const t of traps) {
+        if (!t.triggered && Math.abs(player.wx - t.wx) < 14) {
+          t.triggered = true; addParticles(t.wx, t.y, '#ff3300', 16); hurtPlayer(); break;
+        }
+      }
+    }
   }
 
   // ── Prisoner rescue ───────────────────────────────────────────────────────
   if (!prisoner.rescued && Math.abs(player.wx - prisoner.wx) < 50) {
-    prisoner.rescued = true; score += 1000; gameState = 'win';
+    prisoner.rescued = true; score += 1000;
+    gameState = level >= MAX_LEVEL ? 'win' : 'levelcomplete';
   }
 
   // ── Particles ─────────────────────────────────────────────────────────────
@@ -392,8 +515,9 @@ function blinkText(txt, x, y, color, size) {
 
 // ─── Draw: background ─────────────────────────────────────────────────────────
 function drawBG() {
+  const zc = ZONE_CONFIG[level - 1];
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#0c0608'); g.addColorStop(1, '#180c04');
+  g.addColorStop(0, zc.bgTop); g.addColorStop(1, zc.bgBot);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   // Distant cave glow spots
   for (let i = 0; i < 4; i++) {
@@ -522,6 +646,44 @@ function drawHazards() {
       ctx.restore();
     }
   }
+  // Fire lakes (lethal orange-red pools)
+  const t2 = Date.now() / 120;
+  for (const fl of fireLakes) {
+    const lx = sx(fl.x);
+    if (lx + fl.w < 0 || lx > W) continue;
+    ctx.save();
+    ctx.fillStyle = 'rgba(200,30,0,0.88)'; ctx.shadowBlur = 18; ctx.shadowColor = '#ff2200';
+    ctx.fillRect(lx, fl.py - 11, fl.w, 12);
+    ctx.fillStyle = 'rgba(255,80,0,0.3)'; ctx.fillRect(lx + 4, fl.py - 9, fl.w * 0.5, 3);
+    for (let i = 0; i < 7; i++) {
+      const fo = fl.w * i / 7, flk = 0.55 + Math.sin(t2 + i * 1.5) * 0.45;
+      const fh = (14 + Math.sin(t2 * 1.3 + i) * 7) * flk;
+      ctx.fillStyle = `rgba(255,${Math.floor(50 + flk * 80)},0,${flk * 0.88})`;
+      ctx.shadowBlur = 8; ctx.shadowColor = '#ff4400';
+      ctx.beginPath(); ctx.arc(lx + fo + fl.w / 14, fl.py - 11 - fh * 0.5, fl.w / 14, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawTraps() {
+  for (const t of traps) {
+    const tx = sx(t.wx);
+    if (Math.abs(tx - W / 2) > W + 60) continue;
+    if (t.triggered) {
+      ctx.fillStyle = '#1a0000'; ctx.fillRect(tx - 11, t.y - 5, 22, 5);
+      ctx.strokeStyle = '#440000'; ctx.lineWidth = 1;
+      ctx.strokeRect(tx - 11, t.y - 5, 22, 5);
+    } else {
+      ctx.fillStyle = '#3a1808'; ctx.fillRect(tx - 11, t.y - 4, 22, 4);
+      ctx.strokeStyle = '#882200'; ctx.lineWidth = 1;
+      ctx.strokeRect(tx - 11, t.y - 4, 22, 4);
+      // Small X warning marks
+      ctx.strokeStyle = '#661100'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(tx - 7, t.y - 3); ctx.lineTo(tx - 3, t.y - 1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(tx + 7, t.y - 3); ctx.lineTo(tx + 3, t.y - 1); ctx.stroke();
+    }
+  }
 }
 
 // ─── Draw: prisoner ───────────────────────────────────────────────────────────
@@ -632,17 +794,151 @@ function drawBird(e) {
   ctx.restore();
 }
 
+function drawHairwhip(e) {
+  const ex = sx(e.wx);
+  const fd = e.vx >= 0 ? 1 : -1;
+  const t  = Date.now() / 200;
+  ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = '#cc44aa';
+  // Hair flowing behind
+  ctx.strokeStyle = '#220011'; ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(ex, e.y - 46);
+  ctx.quadraticCurveTo(ex - fd*18 + Math.sin(t)*4, e.y - 38, ex - fd*24, e.y - 22);
+  ctx.stroke();
+  ctx.strokeStyle = '#330022'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(ex, e.y - 46);
+  ctx.quadraticCurveTo(ex - fd*22 + Math.sin(t+1)*4, e.y - 34, ex - fd*30, e.y - 18);
+  ctx.stroke();
+  // Body
+  ctx.fillStyle = '#882255';
+  ctx.fillRect(ex - 8, e.y - 36, 16, 22); // torso
+  ctx.fillStyle = '#aa2266';
+  ctx.fillRect(ex - 6, e.y - 14, 5, 14);   // left leg
+  ctx.fillRect(ex + 1, e.y - 14, 5, 14);   // right leg
+  // Head
+  ctx.fillStyle = '#f0b090'; ctx.shadowBlur = 6;
+  ctx.beginPath(); ctx.arc(ex, e.y - 44, 9, 0, Math.PI * 2); ctx.fill();
+  // Eye
+  ctx.fillStyle = '#cc0066';
+  ctx.beginPath(); ctx.arc(ex + fd * 4, e.y - 46, 2.5, 0, Math.PI * 2); ctx.fill();
+  // Whip hair
+  if (e.whipPhase > 0) {
+    const wdir = fd; // whip direction matches facing
+    const tipX  = ex + wdir * e.whipLen;
+    ctx.lineWidth = 3; ctx.shadowBlur = 12; ctx.shadowColor = '#ff88cc';
+    ctx.strokeStyle = '#440022';
+    ctx.beginPath(); ctx.moveTo(ex, e.y - 44);
+    ctx.quadraticCurveTo(ex + wdir * e.whipLen * 0.5, e.y - 44 + Math.sin(t * 3) * 8, tipX, e.y - 38); ctx.stroke();
+    ctx.fillStyle = '#ff88cc'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(tipX, e.y - 38, 5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawFlyCroc(e) {
+  const ex = sx(e.wx);
+  const t  = Date.now() / 150;
+  ctx.save(); ctx.shadowBlur = 14; ctx.shadowColor = '#ff4400';
+  // Orange wings
+  ctx.fillStyle = '#c84800';
+  ctx.beginPath(); ctx.moveTo(ex, e.y);
+  ctx.lineTo(ex - 44, e.y - 16 + Math.sin(t) * 14);
+  ctx.lineTo(ex - 28, e.y + 10); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(ex, e.y);
+  ctx.lineTo(ex + 44, e.y - 16 + Math.sin(t + 0.5) * 14);
+  ctx.lineTo(ex + 28, e.y + 10); ctx.closePath(); ctx.fill();
+  // Wing membrane lines
+  ctx.strokeStyle = '#ff6600'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ex - 12, e.y + 6); ctx.lineTo(ex - 40, e.y - 12 + Math.sin(t)*14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ex + 12, e.y + 6); ctx.lineTo(ex + 40, e.y - 12 + Math.sin(t+0.5)*14); ctx.stroke();
+  // Body
+  ctx.fillStyle = '#2a6030';
+  ctx.beginPath(); ctx.ellipse(ex, e.y, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
+  // Head / snout
+  ctx.fillStyle = '#2e6c34';
+  ctx.beginPath(); ctx.ellipse(ex - 16, e.y - 3, 12, 9, -0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1a4020';
+  ctx.beginPath(); ctx.ellipse(ex - 24, e.y + 1, 8, 5, 0, 0, Math.PI * 2); ctx.fill(); // snout
+  // Nostrils
+  ctx.fillStyle = '#0a2010';
+  ctx.beginPath(); ctx.arc(ex - 26, e.y - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ex - 22, e.y - 1, 1.5, 0, Math.PI * 2); ctx.fill();
+  // Eye
+  ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(ex - 18, e.y - 6, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000';    ctx.beginPath(); ctx.arc(ex - 18, e.y - 6, 1.5, 0, Math.PI * 2); ctx.fill();
+  // Fire glow at snout when about to shoot
+  if (e.shootCD < 15) {
+    ctx.shadowBlur = 18; ctx.shadowColor = '#ff4400';
+    ctx.fillStyle = `rgba(255,100,0,${0.6 + Math.sin(Date.now()/80)*0.4})`;
+    ctx.beginPath(); ctx.arc(ex - 32, e.y + 1, 6, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawGiant(e) {
+  const ex = sx(e.wx);
+  ctx.save(); ctx.shadowBlur = 14; ctx.shadowColor = '#aa4400';
+  // Body
+  ctx.fillStyle = '#7a3a1a';
+  ctx.fillRect(ex - 22, e.y - 74, 44, 52); // torso
+  ctx.fillRect(ex - 16, e.y - 22, 14, 22);  // left leg
+  ctx.fillRect(ex +  2, e.y - 22, 14, 22);  // right leg
+  // Head
+  ctx.fillStyle = '#8a4422';
+  ctx.beginPath(); ctx.arc(ex, e.y - 82, 20, 0, Math.PI * 2); ctx.fill();
+  // Eyes
+  ctx.fillStyle = '#ff4400'; ctx.shadowBlur = 8; ctx.shadowColor = '#ff2200';
+  ctx.beginPath(); ctx.arc(ex - 8, e.y - 85, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ex + 8, e.y - 85, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(ex - 8, e.y - 85, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ex + 8, e.y - 85, 2.5, 0, Math.PI * 2); ctx.fill();
+  // Arms depending on smashPhase
+  ctx.fillStyle = '#6a3010';
+  if (e.smashPhase === 0 || e.smashPhase === 3) {
+    // Arms at sides
+    ctx.fillRect(ex - 38, e.y - 68, 16, 38);
+    ctx.fillRect(ex + 22, e.y - 68, 16, 38);
+    // Fists
+    ctx.beginPath(); ctx.arc(ex - 30, e.y - 30, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + 30, e.y - 30, 10, 0, Math.PI * 2); ctx.fill();
+  } else if (e.smashPhase === 1) {
+    // Arms raised (warn)
+    ctx.shadowBlur = 16; ctx.shadowColor = '#ff6600';
+    ctx.fillRect(ex - 38, e.y - 110, 16, 44);
+    ctx.fillRect(ex + 22, e.y - 110, 16, 44);
+    ctx.beginPath(); ctx.arc(ex - 30, e.y - 110, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + 30, e.y - 110, 11, 0, Math.PI * 2); ctx.fill();
+  } else if (e.smashPhase === 2) {
+    // Slamming down
+    ctx.shadowBlur = 20; ctx.shadowColor = '#ff2200';
+    ctx.fillRect(ex - 38, e.y - 30, 16, 30);
+    ctx.fillRect(ex + 22, e.y - 30, 16, 30);
+    ctx.beginPath(); ctx.arc(ex - 30, e.y, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex + 30, e.y, 12, 0, Math.PI * 2); ctx.fill();
+    // Shockwave
+    ctx.strokeStyle = 'rgba(255,100,0,0.7)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(ex, e.y, 55 + Math.sin(Date.now()/40)*8, 8, 0, 0, Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawEnemies() {
   for (const e of enemies) {
     if (!e.active || e.hp <= 0) continue;
     const ex = sx(e.wx);
-    if (ex < -90 || ex > W + 90) continue;
-    if      (e.type === 'snake') drawSnake(e);
-    else if (e.type === 'dwarf') drawDwarf(e);
-    else                         drawBird(e);
+    if (ex < -120 || ex > W + 120) continue;
+    if      (e.type === 'snake')    drawSnake(e);
+    else if (e.type === 'dwarf')    drawDwarf(e);
+    else if (e.type === 'bird')     drawBird(e);
+    else if (e.type === 'hairwhip') drawHairwhip(e);
+    else if (e.type === 'flycroc')  drawFlyCroc(e);
+    else if (e.type === 'giant')    drawGiant(e);
     // HP bar (multi-hit enemies)
     if (e.maxHp > 1) {
-      const bw = 30, barY = e.y - (e.type === 'bird' ? 28 : 60);
+      const bw = e.type === 'giant' ? 50 : 30;
+      const barY = e.type === 'bird' || e.type === 'flycroc' ? e.y - 30 : e.y - (e.type === 'giant' ? 108 : 66);
       ctx.fillStyle = '#333'; ctx.fillRect(ex - bw/2, barY, bw, 4);
       ctx.fillStyle = `hsl(${(e.hp/e.maxHp)*120},100%,50%)`;
       ctx.fillRect(ex - bw/2, barY, bw * (e.hp/e.maxHp), 4);
@@ -762,11 +1058,16 @@ function drawBullets() {
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(bx, b.y, 2.5, 0, Math.PI * 2); ctx.fill();
   }
-  // Enemy bullets
+  // Enemy bullets (fireballs get larger radius + glow)
   ctx.shadowBlur = 10;
   for (const b of eBullets) {
+    const br = b.r || 5;
     ctx.shadowColor = b.color; ctx.fillStyle = b.color;
-    ctx.beginPath(); ctx.arc(sx(b.wx), b.y, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx(b.wx), b.y, br, 0, Math.PI * 2); ctx.fill();
+    if (b.r) { // fireball core
+      ctx.fillStyle = '#ffff88';
+      ctx.beginPath(); ctx.arc(sx(b.wx), b.y, br * 0.45, 0, Math.PI * 2); ctx.fill();
+    }
   }
   ctx.restore();
 }
@@ -808,6 +1109,9 @@ function drawHUD() {
   ctx.strokeStyle = '#00ff44'; ctx.lineWidth = 1; ctx.strokeRect(W/2 - 115, 12, 230, 8);
   ctx.fillStyle = '#888'; ctx.shadowBlur = 0; ctx.font = '9px monospace'; ctx.textAlign = 'center';
   ctx.fillText('PROGRESS TO PRISONER', W/2, 32);
+  // Zone indicator
+  ctx.fillStyle = '#88ffcc'; ctx.font = 'bold 9px monospace';
+  ctx.fillText(`ZONE ${level}/5 — ${ZONE_CONFIG[level - 1].name}`, W/2, 46);
   ctx.restore();
 }
 
@@ -815,26 +1119,32 @@ function drawHUD() {
 function drawMenu() {
   drawBG();
   ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, W, H);
-  glowText('CAVE RESCUE',        W/2, 140, '#00ff44', 58);
-  glowText('Green Lantern Edition', W/2, 186, '#44aa77', 19);
+  glowText('CAVE RESCUE',        W/2, 112, '#00ff44', 50);
+  glowText('Green Lantern Edition', W/2, 148, '#44aa77', 17);
   ctx.textAlign = 'center'; ctx.shadowBlur = 0;
   const lines = [
-    ['← → Arrow keys : Move',                  '#aaa',   244],
-    ['↑ : Jump    ↑↑ double-tap : Double jump', '#aaa',   268],
-    ['↓ : Drop through ledge (when on one)',    '#aaa',   292],
-    ['SPACE : Shoot ring laser',                '#aaa',   316],
-    ['SPACE + ↑ / ↓ : Aim laser up or down',   '#88ffcc',340],
-    ['',                                        '',       358],
-    ['SNAKE – slow, shoots from mouth',         '#88ff44',378],
-    ['DWARF – fast, melee clash damage',        '#ffaa44',406],
-    ['BIRD  – flies medium height, shoots',     '#ff8844',434],
-    ['3 Lives · Reach the prisoner to WIN',     '#fff',   462],
+    ['← → Arrow keys : Move',                  '#aaa',   202],
+    ['↑ : Jump    ↑↑ double-tap : Double jump', '#aaa',   222],
+    ['↓ : Drop through ledge (when on one)',    '#aaa',   242],
+    ['SPACE : Shoot ring laser',                '#aaa',   262],
+    ['SPACE + ↑ / ↓ : Aim laser up or down',   '#88ffcc',282],
+    ['',                                        '',       296],
+    ['SNAKE – slow patrol, spits shots',        '#88ff44',312],
+    ['DWARF – fast chaser, melee damage',       '#ffaa44',330],
+    ['BIRD  – hovers, angled shots',            '#ff8844',348],
+    ['HAIR-WHIP – lunges with hair attack',     '#ff88cc',366],
+    ['FLY CROC  – flies, shoots fireballs',     '#ff6622',384],
+    ['GIANT     – slow smash, devastating hit', '#ffaaaa',402],
+    ['',                                        '',       416],
+    ['Watch for TRAPS on platforms!',           '#ff4444',430],
+    ['Fire lakes are LETHAL – jump over them',  '#ff6600',448],
+    ['5 ZONES  ·  3 Lives carry over',          '#fff',   466],
   ];
   lines.forEach(([t, c, y]) => {
     if (!t) return;
     ctx.fillStyle = c; ctx.font = '13px monospace'; ctx.fillText(t, W/2, y);
   });
-  blinkText('CLICK TO START', W/2, H - 8, '#ffffff', 20);
+  blinkText('— CLICK TO START —', W/2, H - 3, '#ffffff', 15);
 }
 
 function drawGameOver() {
@@ -845,18 +1155,32 @@ function drawGameOver() {
   blinkText('CLICK TO RETRY', W/2, 380, '#ffffff', 20);
 }
 
+function drawLevelComplete() {
+  drawBG(); drawCave(); drawStalactites();
+  ctx.fillStyle = 'rgba(0,0,20,0.78)'; ctx.fillRect(0, 0, W, H);
+  glowText(`ZONE ${level} COMPLETE!`, W/2, 175, '#ffcc00', 46);
+  glowText(ZONE_CONFIG[level - 1].name, W/2, 220, '#aaaaff', 20);
+  glowText(`Score: ${score}`, W/2, 278, '#ffffff', 24);
+  if (level < MAX_LEVEL) {
+    glowText(`Entering: ${ZONE_CONFIG[level].name}`, W/2, 316, '#88ffcc', 17);
+  }
+  blinkText('CLICK TO CONTINUE', W/2, 390, '#ffffff', 20);
+}
+
 function drawWin() {
   drawBG(); drawCave(); drawStalactites();
   ctx.fillStyle = 'rgba(0,20,0,0.72)'; ctx.fillRect(0, 0, W, H);
-  glowText('PRISONER RESCUED!',     W/2, 185, '#00ff44', 50);
-  glowText(`Final Score: ${score}`, W/2, 258, '#ffcc00', 26);
-  glowText('You saved the cave!',   W/2, 300, '#88ff88', 18);
+  glowText('ALL 5 ZONES CLEARED!',  W/2, 170, '#00ff44', 44);
+  glowText('Prisoner Rescued!',      W/2, 218, '#88ff88', 24);
+  glowText(`Final Score: ${score}`, W/2, 268, '#ffcc00', 26);
+  glowText('You saved the cave!',   W/2, 308, '#88ff88', 17);
   blinkText('CLICK TO PLAY AGAIN',  W/2, 390, '#ffffff', 20);
 }
 
 // ─── Click handler ────────────────────────────────────────────────────────────
 canvas.addEventListener('click', () => {
-  if (gameState !== 'playing') startGame();
+  if (gameState === 'menu' || gameState === 'gameover' || gameState === 'win') startGame(false);
+  else if (gameState === 'levelcomplete') { level++; startGame(true); }
 });
 
 // ─── Main loop ────────────────────────────────────────────────────────────────
@@ -866,12 +1190,13 @@ function loop(ts) {
   ctx.clearRect(0, 0, W, H);
 
   switch (gameState) {
-    case 'menu':     drawMenu();     break;
-    case 'gameover': drawGameOver(); break;
-    case 'win':      drawWin();      break;
+    case 'menu':          drawMenu();          break;
+    case 'gameover':      drawGameOver();      break;
+    case 'win':           drawWin();           break;
+    case 'levelcomplete': drawLevelComplete(); break;
     default:
       update(dt);
-      drawBG(); drawCave(); drawStalactites(); drawLedges(); drawHazards();
+      drawBG(); drawCave(); drawStalactites(); drawLedges(); drawHazards(); drawTraps();
       drawPrisoner(); drawEnemies(); drawParticles();
       drawPlayer(); drawBullets(); drawHUD();
   }
