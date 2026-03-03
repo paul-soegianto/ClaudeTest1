@@ -17,7 +17,8 @@ const W = 800, H = 480;
 const GRAVITY    = 900;
 const JUMP_V     = -430;
 const DJUMP_V    = -540;
-const RJUMP_V    = -640;   // run-jump: double-tap → then ↑
+const LGJUMP_V   = -395;   // long-jump: →+↑ together — lower arc, more distance
+const LGJUMP_VX  = 340;    // extra horizontal boost for long-jump
 const PSPEED     = 195;
 const WORLD_LEN  = 9000;
 const CEIL_Y     = 55;   // cave ceiling Y
@@ -50,9 +51,10 @@ const ctx    = canvas.getContext('2d');
 // ─── Input ────────────────────────────────────────────────────────────────────
 const keys = {};
 let jumpPressed = false, lastUpTime = 0;
-let lastRightTime = 0, lastRunTime = 0;  // run-jump tracking
+let longJumpPressed = false;  // →+↑ held together
 
 document.addEventListener('keydown', e => {
+  startMusic();
   const gameCodes = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'];
   if (gameCodes.includes(e.code)) e.preventDefault();
   if (!keys[e.code] && e.code === 'ArrowUp') {
@@ -66,12 +68,6 @@ document.addEventListener('keydown', e => {
     }
     lastUpTime = now;
   }
-  // Track double-tap → for run-jump
-  if (!keys[e.code] && e.code === 'ArrowRight') {
-    const now = performance.now();
-    if (now - lastRightTime < 300) lastRunTime = now;  // double-tap registered
-    lastRightTime = now;
-  }
   keys[e.code] = true;
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -84,11 +80,12 @@ let fires      = []; // { x, w, py }
 let ledges     = []; // { x, w, y, aboveLake? }
 let fireLakes  = []; // { x, w, py } — lose 1 life on contact
 let traps      = []; // { wx, y, triggered } — pressure plates
+let stars      = []; // { wx, y, collected, bob } — 1-up stars
 let prisoner   = { wx: WORLD_LEN - 400, rescued: false };
 
 function generateWorld() {
   platforms = []; stalactites = []; lakes = []; fires = [];
-  ledges = []; fireLakes = []; traps = [];
+  ledges = []; fireLakes = []; traps = []; stars = [];
   prisoner.rescued = false;
 
   const cfg = ZONE_CONFIG[level - 1];
@@ -133,6 +130,18 @@ function generateWorld() {
     if (p.w > 80 && Math.random() < cfg.trapFreq) {
       traps.push({ wx: p.x + 30 + Math.random() * (p.w - 60), y: p.y, triggered: false });
     }
+  }
+
+  // ── Ledges above traps — platforms to jump over them ──────────────────
+  for (const t of traps) {
+    ledges.push({ x: t.wx - 50, w: 100, y: t.y - 90, aboveTrap: true });
+  }
+
+  // ── 1-Up star — one per level on a random mid-world platform ──────────
+  const starPlatforms = platforms.filter(p => p.x > 800 && p.x < WORLD_LEN - 800 && p.w > 80);
+  if (starPlatforms.length > 0) {
+    const sp = starPlatforms[Math.floor(Math.random() * starPlatforms.length)];
+    stars.push({ wx: sp.x + sp.w / 2, y: sp.y - 40, collected: false, bob: Math.random() * Math.PI * 2 });
   }
 }
 
@@ -219,9 +228,10 @@ function sx(wx) { return wx - cameraX; }  // world → screen X
 // ─── Update ───────────────────────────────────────────────────────────────────
 function update(dt) {
 
-  // Activate enemies that enter view range
+  // Activate enemies that enter view range; cull enemies left behind
   for (const e of enemies) {
-    if (!e.active && e.wx < cameraX + W + 700) e.active = true;
+    if (!e.active && !e.passed && e.wx < cameraX + W + 700) e.active = true;
+    if (e.active && e.wx < cameraX - 100) { e.active = false; e.passed = true; }
   }
 
   // ── Player horizontal ────────────────────────────────────────────────────
@@ -239,12 +249,11 @@ function update(dt) {
   if (jumpPressed) {
     jumpPressed = false;
     if (player.grounded) {
-      const now = performance.now();
-      const runActive = keys['ArrowRight'] && (now - lastRunTime < 500);
-      player.vy      = runActive ? RJUMP_V : JUMP_V;
+      const longJump = keys['ArrowRight'] && keys['ArrowUp'];
+      player.vy = longJump ? LGJUMP_V : JUMP_V;
+      if (longJump) player.vx = LGJUMP_VX;
       player.grounded = false;
       player.canDjump = true;
-      if (runActive) lastRunTime = 0;  // consume so it only fires once
     }
   }
 
@@ -458,6 +467,15 @@ function update(dt) {
         if (e.smashTimer > 0.9) { e.smashPhase = 0; e.smashTimer = 0; }
       }
     }
+
+    // Stomp kill — player falls on enemy's head
+    if (e.hp > 0 && player.vy > 0
+        && player.wx > e.wx - 26 && player.wx < e.wx + 26
+        && player.y > e.y - 55 && player.y < e.y - 10) {
+      e.hp = 0; score += 150;
+      addParticles(e.wx, e.y, '#ffaa00', 20);
+      player.vy = JUMP_V * 0.6; player.grounded = false; player.canDjump = true;
+    }
   }
 
   // ── Enemy bullets ─────────────────────────────────────────────────────────
@@ -483,6 +501,17 @@ function update(dt) {
           t.triggered = true; addParticles(t.wx, t.y, '#ff3300', 16); hurtPlayer(); break;
         }
       }
+    }
+  }
+
+  // ── Star collection (1-UP) ────────────────────────────────────────────────
+  for (const s of stars) {
+    s.bob += dt * 2.5;
+    if (!s.collected && Math.abs(player.wx - s.wx) < 20 && Math.abs(player.y - s.y) < 30) {
+      s.collected = true;
+      player.lives = Math.min(5, player.lives + 1);
+      score += 200;
+      addParticles(s.wx, s.y, '#ffee00', 20);
     }
   }
 
@@ -606,6 +635,15 @@ function drawLedges() {
       ctx.beginPath(); ctx.moveTo(lx, l.y); ctx.lineTo(lx + l.w, l.y); ctx.stroke();
       ctx.restore();
       ctx.strokeStyle = '#1a3020'; ctx.lineWidth = 1;
+    } else if (l.aboveTrap) {
+      ctx.fillStyle = '#4a2800'; ctx.fillRect(lx, l.y, l.w, 10);
+      ctx.fillStyle = '#ff8800'; ctx.fillRect(lx, l.y, l.w, 3);
+      ctx.save();
+      ctx.shadowBlur = 8; ctx.shadowColor = '#ffcc00';
+      ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(lx, l.y); ctx.lineTo(lx + l.w, l.y); ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = '#662200'; ctx.lineWidth = 1;
     } else {
       ctx.fillStyle = '#2e1a0e'; ctx.fillRect(lx, l.y, l.w, 10);
       ctx.fillStyle = '#4a2a12'; ctx.fillRect(lx, l.y, l.w, 3);
@@ -622,7 +660,7 @@ function drawLedges() {
       ctx.beginPath(); ctx.moveTo(crx, l.y + 2); ctx.lineTo(crx + 6, l.y + 7); ctx.stroke();
     }
     // Triangle drips from underside
-    ctx.fillStyle = l.aboveLake ? '#2a5535' : '#3a1a0a';
+    ctx.fillStyle = l.aboveLake ? '#2a5535' : l.aboveTrap ? '#663300' : '#3a1a0a';
     for (let di = 1; di < 4; di++) {
       const dx = lx + l.w * di / 4;
       ctx.beginPath(); ctx.moveTo(dx - 4, l.y + 10); ctx.lineTo(dx + 4, l.y + 10); ctx.lineTo(dx, l.y + 17); ctx.closePath(); ctx.fill();
@@ -686,14 +724,41 @@ function drawTraps() {
       ctx.strokeStyle = '#440000'; ctx.lineWidth = 1;
       ctx.strokeRect(tx - 11, t.y - 5, 22, 5);
     } else {
-      ctx.fillStyle = '#3a1808'; ctx.fillRect(tx - 11, t.y - 4, 22, 4);
-      ctx.strokeStyle = '#882200'; ctx.lineWidth = 1;
+      ctx.save();
+      ctx.fillStyle = '#ffcc00'; ctx.fillRect(tx - 11, t.y - 4, 22, 4);
+      ctx.strokeStyle = '#ff8800'; ctx.lineWidth = 1;
       ctx.strokeRect(tx - 11, t.y - 4, 22, 4);
-      // Small X warning marks
-      ctx.strokeStyle = '#661100'; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(tx - 7, t.y - 3); ctx.lineTo(tx - 3, t.y - 1); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(tx + 7, t.y - 3); ctx.lineTo(tx + 3, t.y - 1); ctx.stroke();
+      // Bold ! warning mark
+      ctx.shadowBlur = 6; ctx.shadowColor = '#ff4400';
+      ctx.fillStyle = '#ff4400'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('!', tx, t.y - 6);
+      ctx.restore();
     }
+  }
+}
+
+// ─── Draw: stars (1-up collectibles) ──────────────────────────────────────────
+function drawStars() {
+  for (const s of stars) {
+    if (s.collected) continue;
+    const scx = sx(s.wx);
+    if (scx < -60 || scx > W + 60) continue;
+    const scy = s.y + Math.sin(s.bob) * 5;
+    ctx.save();
+    ctx.shadowBlur = 18; ctx.shadowColor = '#ffee00';
+    ctx.fillStyle = '#ffee00';
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 === 0 ? 12 : 5;
+      const angle = (i * Math.PI / 5) - Math.PI / 2;
+      if (i === 0) ctx.moveTo(scx + r * Math.cos(angle), scy + r * Math.sin(angle));
+      else         ctx.lineTo(scx + r * Math.cos(angle), scy + r * Math.sin(angle));
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 8; ctx.shadowColor = '#ffee00';
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('+1UP', scx, scy - 18);
+    ctx.restore();
   }
 }
 
@@ -1135,7 +1200,7 @@ function drawMenu() {
   ctx.textAlign = 'center'; ctx.shadowBlur = 0;
   const lines = [
     ['← → Arrow keys : Move',                  '#aaa',   202],
-    ['↑ : Jump    ↑↑ double-tap : Double jump   →→ + ↑ : Run-jump (higher!)', '#aaa', 222],
+    ['↑ : Jump    ↑↑ double-tap : Double jump   → + ↑ together : Long-jump!', '#aaa', 222],
     ['↓ : Drop through ledge (when on one)',    '#aaa',   242],
     ['SPACE : Shoot ring laser',                '#aaa',   262],
     ['SPACE + ↑ / ↓ : Aim laser up or down',   '#88ffcc',282],
@@ -1188,8 +1253,64 @@ function drawWin() {
   blinkText('CLICK TO PLAY AGAIN',  W/2, 390, '#ffffff', 20);
 }
 
+// ─── Background music ─────────────────────────────────────────────────────────
+let audioCtx = null, musicStarted = false;
+const MELODY_NOTES = [110, 130.8, 146.8, 164.8, 196, 220, 246.9, 220];
+
+function startMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const master = audioCtx.createGain();
+  master.gain.value = 0.18;
+  master.connect(audioCtx.destination);
+
+  // Bass drone (sawtooth, 55 Hz)
+  const bass = audioCtx.createOscillator();
+  bass.type = 'sawtooth';
+  bass.frequency.value = 55;
+  const bassGain = audioCtx.createGain();
+  bassGain.gain.value = 0.35;
+  bass.connect(bassGain); bassGain.connect(master);
+  bass.start();
+
+  // Arpeggiated melody (square wave, 8-note pattern, ~380ms interval)
+  let noteIdx = 0;
+  function playNextNote() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = MELODY_NOTES[noteIdx % MELODY_NOTES.length];
+    noteIdx++;
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.32);
+    osc.connect(gain); gain.connect(master);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+    setTimeout(playNextNote, 380);
+  }
+  playNextNote();
+
+  // Ambient cave drip (sine, 880 Hz, random interval 1.2–3.2s)
+  function playDrip() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880 + Math.random() * 440;
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+    osc.connect(gain); gain.connect(master);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+    setTimeout(playDrip, 1200 + Math.random() * 2000);
+  }
+  playDrip();
+}
+
 // ─── Click handler ────────────────────────────────────────────────────────────
 canvas.addEventListener('click', () => {
+  startMusic();
   if (gameState === 'menu' || gameState === 'gameover' || gameState === 'win') startGame(false);
   else if (gameState === 'levelcomplete') { level++; startGame(true); }
 });
@@ -1207,7 +1328,7 @@ function loop(ts) {
     case 'levelcomplete': drawLevelComplete(); break;
     default:
       update(dt);
-      drawBG(); drawCave(); drawStalactites(); drawLedges(); drawHazards(); drawTraps();
+      drawBG(); drawCave(); drawStalactites(); drawLedges(); drawHazards(); drawTraps(); drawStars();
       drawPrisoner(); drawEnemies(); drawParticles();
       drawPlayer(); drawBullets(); drawHUD();
   }
