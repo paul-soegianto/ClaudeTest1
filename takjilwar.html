@@ -47,9 +47,10 @@ const STALL_DEFS=[
    ]},
   {id:'dimsum',   name:'Warung Dimsum',      color:'#cc7800', vendor:'man',   queueBase:2, cat:'food',
    items:[
-     {name:'Dimsum Mini',        price:10000,cal:300,nutrients:[],                 cat:'food'},
-     {name:'Dimsum Medium',      price:20000,cal:400,nutrients:['protein'],        cat:'food'},
-     {name:'Dimsum Campur',      price:30000,cal:700,nutrients:['protein','fiber'],cat:'food'},
+     {name:'Dimsum Satu',        price:10000,cal:100,nutrients:[],                        cat:'food'},
+     {name:'Dimsum Dua',         price:20000,cal:200,nutrients:[],                        cat:'food'},
+     {name:'Dimsum Tiga',        price:30000,cal:300,nutrients:['protein'],               cat:'food'},
+     {name:'Dimsum Campur',      price:35000,cal:500,nutrients:['protein','fiber'],       cat:'food'},
    ]},
   {id:'bakso',    name:'Warung Bakso',       color:'#bb7700', vendor:'man',   queueBase:1, cat:'food',
    items:[
@@ -63,40 +64,43 @@ const STALL_DEFS=[
    ]},
   {id:'gadogado', name:'Warung Gado-Gado',   color:'#99a800', vendor:'woman', queueBase:0, cat:'food',
    items:[
-     {name:'Gado-Gado',          price:25000,cal:250,nutrients:['fiber'],          cat:'food'},
+     {name:'Gado-Gado Kecil',    price:10000,cal:100,nutrients:['fiber'],                  cat:'food'},
+     {name:'Gado-Gado Medium',   price:15000,cal:200,nutrients:['fiber'],                  cat:'food'},
+     {name:'Gado-Gado Campur',   price:20000,cal:350,nutrients:['fiber','protein'],        cat:'food'},
    ]},
   {id:'sate',     name:'Rumah Sate',         color:'#c08000', vendor:'man',   queueBase:2, cat:'food',
    items:[
-     {name:'Sate Ayam',          price:30000,cal:300,nutrients:['protein'],        cat:'food'},
-     {name:'Sate Kambing',       price:45000,cal:450,nutrients:['protein'],        cat:'food'},
+     {name:'Sate Ayam',          price:20000,cal:500,nutrients:['protein'],                cat:'food'},
+     {name:'Sate Kambing',       price:30000,cal:700,nutrients:['protein'],                cat:'food'},
+     {name:'Sate Kambing Sayur', price:35000,cal:800,nutrients:['protein','fiber'],        cat:'food'},
    ]},
   // ── DESSERT (pink shades) ─────────────────────────────────────────────────
-  {id:'kolak',    name:'Warung Kolakan',     color:'#c83888', vendor:'woman', queueBase:1, cat:'dessert',
+  {id:'kolak',    name:'Warung Kolak',       color:'#c83888', vendor:'woman', queueBase:1, cat:'dessert',
    items:[
-     {name:'Kolak 1',            price:10000,cal:450,nutrients:['carb'],           cat:'dessert'},
-     {name:'Kolak 2',            price:20000,cal:600,nutrients:['carb'],           cat:'dessert'},
+     {name:'Kolak Biasa',        price:10000,cal:180,nutrients:['fiber','carb'],           cat:'dessert'},
+     {name:'Kolak Besar',        price:15000,cal:280,nutrients:['fiber','carb'],           cat:'dessert'},
    ]},
   // ── DRINK (blue shades) ───────────────────────────────────────────────────
   {id:'jus',      name:'Warung Jus & Teh',   color:'#1a5faa', vendor:'man',   queueBase:1, cat:'drink',
    items:[
-     {name:'Jus Kedongdong',     price:20000,cal:400,nutrients:['fiber'],          cat:'drink'},
-     {name:'Jus Jeruk',          price:20000,cal:300,nutrients:['fiber'],          cat:'drink'},
-     {name:'Jus Jambu',          price:25000,cal:450,nutrients:['fiber'],          cat:'drink'},
-     {name:'Teh Tawar',          price:10000,cal:  0,nutrients:[],                cat:'drink'},
-     {name:'Teh Manis',          price:15000,cal:200,nutrients:['carb'],           cat:'drink'},
+     {name:'Jus Jeruk',          price:10000,cal:100,nutrients:['carb'],                   cat:'drink'},
+     {name:'Jus Kedongdong',     price:20000,cal:200,nutrients:['carb'],                   cat:'drink'},
+     {name:'Teh Tawar',          price: 5000,cal:  0,nutrients:[],                         cat:'drink'},
+     {name:'Teh Manis',          price: 7000,cal:100,nutrients:['carb'],                   cat:'drink'},
+     {name:'Matcha',             price:30000,cal:300,nutrients:['carb'],                   cat:'drink'},
    ]},
   // ── DESSERT (pink) ────────────────────────────────────────────────────────
   {id:'rumahes',  name:'Rumah Es',           color:'#aa2888', vendor:'man',   queueBase:2, cat:'dessert',
    items:[
-     {name:'Es Kelapa',          price:10000,cal:200,nutrients:['fiber'],          cat:'dessert'},
-     {name:'Es Campur',          price:15000,cal:300,nutrients:['fiber'],          cat:'dessert'},
-     {name:'Es Buah Potong',     price:20000,cal:200,nutrients:['fiber'],          cat:'dessert'},
+     {name:'Es Campur',          price:10000,cal:100,nutrients:['fiber'],                  cat:'dessert'},
+     {name:'Es Buah Potong',     price:15000,cal:200,nutrients:['fiber'],                  cat:'dessert'},
+     {name:'Es Alpukat',         price:20000,cal:250,nutrients:['fiber'],                  cat:'dessert'},
    ]},
   // ── FOOD ──────────────────────────────────────────────────────────────────
   {id:'bebek',    name:'Bebek Goreng',       color:'#dd9900', vendor:'man',   queueBase:2, cat:'food',
    items:[
-     {name:'Bebek Goreng Kecil', price:30000,cal:300,nutrients:['protein'],        cat:'food'},
-     {name:'Bebek Goreng Besar', price:45000,cal:600,nutrients:['protein'],        cat:'food'},
+     {name:'Bebek Goreng Kecil', price:25000,cal:500,nutrients:['protein'],                cat:'food'},
+     {name:'Bebek Goreng Besar', price:35000,cal:700,nutrients:['protein'],                cat:'food'},
    ]},
 ];
 
@@ -181,6 +185,8 @@ let keys={}, menuItemIndex=0;
 let isMobile=false;
 let mobileKeys={up:false,down:false,left:false,right:false,buy:false};
 let blinkTimer=0, blinkOn=true;
+let playerName=localStorage.getItem('takjilPlayerName')||'';
+let nameInput='';
 
 const NPC_NAMES=['Budi','Sari','Andi','Dewi','Reza'];
 
@@ -228,7 +234,7 @@ function generateMarket(){
   stalls=[];
   STALL_LAYOUT.forEach((sl,idx)=>{
     const def=STALL_DEFS[sl.defIdx];
-    const qLen=Math.floor(Math.random()*5);
+    const qLen=Math.floor(Math.random()*4);
     const qWait=qLen*QUEUE_SEC;
 
     let ix=sl.x+sl.w/2, iy=sl.y+sl.h/2;
@@ -260,14 +266,15 @@ function makePlayer(){
 
 // ─── SCORING ──────────────────────────────────────────────────────────────────
 function calcScore(){
-  const ratio=mission.ratio(cart);
-  const base=Math.round(ratio*100);
-  const timeBonus=timer>30?20:timer>10?10:0;
-  return Math.min(120,base+timeBonus);
+  // Score = % completion of mission goals, 0–100
+  // Each goal's ratio is averaged; deducted proportionally for unmet targets
+  const goals=mission.goals;
+  const avgRatio=goals.reduce((s,g)=>s+goalRatio(g,cart),0)/goals.length;
+  return Math.round(Math.min(1,avgRatio)*100);
 }
 function randNPC(){
   const u=Math.random()||0.0001,v=Math.random();
-  return Math.max(0,Math.min(120,Math.round(62+22*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v))));
+  return Math.max(0,Math.min(100,Math.round(55+18*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v))));
 }
 
 // ─── GAME START / END ─────────────────────────────────────────────────────────
@@ -279,12 +286,23 @@ function startGame(){
   activeStall=null;nearStall=null;menuItemIndex=0;
   gameState='playing';
 }
-function endGame(){ score=calcScore(); gameState='result'; }
+function endGame(){
+  score=calcScore();
+  if(!localStorage.getItem('takjilPlayerName')){
+    nameInput=''; gameState='enter_name';
+  } else {
+    playerName=localStorage.getItem('takjilPlayerName');
+    gameState='result';
+  }
+}
 
 // ─── BUY ITEM ─────────────────────────────────────────────────────────────────
 function buyItem(item){
   cart.push({...item,stallId:activeStall.defId});
   floatTexts.push({x:player.x,y:player.y-20,text:'+'+item.name,timer:1.6,color:'#ffee44'});
+  closeShop();
+}
+function closeShop(){
   gameState='playing';player.state='walk';activeStall=null;nearStall=null;
 }
 
@@ -362,6 +380,19 @@ function update(dt){
 window.addEventListener('keydown',e=>{
   keys[e.key]=true;
   if(gameState==='menu'){if(e.key===' '||e.key==='Enter')startGame();return;}
+  if(gameState==='enter_name'){
+    e.preventDefault();
+    if(e.key==='Enter'&&nameInput.trim()){
+      playerName=nameInput.trim();
+      localStorage.setItem('takjilPlayerName',playerName);
+      gameState='result';
+    } else if(e.key==='Backspace'){
+      nameInput=nameInput.slice(0,-1);
+    } else if(e.key.length===1&&nameInput.length<18){
+      nameInput+=e.key;
+    }
+    return;
+  }
   if(gameState==='result'){if(e.key===' '||e.key==='Enter')gameState='ranking';return;}
   if(gameState==='ranking'){if(e.key===' '||e.key==='Enter')gameState='menu';return;}
 
@@ -374,9 +405,15 @@ window.addEventListener('keydown',e=>{
   if(gameState==='shopping'||player&&player.state==='shop'){
     if(e.key==='ArrowUp'){e.preventDefault();menuItemIndex=Math.max(0,menuItemIndex-1);}
     if(e.key==='ArrowDown'){e.preventDefault();
-      menuItemIndex=Math.min(activeStall.items.length-1,menuItemIndex+1);}
-    if(e.key===' '){e.preventDefault();if(activeStall)buyItem(activeStall.items[menuItemIndex]);}
-    if(e.key==='Escape'){gameState='playing';player.state='walk';activeStall=null;nearStall=null;}
+      menuItemIndex=Math.min(activeStall.items.length,menuItemIndex+1);} // +1 for "Tidak Jadi"
+    if(e.key===' '){
+      e.preventDefault();
+      if(activeStall){
+        if(menuItemIndex===activeStall.items.length) closeShop(); // "Tidak Jadi" selected
+        else buyItem(activeStall.items[menuItemIndex]);
+      }
+    }
+    if(e.key==='Escape')closeShop();
   }
   if(e.key===' ')e.preventDefault();
 });
@@ -393,6 +430,12 @@ function activateStall(s){
 // ─── MOUSE ────────────────────────────────────────────────────────────────────
 canvas.addEventListener('click',e=>{
   if(gameState==='menu'){startGame();return;}
+  if(gameState==='enter_name'&&isMobile){
+    const n=window.prompt('Masukkan namamu (untuk papan skor):','');
+    if(n&&n.trim()){playerName=n.trim().slice(0,18);localStorage.setItem('takjilPlayerName',playerName);}
+    else{playerName='Pemain';localStorage.setItem('takjilPlayerName',playerName);}
+    gameState='result';return;
+  }
   if(gameState==='result'){gameState='ranking';return;}
   if(gameState==='ranking'){
     const r=canvas.getBoundingClientRect();
@@ -437,12 +480,20 @@ function processTouches(e){
 canvas.addEventListener('touchstart',e=>{
   processTouches(e);
   if(gameState==='menu'){startGame();return;}
+  if(gameState==='enter_name'){
+    const n=window.prompt('Masukkan namamu (untuk papan skor):','');
+    if(n&&n.trim()){playerName=n.trim().slice(0,18);localStorage.setItem('takjilPlayerName',playerName);}
+    else{playerName='Pemain';localStorage.setItem('takjilPlayerName',playerName);}
+    gameState='result';return;
+  }
   if(gameState==='result'){gameState='ranking';return;}
   if(gameState==='ranking'){gameState='menu';return;}
   if(mobileKeys.buy){
     if(gameState==='playing'&&player&&player.state==='walk'&&nearStall)activateStall(nearStall);
-    else if(gameState==='shopping'&&player&&player.state==='shop'&&activeStall)
-      buyItem(activeStall.items[menuItemIndex]);
+    else if(gameState==='shopping'&&player&&player.state==='shop'&&activeStall){
+      if(menuItemIndex===activeStall.items.length) closeShop();
+      else buyItem(activeStall.items[menuItemIndex]);
+    }
   }
 },{passive:false});
 canvas.addEventListener('touchmove',e=>processTouches(e),{passive:false});
@@ -700,7 +751,7 @@ function drawQueueBar(){
 function drawShoppingMenu(){
   if(!activeStall)return;
   ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,H);
-  const pw=370,ph=Math.min(320,80+activeStall.items.length*46+30);
+  const pw=370,ph=Math.min(360,80+(activeStall.items.length+1)*46+30); // +1 for Tidak Jadi
   const px=W/2-pw/2,py=H/2-ph/2;
   ctx.fillStyle='#1a1030';rp(px,py,pw,ph,10);ctx.fill();
 
@@ -741,6 +792,17 @@ function drawShoppingMenu(){
       ctx.fillText(labels[n]||n,tx+24,iy+22);
     });
   });
+
+  // "Tidak Jadi" cancel option
+  const cancelIdx=activeStall.items.length;
+  const ciy=itemY+cancelIdx*46,csel=cancelIdx===menuItemIndex;
+  if(csel){
+    ctx.fillStyle='rgba(255,80,80,0.18)';rp(px+8,ciy,pw-16,32,4);ctx.fill();
+    ctx.strokeStyle='#ff6666';ctx.lineWidth=1;rp(px+8,ciy,pw-16,32,4);ctx.stroke();
+  }
+  if(csel){ctx.fillStyle='#ff6666';ctx.textAlign='left';ctx.fillText('>',px+16,ciy+22);}
+  ctx.fillStyle=csel?'#ff9999':'#886666';ctx.font=(csel?'bold ':'')+'12px sans-serif';ctx.textAlign='left';
+  ctx.fillText('✕  Tidak Jadi (Keluar)',px+28,ciy+20);
 }
 
 // ─── DRAW MISSION BAR (PROMINENT) ────────────────────────────────────────────
@@ -765,17 +827,41 @@ function drawMissionBar(){
   ctx.fillStyle='#eeeeee';ctx.font='12px sans-serif';ctx.textAlign='left';
   ctx.fillText(mission.desc,8,44);
 
-  // ── CATEGORY CHECKS ──
+  // ── UNIVERSAL STATS STRIP (bottom of HUD) ──
   const hasFood=cart.some(i=>i.cat==='food');
   const hasDrink=cart.some(i=>i.cat==='drink');
   const hasDessert=cart.some(i=>i.cat==='dessert');
-  const cats=[{l:'Makanan',ok:hasFood,c:CAT_COL.food},{l:'Minuman',ok:hasDrink,c:CAT_COL.drink},{l:'Dessert',ok:hasDessert,c:CAT_COL.dessert}];
-  cats.forEach((c,i)=>{
-    const cx=10+i*90;
-    ctx.fillStyle=c.ok?c.c:'rgba(255,255,255,0.18)';
-    rp(cx,HUD_H-30,82,22,4);ctx.fill();
-    ctx.fillStyle=c.ok?'#fff':'#888';ctx.font=(c.ok?'bold ':'')+'10px sans-serif';ctx.textAlign='center';
-    ctx.fillText((c.ok?'✓ ':'')+c.l,cx+41,HUD_H-15);
+  const hasProt=cart.some(i=>i.nutrients.includes('protein'));
+  const hasKarbo=cart.some(i=>i.nutrients.includes('carb'));
+  const hasSerat=cart.some(i=>i.nutrients.includes('fiber'));
+  const totalRp=sumPrice(cart), totalKal=sumCal(cart);
+
+  // Find mission budget/kal targets if applicable
+  const rpGoal=mission.goals.find(g=>g.unit==='Rp');
+  const kalGoal=mission.goals.find(g=>g.unit==='kal'&&!g.label.includes('Protein'));
+
+  const chips=[
+    {l:'Makanan',ok:hasFood,c:CAT_COL.food,w:70},
+    {l:'Minuman',ok:hasDrink,c:CAT_COL.drink,w:70},
+    {l:'Dessert',ok:hasDessert,c:CAT_COL.dessert,w:70},
+    {l:'Rp: '+(totalRp>=1000?Math.round(totalRp/1000)+'k':totalRp)+(rpGoal?'/'+Math.round(rpGoal.target/1000)+'k':''),
+     ok:rpGoal?(rpGoal.inv?totalRp<=rpGoal.target:totalRp>=rpGoal.target):totalRp>0,
+     c:'#44aa88',w:100},
+    {l:'Kal: '+totalKal+(kalGoal?'/'+kalGoal.target:''),
+     ok:kalGoal?totalKal>=kalGoal.target:totalKal>0,
+     c:'#cc8800',w:100},
+    {l:'Protein',ok:hasProt,c:'#4488ff',w:72},
+    {l:'Karbo',  ok:hasKarbo,c:'#cc5500',w:65},
+    {l:'Serat',  ok:hasSerat,c:'#44aa44',w:65},
+  ];
+  let chipX=8;
+  chips.forEach(c=>{
+    ctx.fillStyle=c.ok?c.c:'rgba(255,255,255,0.12)';
+    rp(chipX,HUD_H-28,c.w,20,4);ctx.fill();
+    ctx.fillStyle=c.ok?'#fff':'#666';
+    ctx.font=(c.ok?'bold ':'')+'9px sans-serif';ctx.textAlign='center';
+    ctx.fillText((c.ok?'✓ ':'')+c.l,chipX+c.w/2,HUD_H-14);
+    chipX+=c.w+4;
   });
 
   // ── GOAL PROGRESS BARS (right section) ──
@@ -822,15 +908,6 @@ function drawMissionBar(){
   ctx.fillStyle='#888888';ctx.font='11px sans-serif';ctx.textAlign='center';
   ctx.fillText('detik',W-52,70);
 
-  // ── LEGEND (small) ──
-  const cats2=[['food','Makanan'],['drink','Minuman'],['dessert','Dessert']];
-  cats2.forEach(([cat,lbl],i)=>{
-    const lx=W-105+i*35,ly=HUD_H-26;
-    ctx.fillStyle=CAT_COL[cat];
-    ctx.fillRect(lx,ly,12,12);
-    ctx.fillStyle='#aaa';ctx.font='8px sans-serif';ctx.textAlign='left';
-    // just color square; label shown in category checks above
-  });
 }
 
 // ─── DRAW CART SIDEBAR ────────────────────────────────────────────────────────
@@ -966,6 +1043,41 @@ function drawMenu(){
   if(isMobile)drawMobileControls();
 }
 
+// ─── DRAW ENTER NAME ─────────────────────────────────────────────────────────
+function drawEnterName(){
+  ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fillRect(0,0,W,H);
+
+  ctx.save();ctx.shadowColor='#ffd700';ctx.shadowBlur=20;
+  ctx.fillStyle='#ffd700';ctx.font='bold 32px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Siapa Namamu?',W/2,175);ctx.restore();
+
+  ctx.fillStyle='#ccccff';ctx.font='16px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Masukkan nama untuk papan skor!',W/2,212);
+
+  // Input box
+  const bw=320,bh=52,bx=W/2-bw/2,by=238;
+  ctx.fillStyle='rgba(255,255,255,0.10)';rp(bx,by,bw,bh,8);ctx.fill();
+  ctx.strokeStyle='#ffd700';ctx.lineWidth=2;rp(bx,by,bw,bh,8);ctx.stroke();
+  const display=nameInput+(blinkOn?'|':'');
+  ctx.fillStyle=nameInput?'#fff':'#666';ctx.font='bold 22px sans-serif';ctx.textAlign='center';
+  ctx.fillText(display||'ketik di sini…',W/2,by+33);
+
+  ctx.fillStyle='#888';ctx.font='12px sans-serif';ctx.textAlign='center';
+  if(isMobile){
+    ctx.fillText('Ketuk tombol di bawah untuk memasukkan nama',W/2,325);
+    ctx.fillStyle='#ffd700';rp(W/2-90,345,180,44,8);ctx.fill();
+    ctx.fillStyle='#1a0a00';ctx.font='bold 15px sans-serif';
+    ctx.fillText('Masukkan Nama',W/2,372);
+  } else {
+    ctx.fillText('Ketik nama (maks 18 karakter), lalu tekan ENTER',W/2,325);
+    if(nameInput.trim()){
+      ctx.fillStyle='#44ff44';rp(W/2-80,345,160,40,8);ctx.fill();
+      ctx.fillStyle='#1a0a00';ctx.font='bold 14px sans-serif';
+      ctx.fillText('ENTER untuk lanjut',W/2,369);
+    }
+  }
+}
+
 // ─── DRAW RESULT ─────────────────────────────────────────────────────────────
 function drawResult(){
   ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fillRect(0,0,W,H);
@@ -973,7 +1085,7 @@ function drawResult(){
   if(score>=80){ctx.shadowColor='#ffd700';ctx.shadowBlur=30;}
   ctx.fillStyle=score>=80?'#ffd700':score>=50?'#88ddff':'#ff6666';
   ctx.font='bold 80px sans-serif';ctx.textAlign='center';ctx.fillText(score,W/2,185);ctx.restore();
-  ctx.fillStyle='#fff';ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.fillText('/ 120 POIN',W/2,215);
+  ctx.fillStyle='#fff';ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.fillText('/ 100 POIN',W/2,215);
 
   const passed=mission.check(cart);
   ctx.fillStyle=passed?'#44ff44':'#ff4444';ctx.font='bold 16px sans-serif';
@@ -1021,7 +1133,7 @@ function drawRanking(){
   ctx.fillStyle='#ffd700';ctx.font='bold 24px sans-serif';ctx.textAlign='center';
   ctx.fillText('🏆 PAPAN SKOR — '+mission.title,W/2,45);
 
-  const entries=[{name:'KAMU',score,isPlayer:true},...npcScores].sort((a,b)=>b.score-a.score);
+  const entries=[{name:playerName||'KAMU',score,isPlayer:true},...npcScores].sort((a,b)=>b.score-a.score);
   const medals=['🥇','🥈','🥉'],tw=520,th=42,tx=W/2-260,ty=65;
 
   entries.forEach((e,i)=>{
@@ -1036,7 +1148,7 @@ function drawRanking(){
     ctx.fillText(e.name+(e.isPlayer?' ◄':''),tx+52,ey+26);
     const bx=tx+220,bw=tw-240,bh=14;
     ctx.fillStyle='rgba(255,255,255,0.1)';rp(bx,ey+14,bw,bh,4);ctx.fill();
-    const sr=e.score/120,bc=e.score>=80?'#ffd700':e.score>=50?'#44aaff':'#ff6644';
+    const sr=e.score/100,bc=e.score>=80?'#ffd700':e.score>=50?'#44aaff':'#ff6644';
     ctx.fillStyle=bc;rp(bx,ey+14,Math.max(0,bw*sr),bh,4);ctx.fill();
     ctx.fillStyle=e.isPlayer?'#ffd700':'#fff';ctx.font='bold 15px sans-serif';ctx.textAlign='right';
     ctx.fillText(e.score+' poin',tx+tw-6,ey+26);
@@ -1070,6 +1182,7 @@ function loop(ts){
       if(gameState==='shopping')drawShoppingMenu();
       if(isMobile)drawMobileControls();
       break;
+    case 'enter_name': drawEnterName(); break;
     case 'result':  drawResult();  break;
     case 'ranking': drawRanking(); break;
   }
