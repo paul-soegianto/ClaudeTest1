@@ -30,9 +30,8 @@ const STALL_DEFS=[
   // ── FOOD (yellow shades) ──────────────────────────────────────────────────
   {id:'nasiuduk', name:'Warung Nasi Uduk',  color:'#ddb800', vendor:'woman', queueBase:2, cat:'food',
    items:[
-     {name:'Nasi Uduk',          price:10000,cal:300,nutrients:['carb'],           cat:'food'},
-     {name:'Nasi Uduk Komplit',  price:20000,cal:600,nutrients:['carb','protein'], cat:'food'},
-     {name:'Nasi Uduk Spesial',  price:30000,cal:700,nutrients:['carb','protein'], cat:'food'},
+     {name:'Nasi Uduk Biasa',    price:20000,cal:400,nutrients:['carb'],           cat:'food'},
+     {name:'Nasi Uduk Lengkap',  price:30000,cal:600,nutrients:['carb'],           cat:'food'},
    ]},
   {id:'ayamandi', name:'Resto Ayam Andi',   color:'#cc8800', vendor:'man',   queueBase:3, cat:'food',
    items:[
@@ -105,75 +104,126 @@ const STALL_DEFS=[
 ];
 
 // ─── MISSION HELPERS ──────────────────────────────────────────────────────────
-function hasAllCats(c){
-  return c.some(i=>i.cat==='food') && c.some(i=>i.cat==='drink') && c.some(i=>i.cat==='dessert');
-}
 function sumPrice(c){ return c.reduce((s,i)=>s+i.price,0); }
 function sumCal(c)  { return c.reduce((s,i)=>s+i.cal,0); }
 function calByNutrient(c,n){ return c.filter(i=>i.nutrients.includes(n)).reduce((s,i)=>s+i.cal,0); }
 
-// Each goal: {label, get(c), target, unit, inv (lower=better), bool}
-const MISSION_TYPES=[
-  {id:'sehat',      title:'🥗 SEHAT & HEMAT',
-   desc:'Fiber+Protein, min 500 kal, max Rp 60.000',
-   goals:[
-     {label:'Kalori',    get:c=>sumCal(c),                                        target:500,   unit:'kal', inv:false},
-     {label:'Budget',    get:c=>sumPrice(c),                                      target:60000, unit:'Rp',  inv:true},
-     {label:'Ada Fiber', get:c=>c.some(i=>i.nutrients.includes('fiber'))?1:0,    target:1,     unit:'',    bool:true},
-     {label:'Ada Protein',get:c=>c.some(i=>i.nutrients.includes('protein'))?1:0, target:1,     unit:'',    bool:true},
-   ],
-   check:c=>hasAllCats(c)&&sumCal(c)>=500&&sumPrice(c)<=60000&&
-            c.some(i=>i.nutrients.includes('fiber'))&&c.some(i=>i.nutrients.includes('protein')),
-   ratio:c=>{
-     if(!hasAllCats(c))return 0;
-     const r1=Math.min(1,sumCal(c)/500);
-     const r2=sumPrice(c)<=60000?1:60000/sumPrice(c);
-     const r3=c.some(i=>i.nutrients.includes('fiber'))?1:0;
-     const r4=c.some(i=>i.nutrients.includes('protein'))?1:0;
-     return(r1+r2+r3+r4)/4;
-   }},
-
-  {id:'protein_cal',title:'💪 PROTEIN POWER',
-   desc:'Capai 1.500 kalori dari makanan PROTEIN!',
-   goals:[
-     {label:'Kal Protein',get:c=>calByNutrient(c,'protein'),target:1500,unit:'kal',inv:false},
-   ],
-   check:c=>hasAllCats(c)&&calByNutrient(c,'protein')>=1500,
-   ratio:c=>hasAllCats(c)?Math.min(1,calByNutrient(c,'protein')/1500):0},
-
-  {id:'budget',     title:'💰 BUDGET HUNT',
-   desc:'Beli banyak, habiskan maks Rp 50.000!',
-   goals:[
-     {label:'Jumlah item',get:c=>c.length,          target:5,     unit:'item',inv:false},
-     {label:'Budget',     get:c=>sumPrice(c),        target:50000, unit:'Rp', inv:true},
-   ],
-   check:c=>hasAllCats(c)&&sumPrice(c)<=50000,
-   ratio:c=>hasAllCats(c)&&sumPrice(c)<=50000?Math.min(1,c.length/5):0},
-
-  {id:'cal_target', title:'🎯 KALORI TEPAT',
-   desc:'Capai tepat 1.200 kalori (\u00b1150 kcal)!',
-   goals:[
-     {label:'Kalori', get:c=>sumCal(c), target:1200, unit:'kal', inv:false, range:{min:1050,max:1350}},
-   ],
-   check:c=>hasAllCats(c)&&Math.abs(sumCal(c)-1200)<=150,
-   ratio:c=>hasAllCats(c)?Math.max(0,1-Math.abs(sumCal(c)-1200)/1200):0},
-
-  {id:'variety',    title:'🛒 FOOD EXPLORER',
-   desc:'Beli dari minimal 4 warung berbeda!',
-   goals:[
-     {label:'Warung berbeda',get:c=>new Set(c.map(i=>i.stallId)).size,target:4,unit:'warung',inv:false},
-   ],
-   check:c=>hasAllCats(c)&&new Set(c.map(i=>i.stallId)).size>=4,
-   ratio:c=>hasAllCats(c)?Math.min(1,new Set(c.map(i=>i.stallId)).size/4):0},
-];
-
-// Goal progress ratio (0..1)
-function goalRatio(g, c){
+// Goal progress ratio (0..1) — works with {label,get,target,unit,inv,bool} goal objects
+function goalRatio(g,c){
   const v=g.get(c);
   if(g.bool) return v>=g.target?1:0;
-  if(g.range) return Math.max(0,1-Math.abs(v-1200)/1200);
-  if(g.inv)   return v<=g.target?1:Math.max(0,g.target/v);
+  if(g.inv)  return v<=g.target?1:Math.max(0,g.target/v);
   return Math.min(1,v/g.target);
+}
+
+// Base check: ALL missions always require these 6 things
+function baseCheck(c){
+  return c.some(i=>i.cat==='food')&&c.some(i=>i.cat==='drink')&&c.some(i=>i.cat==='dessert')&&
+         c.some(i=>i.nutrients.includes('protein'))&&
+         c.some(i=>i.nutrients.includes('carb'))&&
+         c.some(i=>i.nutrients.includes('fiber'));
+}
+function baseRatio(c){
+  return [c.some(i=>i.cat==='food'),c.some(i=>i.cat==='drink'),c.some(i=>i.cat==='dessert'),
+          c.some(i=>i.nutrients.includes('protein')),
+          c.some(i=>i.nutrients.includes('carb')),
+          c.some(i=>i.nutrients.includes('fiber')),
+  ].reduce((s,v)=>s+(v?1:0),0)/6;
+}
+
+// ─── RANDOM MISSION GENERATOR ─────────────────────────────────────────────────
+// Each game gets a fresh mission: base 6 requirements + 1 random extra challenge.
+const MENU_PREVIEW=[
+  {title:'💰 HEMAT!',            desc:'Belanja semua kebutuhan, maks Rp 60.000! + protein, karbo & serat wajib!'},
+  {title:'🛒 FOOD EXPLORER!',    desc:'Beli dari minimal 4 warung berbeda! + protein, karbo & serat wajib!'},
+  {title:'🔥 TARGET KALORI!',    desc:'Capai minimal 1.000 kalori! + protein, karbo & serat wajib!'},
+  {title:'💪 PROTEIN POWER!',    desc:'Capai 800 kalori dari PROTEIN! + protein, karbo & serat wajib!'},
+  {title:'📦 BORONG!',           desc:'Beli minimal 5 item! + protein, karbo & serat wajib!'},
+  {title:'🎯 TEPAT BUDGET!',     desc:'Budget Rp 30k–60k! + protein, karbo & serat wajib!'},
+  {title:'🏪 WAJIB MAMPIR!',     desc:'Harus mampir ke warung tertentu! + protein, karbo & serat wajib!'},
+];
+
+function generateMission(){
+  const R=n=>~~(Math.random()*n);
+  const extras=[
+    ()=>{ // Max budget
+      const maxRp=[40000,50000,60000,70000,80000][R(5)];
+      return{title:'💰 HEMAT!',accentColor:'#ffcc00',
+        extraDesc:'Belanja semua kebutuhan, maks Rp '+(maxRp/1000)+'.000!',
+        goals:[{label:'Maks Budget',get:c=>sumPrice(c),target:maxRp,unit:'Rp',inv:true}],
+        extraCheck:c=>sumPrice(c)<=maxRp};
+    },
+    ()=>{ // Min + Max budget
+      const minRp=[20000,25000,30000][R(3)];
+      const maxRp=minRp+[25000,30000,40000][R(3)];
+      return{title:'🎯 TEPAT BUDGET!',accentColor:'#4488ff',
+        extraDesc:'Budget Rp '+(minRp/1000)+'k–'+(maxRp/1000)+'k!',
+        goals:[
+          {label:'Min Budget',get:c=>sumPrice(c),target:minRp,unit:'Rp',inv:false},
+          {label:'Maks Budget',get:c=>sumPrice(c),target:maxRp,unit:'Rp',inv:true},
+        ],
+        extraCheck:c=>sumPrice(c)>=minRp&&sumPrice(c)<=maxRp};
+    },
+    ()=>{ // Required stall
+      const def=STALL_DEFS[R(STALL_DEFS.length)];
+      return{title:'🏪 WAJIB MAMPIR!',accentColor:'#cc44ff',
+        extraDesc:'Harus beli dari '+def.name+'!',
+        goals:[{label:'Dari '+def.name,get:c=>c.some(i=>i.stallId===def.id)?1:0,target:1,unit:'',bool:true}],
+        extraCheck:c=>c.some(i=>i.stallId===def.id)};
+    },
+    ()=>{ // Variety
+      const n=[3,4,5][R(3)];
+      return{title:'🛒 FOOD EXPLORER!',accentColor:'#aa44ff',
+        extraDesc:'Beli dari minimal '+n+' warung berbeda!',
+        goals:[{label:n+' warung beda',get:c=>new Set(c.map(i=>i.stallId)).size,target:n,unit:'warung',inv:false}],
+        extraCheck:c=>new Set(c.map(i=>i.stallId)).size>=n};
+    },
+    ()=>{ // Min calories
+      const target=[600,800,1000,1200][R(4)];
+      return{title:'🔥 TARGET KALORI!',accentColor:'#ff8800',
+        extraDesc:'Capai minimal '+target+' kalori!',
+        goals:[{label:'Min Kalori',get:c=>sumCal(c),target,unit:'kal',inv:false}],
+        extraCheck:c=>sumCal(c)>=target};
+    },
+    ()=>{ // Item count
+      const n=[4,5,6][R(3)];
+      return{title:'📦 BORONG!',accentColor:'#44ddaa',
+        extraDesc:'Beli minimal '+n+' item!',
+        goals:[{label:'Jumlah item',get:c=>c.length,target:n,unit:'item',inv:false}],
+        extraCheck:c=>c.length>=n};
+    },
+    ()=>{ // Protein calorie target
+      const target=[500,700,900][R(3)];
+      return{title:'💪 PROTEIN POWER!',accentColor:'#4488ff',
+        extraDesc:'Capai '+target+' kalori dari PROTEIN!',
+        goals:[{label:'Kal Protein',get:c=>calByNutrient(c,'protein'),target,unit:'kal',inv:false}],
+        extraCheck:c=>calByNutrient(c,'protein')>=target};
+    },
+    ()=>{ // Max budget with required stall
+      const def=STALL_DEFS[R(STALL_DEFS.length)];
+      const maxRp=[50000,60000,70000][R(3)];
+      return{title:'🏪 HEMAT + MAMPIR!',accentColor:'#ff8844',
+        extraDesc:'Maks Rp '+(maxRp/1000)+'k, harus mampir '+def.name+'!',
+        goals:[
+          {label:'Dari '+def.name,get:c=>c.some(i=>i.stallId===def.id)?1:0,target:1,unit:'',bool:true},
+          {label:'Maks Budget',get:c=>sumPrice(c),target:maxRp,unit:'Rp',inv:true},
+        ],
+        extraCheck:c=>c.some(i=>i.stallId===def.id)&&sumPrice(c)<=maxRp};
+    },
+  ];
+
+  const ex=extras[R(extras.length)]();
+  return{
+    title:ex.title,
+    desc:ex.extraDesc+' + protein, karbo & serat wajib!',
+    accentColor:ex.accentColor,
+    goals:ex.goals,
+    check:c=>baseCheck(c)&&ex.extraCheck(c),
+    ratio:c=>{
+      const er=ex.goals.reduce((s,g)=>s+goalRatio(g,c),0)/ex.goals.length;
+      return(baseRatio(c)+er)/2;
+    },
+  };
 }
 
 // ─── GLOBALS ──────────────────────────────────────────────────────────────────
@@ -266,11 +316,8 @@ function makePlayer(){
 
 // ─── SCORING ──────────────────────────────────────────────────────────────────
 function calcScore(){
-  // Score = % completion of mission goals, 0–100
-  // Each goal's ratio is averaged; deducted proportionally for unmet targets
-  const goals=mission.goals;
-  const avgRatio=goals.reduce((s,g)=>s+goalRatio(g,cart),0)/goals.length;
-  return Math.round(Math.min(1,avgRatio)*100);
+  // Score = average of base-6 ratio + extra goal ratio, scaled to 0–100
+  return Math.round(Math.min(1,mission.ratio(cart))*100);
 }
 function randNPC(){
   const u=Math.random()||0.0001,v=Math.random();
@@ -280,7 +327,7 @@ function randNPC(){
 // ─── GAME START / END ─────────────────────────────────────────────────────────
 function startGame(){
   generateMarket();makePlayer();
-  mission=MISSION_TYPES[Math.floor(Math.random()*MISSION_TYPES.length)];
+  mission=generateMission();
   npcScores=NPC_NAMES.map(name=>({name,score:randNPC()}));
   cart=[];timer=TOTAL_TIME;score=0;floatTexts=[];
   activeStall=null;nearStall=null;menuItemIndex=0;
@@ -813,8 +860,7 @@ function drawMissionBar(){
   ctx.fillStyle='rgba(8,0,18,0.92)';
   ctx.fillRect(0,0,W,HUD_H);
   // Bottom glow line
-  ctx.fillStyle=mission.id==='sehat'?'#44aa44':mission.id==='protein_cal'?'#4466ff':
-                mission.id==='budget'?'#ffcc00':mission.id==='cal_target'?'#ff8800':'#aa44ff';
+  ctx.fillStyle=mission.accentColor||'#ffd700';
   ctx.fillRect(0,HUD_H-2,W,2);
 
   // ── MISSION TITLE (large, prominent) ──
@@ -1006,7 +1052,7 @@ function drawMenu(){
   ctx.fillStyle='#ffcc88';ctx.font='20px sans-serif';ctx.textAlign='center';
   ctx.fillText('Beli Makan Sebelum Buka Puasa!',W/2,195);
 
-  const prev=MISSION_TYPES[Math.floor((Date.now()/3000)%MISSION_TYPES.length)];
+  const prev=MENU_PREVIEW[~~((Date.now()/3000)%MENU_PREVIEW.length)];
   ctx.fillStyle='rgba(0,0,0,0.5)';rp(W/2-200,218,400,80,8);ctx.fill();
   ctx.strokeStyle='#ffd700';ctx.lineWidth=1;rp(W/2-200,218,400,80,8);ctx.stroke();
   ctx.fillStyle='#ffd700';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
@@ -1102,11 +1148,15 @@ function drawResult(){
     ctx.fillText(disp,W/2-100+i*100,272);
   });
 
-  // Cat checks
+  // Base requirement checks (6 items)
   const hf=cart.some(i=>i.cat==='food'),hd=cart.some(i=>i.cat==='drink'),hde=cart.some(i=>i.cat==='dessert');
-  [{l:'Makanan',ok:hf},{l:'Minuman',ok:hd},{l:'Dessert',ok:hde}].forEach((c,i)=>{
-    ctx.fillStyle=c.ok?'#44ff44':'#ff4444';ctx.font='13px sans-serif';ctx.textAlign='center';
-    ctx.fillText((c.ok?'✓':'✗')+' '+c.l,W/2-80+i*80,300);
+  const hprot=cart.some(i=>i.nutrients.includes('protein'));
+  const hkarbo=cart.some(i=>i.nutrients.includes('carb'));
+  const hserat=cart.some(i=>i.nutrients.includes('fiber'));
+  [{l:'Makanan',ok:hf},{l:'Minuman',ok:hd},{l:'Dessert',ok:hde},
+   {l:'Protein',ok:hprot},{l:'Karbo',ok:hkarbo},{l:'Serat',ok:hserat}].forEach((c,i)=>{
+    ctx.fillStyle=c.ok?'#44ff44':'#ff4444';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText((c.ok?'✓':'✗')+' '+c.l,W/2-125+i*50,300);
   });
 
   ctx.fillStyle='#aaaaff';ctx.font='12px sans-serif';ctx.textAlign='center';
