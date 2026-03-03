@@ -52,10 +52,11 @@ let platforms  = []; // { x, w, y }
 let stalactites = []; // { wx, w, h }
 let lakes      = []; // { x, w, py }
 let fires      = []; // { x, w, py }
+let ledges     = []; // { x, w, y, aboveLake? }
 let prisoner   = { wx: WORLD_LEN - 400, rescued: false };
 
 function generateWorld() {
-  platforms = []; stalactites = []; lakes = []; fires = [];
+  platforms = []; stalactites = []; lakes = []; fires = []; ledges = [];
   prisoner.rescued = false;
 
   // ── Platforms (varying heights, occasional gaps) ──────────────────────────
@@ -82,6 +83,15 @@ function generateWorld() {
   for (let wx = 350; wx < WORLD_LEN - 250; wx += 130 + Math.random() * 190) {
     stalactites.push({ wx, w: 13 + Math.random() * 18, h: 30 + Math.random() * 75 });
   }
+
+  // ── Scene ledges — random mid-cave floaters ───────────────────────────
+  for (let wx = 900; wx < WORLD_LEN - 900; wx += 380 + Math.random() * 520) {
+    ledges.push({ x: wx, w: 75 + Math.random() * 140, y: 195 + Math.random() * 95 });
+  }
+  // ── Pond ledges — above every lake so hazards are bypassable ─────────
+  for (const l of lakes) {
+    ledges.push({ x: l.x - 35, w: l.w + 70, y: l.py - 88, aboveLake: true });
+  }
 }
 
 // Helper: Y of the platform surface at world-x (returns DEATH_Y if no platform)
@@ -106,6 +116,9 @@ function makePlayer() {
     shootCD: 0,
     w: 20, h: 38,
     phase: 0,
+    facing: 1,
+    onLedge: false,
+    passThroughLedge: 0,
   };
 }
 
@@ -167,6 +180,8 @@ function update(dt) {
   else                         player.vx *= 0.75;
 
   player.wx = Math.max(cameraX + 30, Math.min(WORLD_LEN - 60, player.wx + player.vx * dt));
+  if (player.vx > 5) player.facing = 1;
+  else if (player.vx < -5) player.facing = -1;
 
   // ── Gravity + vertical ───────────────────────────────────────────────────
   player.vy += GRAVITY * dt;
@@ -189,6 +204,27 @@ function update(dt) {
     player.y = fy; player.vy = 0; player.grounded = true; player.canDjump = false;
   }
 
+  // Ledge collision & drop-through
+  player.passThroughLedge = Math.max(0, player.passThroughLedge - dt);
+  if (keys['ArrowDown'] && player.onLedge) {
+    player.passThroughLedge = 0.4; player.onLedge = false;
+    player.grounded = false; player.vy = 30;
+  }
+  if (!player.grounded && player.passThroughLedge <= 0) {
+    player.onLedge = false;
+    for (const l of ledges) {
+      if (player.vy >= 0
+          && player.wx + player.w/2 > l.x && player.wx - player.w/2 < l.x + l.w
+          && player.y >= l.y && player.y <= l.y + 18) {
+        player.y = l.y; player.vy = 0;
+        player.grounded = true; player.canDjump = false; player.onLedge = true;
+        break;
+      }
+    }
+  } else {
+    player.onLedge = false;
+  }
+
   // Fall death
   if (player.y > DEATH_Y - 5) { hurtPlayer(); return; }
 
@@ -201,7 +237,13 @@ function update(dt) {
   // ── Shoot ────────────────────────────────────────────────────────────────
   if (player.shootCD > 0) player.shootCD--;
   if (keys['Space'] && player.shootCD <= 0) {
-    pBullets.push({ wx: player.wx + 18, y: player.y - player.h * 0.55, speed: 530 });
+    let aimAngle = 0;
+    if (keys['ArrowUp'])   aimAngle = -Math.PI / 5.5;
+    if (keys['ArrowDown']) aimAngle =  Math.PI / 5.5;
+    const fd = player.facing;
+    pBullets.push({ wx: player.wx + fd * 16, y: player.y - player.h * 0.48,
+                    vx: fd * 530 * Math.cos(aimAngle),
+                    vy: 530 * Math.sin(aimAngle) });
     player.shootCD = 14;
   }
 
@@ -211,8 +253,9 @@ function update(dt) {
   // ── Player bullets ───────────────────────────────────────────────────────
   for (let i = pBullets.length - 1; i >= 0; i--) {
     const b = pBullets[i];
-    b.wx += b.speed * dt;
-    if (b.wx > cameraX + W + 80) { pBullets.splice(i, 1); continue; }
+    b.wx += b.vx * dt;
+    b.y  += b.vy * dt;
+    if (b.wx > cameraX + W + 80 || b.wx < cameraX - 80 || b.y < CEIL_Y || b.y > H + 40) { pBullets.splice(i, 1); continue; }
     let hit = false;
     for (const e of enemies) {
       if (!e.active || e.hp <= 0) continue;
@@ -333,6 +376,7 @@ function hurtPlayer() {
   // Respawn on nearest safe platform behind player
   const safe = [...platforms].reverse().find(p => p.x + p.w < player.wx + 150 && p.y < DEATH_Y);
   if (safe) { player.wx = safe.x + safe.w / 2; player.y = safe.y; player.vy = 0; }
+  player.onLedge = false; player.passThroughLedge = 0;
 }
 
 // ─── Draw helpers ─────────────────────────────────────────────────────────────
@@ -411,6 +455,43 @@ function drawStalactites() {
     // Drip highlight
     ctx.fillStyle = 'rgba(120,60,20,0.4)';
     ctx.beginPath(); ctx.arc(x, CEIL_Y + s.h, 3, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawLedges() {
+  for (const l of ledges) {
+    const lx = sx(l.x);
+    if (lx + l.w < 0 || lx > W) continue;
+    if (l.aboveLake) {
+      ctx.fillStyle = '#1a3422'; ctx.fillRect(lx, l.y, l.w, 10);
+      ctx.fillStyle = '#2a5535'; ctx.fillRect(lx, l.y, l.w, 3);
+      ctx.save();
+      ctx.shadowBlur = 6; ctx.shadowColor = '#3aaa55';
+      ctx.strokeStyle = '#3aaa55'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(lx, l.y); ctx.lineTo(lx + l.w, l.y); ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = '#1a3020'; ctx.lineWidth = 1;
+    } else {
+      ctx.fillStyle = '#2e1a0e'; ctx.fillRect(lx, l.y, l.w, 10);
+      ctx.fillStyle = '#4a2a12'; ctx.fillRect(lx, l.y, l.w, 3);
+      ctx.save();
+      ctx.shadowBlur = 4; ctx.shadowColor = '#6a3a18';
+      ctx.strokeStyle = '#6a3a18'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(lx, l.y); ctx.lineTo(lx + l.w, l.y); ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = '#1a0e06'; ctx.lineWidth = 1;
+    }
+    // Crack lines on top surface
+    for (let ci = 1; ci < 3; ci++) {
+      const crx = lx + l.w * ci / 3;
+      ctx.beginPath(); ctx.moveTo(crx, l.y + 2); ctx.lineTo(crx + 6, l.y + 7); ctx.stroke();
+    }
+    // Triangle drips from underside
+    ctx.fillStyle = l.aboveLake ? '#2a5535' : '#3a1a0a';
+    for (let di = 1; di < 4; di++) {
+      const dx = lx + l.w * di / 4;
+      ctx.beginPath(); ctx.moveTo(dx - 4, l.y + 10); ctx.lineTo(dx + 4, l.y + 10); ctx.lineTo(dx, l.y + 17); ctx.closePath(); ctx.fill();
+    }
   }
 }
 
@@ -575,34 +656,114 @@ function drawPlayer() {
   const px = sx(player.wx);
   const py = player.y;
   const pulse = 0.5 + Math.sin(player.phase) * 0.5;
+  const fd = player.facing;
 
-  ctx.save(); ctx.shadowBlur = 22; ctx.shadowColor = '#00ff44';
+  ctx.save();
+
+  // Outer aura ring (GL energy field)
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = `rgba(0,255,68,${0.08 + pulse * 0.07})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(px, py - player.h / 2, 24 + pulse * 3, 0, Math.PI * 2); ctx.stroke();
+
+  ctx.shadowBlur = 18; ctx.shadowColor = '#00ff44';
+
+  // Cape (dark green triangle flowing behind player, flaps with phase)
+  const capeFlap = Math.sin(player.phase * 1.3) * 6;
+  ctx.fillStyle = '#002b14';
+  ctx.beginPath();
+  ctx.moveTo(px - fd * 8, py - player.h + 12);
+  ctx.lineTo(px - fd * 22 + capeFlap * fd, py - player.h / 2);
+  ctx.lineTo(px - fd * 14, py - 2);
+  ctx.closePath(); ctx.fill();
+
   // Legs
-  ctx.fillStyle = '#003318'; ctx.fillRect(px - 9, py - 13, 7, 13); ctx.fillRect(px + 2, py - 13, 7, 13);
+  ctx.fillStyle = '#003318'; ctx.shadowBlur = 6;
+  ctx.fillRect(px - 9, py - 13, 7, 13);
+  ctx.fillRect(px + 2, py - 13, 7, 13);
+
   // Body (suit)
-  ctx.fillStyle = '#004422'; ctx.fillRect(px - 10, py - player.h + 10, 20, player.h - 10);
-  // Ring aura pulse
-  ctx.strokeStyle = `rgba(0,255,68,${0.45 + pulse * 0.45})`;
+  ctx.fillStyle = '#004422';
+  ctx.fillRect(px - 10, py - player.h + 10, 20, player.h - 10);
+
+  // White trim at waist and collar
+  ctx.fillStyle = '#ccffcc'; ctx.shadowBlur = 0;
+  ctx.fillRect(px - 10, py - 16, 20, 2);
+  ctx.fillRect(px - 10, py - player.h + 10, 20, 2);
+
+  // GL chest symbol: two concentric circles + crosshair
+  const chestY = py - player.h / 2 + 2;
+  ctx.shadowBlur = 14; ctx.shadowColor = '#00ff44';
+  ctx.strokeStyle = '#00ff44'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(px, chestY, 8, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(px, chestY, 4.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(px - 9, chestY); ctx.lineTo(px + 9, chestY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px, chestY - 9); ctx.lineTo(px, chestY + 9); ctx.stroke();
+
+  // Ring arm (extended rectangle on facing side)
+  const ringX = px + fd * 10;
+  const ringY = py - player.h * 0.45;
+  ctx.fillStyle = '#003318'; ctx.shadowBlur = 4;
+  ctx.fillRect(fd > 0 ? px + 9 : px - 19, py - player.h + 14, 10, 8);
+
+  // Ring glow (pulses, brightens when Space held)
+  const ringPulse = keys['Space'] ? 1.0 : 0.5 + pulse * 0.35;
+  ctx.shadowBlur = 10 + ringPulse * 8; ctx.shadowColor = '#00ff44';
+  ctx.strokeStyle = `rgba(0,255,68,${0.6 + ringPulse * 0.4})`;
   ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.arc(px, py - player.h / 2, 9 + pulse * 4, 0, Math.PI * 2); ctx.stroke();
-  // Chest lantern
-  ctx.fillStyle = '#00ff44'; ctx.shadowBlur = 24;
-  ctx.beginPath(); ctx.arc(px, py - player.h / 2 + 1, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ringX, ringY, 4 + ringPulse * 2, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = `rgba(0,255,68,${0.3 + ringPulse * 0.4})`;
+  ctx.beginPath(); ctx.arc(ringX, ringY, 3.5, 0, Math.PI * 2); ctx.fill();
+
   // Head
-  ctx.fillStyle = '#55cc88'; ctx.shadowBlur = 8;
+  ctx.shadowBlur = 8; ctx.shadowColor = '#00ff44';
+  ctx.fillStyle = '#55cc88';
   ctx.beginPath(); ctx.arc(px, py - player.h + 9, 10, 0, Math.PI * 2); ctx.fill();
-  // Mask
-  ctx.fillStyle = '#003315'; ctx.fillRect(px - 8, py - player.h + 5, 16, 5);
+
+  // Black domino mask
+  ctx.fillStyle = '#001a0a';
+  ctx.fillRect(px - 9, py - player.h + 4, 18, 6);
+
+  // White glowing eye slits
+  ctx.shadowBlur = 8; ctx.shadowColor = '#aaffcc';
+  ctx.fillStyle = '#ccffee';
+  ctx.fillRect(px - 7, py - player.h + 5, 5, 3);
+  ctx.fillRect(px + 2, py - player.h + 5, 5, 3);
+
   ctx.restore();
 }
 
 // ─── Draw: bullets & particles ────────────────────────────────────────────────
 function drawBullets() {
   ctx.save();
-  ctx.shadowBlur = 10; ctx.shadowColor = '#00ff44'; ctx.fillStyle = '#00ff44';
+  // Player bullets — GL laser beam from ring hand to bullet tip
+  const ringSX = sx(player.wx) + player.facing * 12;
+  const ringSY = player.y - player.h * 0.45;
   for (const b of pBullets) {
-    ctx.beginPath(); ctx.ellipse(sx(b.wx), b.y, 13, 4, 0, 0, Math.PI * 2); ctx.fill();
+    const bx = sx(b.wx);
+    // Outer glow
+    ctx.strokeStyle = 'rgba(0,255,68,0.10)';
+    ctx.lineWidth = 16; ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.moveTo(ringSX, ringSY); ctx.lineTo(bx, b.y); ctx.stroke();
+    // Mid glow
+    ctx.strokeStyle = 'rgba(0,255,68,0.25)';
+    ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(ringSX, ringSY); ctx.lineTo(bx, b.y); ctx.stroke();
+    // Core beam
+    ctx.strokeStyle = 'rgba(100,255,160,0.8)';
+    ctx.lineWidth = 2.5; ctx.shadowBlur = 8; ctx.shadowColor = '#00ff44';
+    ctx.beginPath(); ctx.moveTo(ringSX, ringSY); ctx.lineTo(bx, b.y); ctx.stroke();
+    // Tip outer
+    ctx.shadowBlur = 12; ctx.shadowColor = '#00ff88';
+    ctx.fillStyle = '#ccffee';
+    ctx.beginPath(); ctx.arc(bx, b.y, 6, 0, Math.PI * 2); ctx.fill();
+    // Tip inner
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(bx, b.y, 2.5, 0, Math.PI * 2); ctx.fill();
   }
+  // Enemy bullets
+  ctx.shadowBlur = 10;
   for (const b of eBullets) {
     ctx.shadowColor = b.color; ctx.fillStyle = b.color;
     ctx.beginPath(); ctx.arc(sx(b.wx), b.y, 5, 0, Math.PI * 2); ctx.fill();
@@ -658,15 +819,16 @@ function drawMenu() {
   glowText('Green Lantern Edition', W/2, 186, '#44aa77', 19);
   ctx.textAlign = 'center'; ctx.shadowBlur = 0;
   const lines = [
-    ['← → Arrow keys : Move',              '#aaa',  258],
-    ['↑ : Jump    ↑↑ double-tap : Double jump', '#aaa',  286],
-    ['↓ : Duck low shots',                 '#aaa',  314],
-    ['SPACE : Shoot (always right)',        '#aaa',  342],
-    ['',                                   '',      358],
-    ['SNAKE – slow, shoots from mouth',    '#88ff44',378],
-    ['DWARF – fast, melee clash damage',   '#ffaa44',406],
-    ['BIRD  – flies medium height, shoots','#ff8844',434],
-    ['3 Lives · Reach the prisoner to WIN','#fff',  462],
+    ['← → Arrow keys : Move',                  '#aaa',   244],
+    ['↑ : Jump    ↑↑ double-tap : Double jump', '#aaa',   268],
+    ['↓ : Drop through ledge (when on one)',    '#aaa',   292],
+    ['SPACE : Shoot ring laser',                '#aaa',   316],
+    ['SPACE + ↑ / ↓ : Aim laser up or down',   '#88ffcc',340],
+    ['',                                        '',       358],
+    ['SNAKE – slow, shoots from mouth',         '#88ff44',378],
+    ['DWARF – fast, melee clash damage',        '#ffaa44',406],
+    ['BIRD  – flies medium height, shoots',     '#ff8844',434],
+    ['3 Lives · Reach the prisoner to WIN',     '#fff',   462],
   ];
   lines.forEach(([t, c, y]) => {
     if (!t) return;
@@ -709,9 +871,9 @@ function loop(ts) {
     case 'win':      drawWin();      break;
     default:
       update(dt);
-      drawBG(); drawCave(); drawStalactites(); drawHazards();
-      drawPrisoner(); drawEnemies(); drawBullets(); drawParticles();
-      drawPlayer(); drawHUD();
+      drawBG(); drawCave(); drawStalactites(); drawLedges(); drawHazards();
+      drawPrisoner(); drawEnemies(); drawParticles();
+      drawPlayer(); drawBullets(); drawHUD();
   }
   requestAnimationFrame(loop);
 }
