@@ -17,6 +17,7 @@ const W = 800, H = 480;
 const GRAVITY    = 900;
 const JUMP_V     = -430;
 const DJUMP_V    = -540;
+const RJUMP_V    = -640;   // run-jump: double-tap → then ↑
 const PSPEED     = 195;
 const WORLD_LEN  = 9000;
 const CEIL_Y     = 55;   // cave ceiling Y
@@ -49,6 +50,7 @@ const ctx    = canvas.getContext('2d');
 // ─── Input ────────────────────────────────────────────────────────────────────
 const keys = {};
 let jumpPressed = false, lastUpTime = 0;
+let lastRightTime = 0, lastRunTime = 0;  // run-jump tracking
 
 document.addEventListener('keydown', e => {
   const gameCodes = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'];
@@ -63,6 +65,12 @@ document.addEventListener('keydown', e => {
       jumpPressed = true;
     }
     lastUpTime = now;
+  }
+  // Track double-tap → for run-jump
+  if (!keys[e.code] && e.code === 'ArrowRight') {
+    const now = performance.now();
+    if (now - lastRightTime < 300) lastRunTime = now;  // double-tap registered
+    lastRightTime = now;
   }
   keys[e.code] = true;
 });
@@ -231,9 +239,12 @@ function update(dt) {
   if (jumpPressed) {
     jumpPressed = false;
     if (player.grounded) {
-      player.vy     = JUMP_V;
+      const now = performance.now();
+      const runActive = keys['ArrowRight'] && (now - lastRunTime < 500);
+      player.vy      = runActive ? RJUMP_V : JUMP_V;
       player.grounded = false;
       player.canDjump = true;
+      if (runActive) lastRunTime = 0;  // consume so it only fires once
     }
   }
 
@@ -1124,7 +1135,7 @@ function drawMenu() {
   ctx.textAlign = 'center'; ctx.shadowBlur = 0;
   const lines = [
     ['← → Arrow keys : Move',                  '#aaa',   202],
-    ['↑ : Jump    ↑↑ double-tap : Double jump', '#aaa',   222],
+    ['↑ : Jump    ↑↑ double-tap : Double jump   →→ + ↑ : Run-jump (higher!)', '#aaa', 222],
     ['↓ : Drop through ledge (when on one)',    '#aaa',   242],
     ['SPACE : Shoot ring laser',                '#aaa',   262],
     ['SPACE + ↑ / ↓ : Aim laser up or down',   '#88ffcc',282],
