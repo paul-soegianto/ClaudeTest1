@@ -15,65 +15,86 @@ canvas { display:block; image-rendering:pixelated; touch-action:none; }
 <canvas id="c"></canvas>
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const W=800, H=600;
+const W=800, H=620;
 const QUEUE_SEC=3;
-const TOTAL_TIME=30;
-const PSPEED=130;
+const TOTAL_TIME=60;
+const PSPEED=140;
+const HUD_H=92;   // height of top HUD band
+
+// Category colors
+const CAT_COL={food:'#c8960a',drink:'#1a5faa',dessert:'#c03880'};
+const CAT_LABEL={food:'Makanan',drink:'Minuman',dessert:'Dessert'};
 
 // ─── ITEM DATA ────────────────────────────────────────────────────────────────
 const STALL_DEFS=[
-  {id:'goreng',  name:'Warung Goreng-an',  color:'#cc5500', vendor:'woman', queueBase:2,
+  // ── FOOD (yellow shades) ──────────────────────────────────────────────────
+  {id:'nasiuduk', name:'Warung Nasi Uduk',  color:'#ddb800', vendor:'woman', queueBase:2, cat:'food',
    items:[
-     {name:'Nasi Goreng Murah',  price:20000,cal:850, nutrients:['carb'],           cat:'food'},
-     {name:'Mie Goreng',         price:12000,cal:350, nutrients:['carb'],           cat:'food'},
-     {name:'Tahu Goreng',        price: 5000,cal:150, nutrients:['protein'],        cat:'food'},
-     {name:'Tempe Goreng',       price: 5000,cal:100, nutrients:['fat','protein'],  cat:'food'},
+     {name:'Nasi Uduk',          price:10000,cal:300,nutrients:['carb'],           cat:'food'},
+     {name:'Nasi Uduk Komplit',  price:20000,cal:600,nutrients:['carb','protein'], cat:'food'},
+     {name:'Nasi Uduk Spesial',  price:30000,cal:700,nutrients:['carb','protein'], cat:'food'},
    ]},
-  {id:'grill',   name:'Warung Panggang',   color:'#8b2200', vendor:'man',   queueBase:1,
+  {id:'ayamandi', name:'Resto Ayam Andi',   color:'#cc8800', vendor:'man',   queueBase:3, cat:'food',
    items:[
-     {name:'Ayam Goreng Kampung',price:40000,cal:1000,nutrients:['protein'],        cat:'food'},
-     {name:'Steak Sapi',         price:55000,cal:520, nutrients:['protein','fat'],  cat:'food'},
+     {name:'Ayam Goreng Biasa',  price:20000,cal:500,nutrients:['protein'],        cat:'food'},
+     {name:'Ayam Goreng Geprek', price:30000,cal:700,nutrients:['protein'],        cat:'food'},
+     {name:'Ayam Goreng Kampung',price:40000,cal:800,nutrients:['protein'],        cat:'food'},
    ]},
-  {id:'veggie',  name:'Warung Sehat',      color:'#336600', vendor:'woman', queueBase:0,
+  {id:'warteg',   name:'Warung Tegal',       color:'#a0a000', vendor:'woman', queueBase:1, cat:'food',
    items:[
-     {name:'Gado-Gado',          price:25000,cal:400, nutrients:['fiber'],          cat:'food'},
-     {name:'Pecel',              price:18000,cal:220, nutrients:['fiber'],          cat:'food'},
-     {name:'Lalapan',            price: 8000,cal:120, nutrients:['fiber'],          cat:'food'},
+     {name:'Nasi Campur',        price:20000,cal:600,nutrients:['fiber'],          cat:'food'},
+     {name:'Nasi Campur Lengkap',price:35000,cal:800,nutrients:['fiber','protein'],cat:'food'},
    ]},
-  {id:'rawon',   name:'Warung Berkuah',    color:'#664400', vendor:'woman', queueBase:3,
+  {id:'dimsum',   name:'Warung Dimsum',      color:'#cc7800', vendor:'man',   queueBase:2, cat:'food',
    items:[
-     {name:'Rawon',              price:22000,cal:380, nutrients:['fat'],            cat:'food'},
-     {name:'Soto Ayam',          price:18000,cal:260, nutrients:['protein'],        cat:'food'},
-     {name:'Bakso',              price:15000,cal:290, nutrients:['protein','fat'],  cat:'food'},
+     {name:'Dimsum Mini',        price:10000,cal:300,nutrients:[],                 cat:'food'},
+     {name:'Dimsum Medium',      price:20000,cal:400,nutrients:['protein'],        cat:'food'},
+     {name:'Dimsum Campur',      price:30000,cal:700,nutrients:['protein','fiber'],cat:'food'},
    ]},
-  {id:'rice',    name:'Warung Nasi',       color:'#cc9900', vendor:'man',   queueBase:1,
+  {id:'bakso',    name:'Warung Bakso',       color:'#bb7700', vendor:'man',   queueBase:1, cat:'food',
    items:[
-     {name:'Nasi Uduk',          price:12000,cal:320, nutrients:['carb'],          cat:'food'},
-     {name:'Lontong Sayur',      price:10000,cal:250, nutrients:['carb','fiber'],  cat:'food'},
+     {name:'Bakso Goreng',       price: 5000,cal:100,nutrients:['protein'],        cat:'food'},
+     {name:'Bakso Campur Sayur', price:15000,cal:750,nutrients:['protein','fiber'],cat:'food'},
    ]},
-  {id:'teh',     name:'Warung Teh',        color:'#445500', vendor:'man',   queueBase:0,
+  {id:'padang',   name:'Rumah Padang',       color:'#aa6600', vendor:'woman', queueBase:4, cat:'food',
    items:[
-     {name:'Teh Manis',          price: 3000,cal: 80, nutrients:['carb'],          cat:'drink'},
-     {name:'Teh Tawar',          price: 2000,cal:  5, nutrients:['fiber'],         cat:'drink'},
-     {name:'Es Teh',             price: 5000,cal: 60, nutrients:['carb'],          cat:'drink'},
+     {name:'Padang Mini',        price:30000,cal:700, nutrients:['protein','fat'],              cat:'food'},
+     {name:'Padang Lengkap',     price:55000,cal:1200,nutrients:['protein','fat','fiber'],      cat:'food'},
    ]},
-  {id:'minuman', name:'Warung Minuman',    color:'#003366', vendor:'man',   queueBase:1,
+  {id:'gadogado', name:'Warung Gado-Gado',   color:'#99a800', vendor:'woman', queueBase:0, cat:'food',
    items:[
-     {name:'Coca-Cola',          price: 8000,cal:150, nutrients:['carb'],          cat:'drink'},
-     {name:'Es Jeruk',           price: 7000,cal:100, nutrients:['fiber'],         cat:'drink'},
-     {name:'Air Mineral',        price: 3000,cal:  0, nutrients:[],               cat:'drink'},
-     {name:'Jus Alpukat',        price:12000,cal:200, nutrients:['fiber','fat'],   cat:'drink'},
+     {name:'Gado-Gado',          price:25000,cal:250,nutrients:['fiber'],          cat:'food'},
    ]},
-  {id:'dessert1',name:'Warung Kolak',      color:'#aa6600', vendor:'woman', queueBase:1,
+  {id:'sate',     name:'Rumah Sate',         color:'#c08000', vendor:'man',   queueBase:2, cat:'food',
    items:[
-     {name:'Kolak Pisang',       price: 8000,cal:180, nutrients:['fiber','carb'],  cat:'dessert'},
-     {name:'Bubur Sumsum',       price: 6000,cal:150, nutrients:['carb'],          cat:'dessert'},
+     {name:'Sate Ayam',          price:30000,cal:300,nutrients:['protein'],        cat:'food'},
+     {name:'Sate Kambing',       price:45000,cal:450,nutrients:['protein'],        cat:'food'},
    ]},
-  {id:'dessert2',name:'Warung Es',         color:'#004466', vendor:'man',   queueBase:2,
+  // ── DESSERT (pink shades) ─────────────────────────────────────────────────
+  {id:'kolak',    name:'Warung Kolakan',     color:'#c83888', vendor:'woman', queueBase:1, cat:'dessert',
    items:[
-     {name:'Es Campur',          price:12000,cal:220, nutrients:['carb','fiber'],  cat:'dessert'},
-     {name:'Es Krim',            price: 8000,cal:190, nutrients:['fat','carb'],    cat:'dessert'},
-     {name:'Cendol',             price: 7000,cal:160, nutrients:['carb'],          cat:'dessert'},
+     {name:'Kolak 1',            price:10000,cal:450,nutrients:['carb'],           cat:'dessert'},
+     {name:'Kolak 2',            price:20000,cal:600,nutrients:['carb'],           cat:'dessert'},
+   ]},
+  // ── DRINK (blue shades) ───────────────────────────────────────────────────
+  {id:'jus',      name:'Warung Jus & Teh',   color:'#1a5faa', vendor:'man',   queueBase:1, cat:'drink',
+   items:[
+     {name:'Jus Kedongdong',     price:20000,cal:400,nutrients:['fiber'],          cat:'drink'},
+     {name:'Jus Jeruk',          price:20000,cal:300,nutrients:['fiber'],          cat:'drink'},
+     {name:'Jus Jambu',          price:25000,cal:450,nutrients:['fiber'],          cat:'drink'},
+   ]},
+  // ── DESSERT (pink) ────────────────────────────────────────────────────────
+  {id:'rumahes',  name:'Rumah Es',           color:'#aa2888', vendor:'man',   queueBase:2, cat:'dessert',
+   items:[
+     {name:'Es Kelapa',          price:10000,cal:200,nutrients:['fiber'],          cat:'dessert'},
+     {name:'Es Campur',          price:15000,cal:300,nutrients:['fiber'],          cat:'dessert'},
+     {name:'Es Buah Potong',     price:20000,cal:200,nutrients:['fiber'],          cat:'dessert'},
+   ]},
+  // ── FOOD ──────────────────────────────────────────────────────────────────
+  {id:'bebek',    name:'Bebek Goreng',       color:'#dd9900', vendor:'man',   queueBase:2, cat:'food',
+   items:[
+     {name:'Bebek Goreng Kecil', price:30000,cal:300,nutrients:['protein'],        cat:'food'},
+     {name:'Bebek Goreng Besar', price:45000,cal:600,nutrients:['protein'],        cat:'food'},
    ]},
 ];
 
@@ -85,29 +106,69 @@ function sumPrice(c){ return c.reduce((s,i)=>s+i.price,0); }
 function sumCal(c)  { return c.reduce((s,i)=>s+i.cal,0); }
 function calByNutrient(c,n){ return c.filter(i=>i.nutrients.includes(n)).reduce((s,i)=>s+i.cal,0); }
 
+// Each goal: {label, get(c), target, unit, inv (lower=better), bool}
 const MISSION_TYPES=[
-  {id:'fiber_budget', title:'🥗 SEHAT & HEMAT',
-   desc:'Beli makanan BERSERAT di bawah Rp 35.000!',
-   check:c=>hasAllCats(c)&&c.every(i=>i.nutrients.includes('fiber'))&&sumPrice(c)<=35000,
-   ratio:c=>{if(!c.every(i=>i.nutrients.includes('fiber')))return 0;
-             return hasAllCats(c)?Math.min(1,35000/Math.max(sumPrice(c),1)):0;}},
-  {id:'protein_cal',  title:'💪 PROTEIN POWER',
-   desc:'Capai 1.500 kalori dari makanan berPROTEIN!',
+  {id:'sehat',      title:'🥗 SEHAT & HEMAT',
+   desc:'Fiber+Protein, min 500 kal, max Rp 60.000',
+   goals:[
+     {label:'Kalori',    get:c=>sumCal(c),                                        target:500,   unit:'kal', inv:false},
+     {label:'Budget',    get:c=>sumPrice(c),                                      target:60000, unit:'Rp',  inv:true},
+     {label:'Ada Fiber', get:c=>c.some(i=>i.nutrients.includes('fiber'))?1:0,    target:1,     unit:'',    bool:true},
+     {label:'Ada Protein',get:c=>c.some(i=>i.nutrients.includes('protein'))?1:0, target:1,     unit:'',    bool:true},
+   ],
+   check:c=>hasAllCats(c)&&sumCal(c)>=500&&sumPrice(c)<=60000&&
+            c.some(i=>i.nutrients.includes('fiber'))&&c.some(i=>i.nutrients.includes('protein')),
+   ratio:c=>{
+     if(!hasAllCats(c))return 0;
+     const r1=Math.min(1,sumCal(c)/500);
+     const r2=sumPrice(c)<=60000?1:60000/sumPrice(c);
+     const r3=c.some(i=>i.nutrients.includes('fiber'))?1:0;
+     const r4=c.some(i=>i.nutrients.includes('protein'))?1:0;
+     return(r1+r2+r3+r4)/4;
+   }},
+
+  {id:'protein_cal',title:'💪 PROTEIN POWER',
+   desc:'Capai 1.500 kalori dari makanan PROTEIN!',
+   goals:[
+     {label:'Kal Protein',get:c=>calByNutrient(c,'protein'),target:1500,unit:'kal',inv:false},
+   ],
    check:c=>hasAllCats(c)&&calByNutrient(c,'protein')>=1500,
    ratio:c=>hasAllCats(c)?Math.min(1,calByNutrient(c,'protein')/1500):0},
-  {id:'budget',       title:'💰 BUDGET HUNT',
-   desc:'Belanja SEBANYAK MUNGKIN di bawah Rp 30.000!',
-   check:c=>hasAllCats(c)&&sumPrice(c)<=30000,
-   ratio:c=>hasAllCats(c)&&sumPrice(c)<=30000?Math.min(1,c.length/5):0},
-  {id:'cal_target',   title:'🎯 KALORI TEPAT',
-   desc:'Capai tepat 1.200 kalori (\u00b1 100 kcal)!',
-   check:c=>hasAllCats(c)&&Math.abs(sumCal(c)-1200)<=100,
+
+  {id:'budget',     title:'💰 BUDGET HUNT',
+   desc:'Beli banyak, habiskan maks Rp 50.000!',
+   goals:[
+     {label:'Jumlah item',get:c=>c.length,          target:5,     unit:'item',inv:false},
+     {label:'Budget',     get:c=>sumPrice(c),        target:50000, unit:'Rp', inv:true},
+   ],
+   check:c=>hasAllCats(c)&&sumPrice(c)<=50000,
+   ratio:c=>hasAllCats(c)&&sumPrice(c)<=50000?Math.min(1,c.length/5):0},
+
+  {id:'cal_target', title:'🎯 KALORI TEPAT',
+   desc:'Capai tepat 1.200 kalori (\u00b1150 kcal)!',
+   goals:[
+     {label:'Kalori', get:c=>sumCal(c), target:1200, unit:'kal', inv:false, range:{min:1050,max:1350}},
+   ],
+   check:c=>hasAllCats(c)&&Math.abs(sumCal(c)-1200)<=150,
    ratio:c=>hasAllCats(c)?Math.max(0,1-Math.abs(sumCal(c)-1200)/1200):0},
-  {id:'variety',      title:'🛒 FOOD EXPLORER',
+
+  {id:'variety',    title:'🛒 FOOD EXPLORER',
    desc:'Beli dari minimal 4 warung berbeda!',
+   goals:[
+     {label:'Warung berbeda',get:c=>new Set(c.map(i=>i.stallId)).size,target:4,unit:'warung',inv:false},
+   ],
    check:c=>hasAllCats(c)&&new Set(c.map(i=>i.stallId)).size>=4,
    ratio:c=>hasAllCats(c)?Math.min(1,new Set(c.map(i=>i.stallId)).size/4):0},
 ];
+
+// Goal progress ratio (0..1)
+function goalRatio(g, c){
+  const v=g.get(c);
+  if(g.bool) return v>=g.target?1:0;
+  if(g.range) return Math.max(0,1-Math.abs(v-1200)/1200);
+  if(g.inv)   return v<=g.target?1:Math.max(0,g.target/v);
+  return Math.min(1,v/g.target);
+}
 
 // ─── GLOBALS ──────────────────────────────────────────────────────────────────
 let gameState='menu', timer=TOTAL_TIME, mission=null;
@@ -118,7 +179,6 @@ let keys={}, menuItemIndex=0;
 let isMobile=false;
 let mobileKeys={up:false,down:false,left:false,right:false,buy:false};
 let blinkTimer=0, blinkOn=true;
-let resultClicked=false;
 
 const NPC_NAMES=['Budi','Sari','Andi','Dewi','Reza'];
 
@@ -127,33 +187,35 @@ const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
 canvas.width=W; canvas.height=H;
 
-isMobile='ontouchstart' in window || screen.width<700;
-if(isMobile){ canvas.style.width='100%'; canvas.style.height='auto'; }
+isMobile='ontouchstart' in window||screen.width<700;
+if(isMobile){canvas.style.width='100%';canvas.style.height='auto';}
 
 // ─── MARKET LAYOUT ────────────────────────────────────────────────────────────
-// 16 stall positions (we'll use all 9 defs + repeat some)
+// 12 stalls in 3 rows + side columns
+// Market floor: x=50 y=HUD_H w=700 h=(H-HUD_H-30)
+// Top row (4, facing down):  y=HUD_H+4
+// Row A (4, mixed):          y=HUD_H+130
+// Row B (4, mixed):          y=HUD_H+260
+const MY=HUD_H+2;   // market top y (just below HUD)
+
 const STALL_LAYOUT=[
-  // Top row (5 stalls facing down)
-  {x:75, y:45,  w:90,h:55, facing:'down', defIdx:0},
-  {x:185,y:45,  w:90,h:55, facing:'down', defIdx:1},
-  {x:295,y:45,  w:90,h:55, facing:'down', defIdx:2},
-  {x:405,y:45,  w:90,h:55, facing:'down', defIdx:3},
-  {x:515,y:45,  w:90,h:55, facing:'down', defIdx:4},
-  // Right column (3 stalls facing left)
-  {x:655,y:60,  w:90,h:55, facing:'left', defIdx:5},
-  {x:655,y:155, w:90,h:55, facing:'left', defIdx:6},
-  {x:655,y:250, w:90,h:55, facing:'left', defIdx:7},
-  // Left column (3 stalls facing right)
-  {x:55, y:155, w:90,h:55, facing:'right',defIdx:8},
-  {x:55, y:250, w:90,h:55, facing:'right',defIdx:0},
-  {x:55, y:345, w:90,h:55, facing:'right',defIdx:1},
-  // Interior cluster (3 stalls)
-  {x:260,y:180, w:90,h:55, facing:'down', defIdx:2},
-  {x:380,y:180, w:90,h:55, facing:'down', defIdx:3},
-  {x:260,y:290, w:90,h:55, facing:'down', defIdx:5},
-  {x:380,y:290, w:90,h:55, facing:'down', defIdx:6},
-  // Bottom interior stall
-  {x:500,y:180, w:90,h:55, facing:'down', defIdx:7},
+  // Top row — 4 stalls facing down (x: 118,276,434,592 width=90)
+  {x:118,y:MY+2,  w:90,h:55,facing:'down', defIdx:0 },  // nasiuduk
+  {x:276,y:MY+2,  w:90,h:55,facing:'down', defIdx:1 },  // ayamandi
+  {x:434,y:MY+2,  w:90,h:55,facing:'down', defIdx:2 },  // warteg
+  {x:592,y:MY+2,  w:90,h:55,facing:'down', defIdx:3 },  // dimsum
+
+  // Row A — left wall + 2 interior + right wall
+  {x:55, y:MY+130,w:90,h:55,facing:'right',defIdx:4 },  // bakso
+  {x:240,y:MY+130,w:90,h:55,facing:'down', defIdx:8 },  // kolak (dessert)
+  {x:400,y:MY+130,w:90,h:55,facing:'down', defIdx:9 },  // jus (drink)
+  {x:655,y:MY+130,w:90,h:55,facing:'left', defIdx:11},  // bebek
+
+  // Row B — left wall + 2 interior + right wall
+  {x:55, y:MY+260,w:90,h:55,facing:'right',defIdx:5 },  // padang
+  {x:240,y:MY+260,w:90,h:55,facing:'down', defIdx:6 },  // gadogado
+  {x:400,y:MY+260,w:90,h:55,facing:'down', defIdx:10},  // rumahes (dessert)
+  {x:655,y:MY+260,w:90,h:55,facing:'left', defIdx:7 },  // sate
 ];
 
 function generateMarket(){
@@ -163,180 +225,129 @@ function generateMarket(){
     const qLen=Math.floor(Math.random()*5);
     const qWait=qLen*QUEUE_SEC;
 
-    // Compute interact point (center of counter-facing side)
     let ix=sl.x+sl.w/2, iy=sl.y+sl.h/2;
-    if(sl.facing==='down') { iy=sl.y+sl.h+10; }
-    else if(sl.facing==='up')   { iy=sl.y-10; }
-    else if(sl.facing==='left') { ix=sl.x-10; }
-    else if(sl.facing==='right'){ ix=sl.x+sl.w+10; }
-
-    // Counter rect (the interaction boundary)
-    let cr={x:sl.x,y:sl.y,w:sl.w,h:sl.h};
+    if(sl.facing==='down')  iy=sl.y+sl.h+12;
+    else if(sl.facing==='up')   iy=sl.y-12;
+    else if(sl.facing==='left') ix=sl.x-12;
+    else                        ix=sl.x+sl.w+12;
 
     stalls.push({
       defId:def.id, stallIdx:idx,
-      x:sl.x, y:sl.y, w:sl.w, h:sl.h,
+      x:sl.x,y:sl.y,w:sl.w,h:sl.h,
       facing:sl.facing,
-      queueLen:qLen, queueWait:qWait,
-      color:def.color, name:def.name,
+      queueLen:qLen,queueWait:qWait,
+      color:def.color,name:def.name,
+      cat:def.cat,vendor:def.vendor,
       items:def.items.map(i=>({...i})),
-      vendor:def.vendor,
-      interactX:ix, interactY:iy,
-      counterRect:cr,
+      interactX:ix,interactY:iy,
+      counterRect:{x:sl.x,y:sl.y,w:sl.w,h:sl.h},
     });
   });
 }
 
 // ─── PLAYER ───────────────────────────────────────────────────────────────────
 function makePlayer(){
-  player={
-    x:400, y:540, vx:0, vy:0, w:18, h:24,
-    state:'walk',
-    activeStall:null, queueTimer:0,
-    animFrame:0, animTimer:0, facing:'up'
-  };
+  player={x:400,y:H-55,vx:0,vy:0,w:18,h:24,
+    state:'walk',activeStall:null,queueTimer:0,
+    animFrame:0,animTimer:0,facing:'up'};
 }
 
 // ─── SCORING ──────────────────────────────────────────────────────────────────
 function calcScore(){
   const ratio=mission.ratio(cart);
   const base=Math.round(ratio*100);
-  const timeBonus=timer>15?20:timer>5?10:0;
+  const timeBonus=timer>30?20:timer>10?10:0;
   return Math.min(120,base+timeBonus);
 }
-
 function randNPC(){
-  const u=Math.random()||0.0001, v=Math.random();
+  const u=Math.random()||0.0001,v=Math.random();
   return Math.max(0,Math.min(120,Math.round(62+22*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v))));
 }
 
 // ─── GAME START / END ─────────────────────────────────────────────────────────
 function startGame(){
-  generateMarket();
-  makePlayer();
+  generateMarket();makePlayer();
   mission=MISSION_TYPES[Math.floor(Math.random()*MISSION_TYPES.length)];
   npcScores=NPC_NAMES.map(name=>({name,score:randNPC()}));
-  cart=[]; timer=TOTAL_TIME; score=0; floatTexts=[];
-  activeStall=null; nearStall=null; menuItemIndex=0;
-  resultClicked=false;
+  cart=[];timer=TOTAL_TIME;score=0;floatTexts=[];
+  activeStall=null;nearStall=null;menuItemIndex=0;
   gameState='playing';
 }
-
-function endGame(){
-  score=calcScore();
-  gameState='result';
-}
+function endGame(){ score=calcScore(); gameState='result'; }
 
 // ─── BUY ITEM ─────────────────────────────────────────────────────────────────
 function buyItem(item){
-  cart.push({...item, stallId:activeStall.defId});
+  cart.push({...item,stallId:activeStall.defId});
   floatTexts.push({x:player.x,y:player.y-20,text:'+'+item.name,timer:1.6,color:'#ffee44'});
-  gameState='playing';
-  player.state='walk';
-  activeStall=null;
-  nearStall=null;
+  gameState='playing';player.state='walk';activeStall=null;nearStall=null;
 }
 
-// ─── AABB COLLISION ───────────────────────────────────────────────────────────
+// ─── COLLISION ────────────────────────────────────────────────────────────────
 function aabbCollide(ax,ay,aw,ah,bx,by,bw,bh){
-  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+  return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
 }
-
-function pushOut(p, r){
-  // push player out of rect r
-  const overlapL=p.x+p.w-r.x;
-  const overlapR=r.x+r.w-p.x;
-  const overlapT=p.y+p.h-r.y;
-  const overlapB=r.y+r.h-p.y;
-  const minX=Math.min(overlapL,overlapR);
-  const minY=Math.min(overlapT,overlapB);
-  if(minX<minY){
-    if(overlapL<overlapR) p.x-=overlapL; else p.x+=overlapR;
-  } else {
-    if(overlapT<overlapB) p.y-=overlapT; else p.y+=overlapB;
-  }
+function pushOut(p,r){
+  const oL=p.x+p.w-r.x,oR=r.x+r.w-p.x,oT=p.y+p.h-r.y,oB=r.y+r.h-p.y;
+  const mx=Math.min(oL,oR),my=Math.min(oT,oB);
+  if(mx<my){if(oL<oR)p.x-=oL;else p.x+=oR;}
+  else{if(oT<oB)p.y-=oT;else p.y+=oB;}
 }
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
 function update(dt){
-  // Timer countdown
   if(gameState==='playing'||gameState==='queueing'||gameState==='shopping'){
     timer-=dt;
-    if(timer<=0){ timer=0; endGame(); return; }
+    if(timer<=0){timer=0;endGame();return;}
   }
 
-  blinkTimer+=dt;
-  if(blinkTimer>0.5){ blinkTimer=0; blinkOn=!blinkOn; }
-
-  // Float texts
-  floatTexts.forEach(ft=>{ft.timer-=dt; ft.y-=30*dt;});
+  floatTexts.forEach(ft=>{ft.timer-=dt;ft.y-=30*dt;});
   floatTexts=floatTexts.filter(ft=>ft.timer>0);
 
   if(player.state==='queue'){
     player.queueTimer-=dt;
     if(player.queueTimer<=0){
-      player.queueTimer=0;
-      gameState='shopping';
-      player.state='shop';
-      menuItemIndex=0;
+      player.queueTimer=0;gameState='shopping';player.state='shop';menuItemIndex=0;
     }
     return;
   }
+  if(player.state==='shop')return;
 
-  if(player.state==='shop') return;
+  let vx=0,vy=0;
+  if(keys['ArrowUp']  ||keys['w']||keys['W']||mobileKeys.up)    vy=-PSPEED;
+  if(keys['ArrowDown']||keys['s']||keys['S']||mobileKeys.down)  vy= PSPEED;
+  if(keys['ArrowLeft']||keys['a']||keys['A']||mobileKeys.left)  vx=-PSPEED;
+  if(keys['ArrowRight']||keys['d']||keys['D']||mobileKeys.right)vx= PSPEED;
+  if(vx&&vy){vx*=0.707;vy*=0.707;}
 
-  // Walking
-  let vx=0, vy=0;
-  const up=keys['ArrowUp']||keys['w']||keys['W']||mobileKeys.up;
-  const down=keys['ArrowDown']||keys['s']||keys['S']||mobileKeys.down;
-  const left=keys['ArrowLeft']||keys['a']||keys['A']||mobileKeys.left;
-  const right=keys['ArrowRight']||keys['d']||keys['D']||mobileKeys.right;
+  player.x+=vx*dt; player.y+=vy*dt;
+  if(vx<0)player.facing='left';
+  else if(vx>0)player.facing='right';
+  else if(vy<0)player.facing='up';
+  else if(vy>0)player.facing='down';
 
-  if(up)    vy=-PSPEED;
-  if(down)  vy= PSPEED;
-  if(left)  vx=-PSPEED;
-  if(right) vx= PSPEED;
-  if(vx&&vy){ vx*=0.707; vy*=0.707; }
-
-  player.x+=vx*dt;
-  player.y+=vy*dt;
-
-  // Update facing
-  if(vx<0) player.facing='left';
-  else if(vx>0) player.facing='right';
-  else if(vy<0) player.facing='up';
-  else if(vy>0) player.facing='down';
-
-  // Walk animation
   if(vx||vy){
     player.animTimer+=dt;
-    if(player.animTimer>0.18){ player.animTimer=0; player.animFrame^=1; }
-  } else {
-    player.animFrame=0;
-  }
+    if(player.animTimer>0.18){player.animTimer=0;player.animFrame^=1;}
+  } else player.animFrame=0;
 
-  // Stall collision
+  const PAD=4;
   stalls.forEach(s=>{
-    const pad=4;
-    const r={x:s.counterRect.x-pad, y:s.counterRect.y-pad,
-              w:s.counterRect.w+pad*2, h:s.counterRect.h+pad*2};
-    if(aabbCollide(player.x,player.y,player.w,player.h,r.x,r.y,r.w,r.h)){
+    const r={x:s.counterRect.x-PAD,y:s.counterRect.y-PAD,
+             w:s.counterRect.w+PAD*2,h:s.counterRect.h+PAD*2};
+    if(aabbCollide(player.x,player.y,player.w,player.h,r.x,r.y,r.w,r.h))
       pushOut(player,r);
-    }
   });
 
-  // Clamp to market bounds
-  const MX=50, MY=30, MW=700, MH=540;
-  player.x=Math.max(MX,Math.min(MX+MW-player.w,player.x));
-  player.y=Math.max(MY,Math.min(MY+MH-player.h,player.y));
+  // Clamp to market
+  player.x=Math.max(52,Math.min(748-player.w,player.x));
+  player.y=Math.max(HUD_H+2,Math.min(H-28-player.h,player.y));
 
-  // Find nearStall
-  let best=null, bestDist=52;
+  // Nearest stall
+  let best=null,bestD=52;
   stalls.forEach(s=>{
-    const dx=player.x+player.w/2-s.interactX;
-    const dy=player.y+player.h/2-s.interactY;
+    const dx=player.x+9-s.interactX,dy=player.y+12-s.interactY;
     const d=Math.sqrt(dx*dx+dy*dy);
-    if(d<bestDist){ bestDist=d; best=s; }
+    if(d<bestD){bestD=d;best=s;}
   });
   nearStall=best;
 }
@@ -344,368 +355,280 @@ function update(dt){
 // ─── KEYBOARD ─────────────────────────────────────────────────────────────────
 window.addEventListener('keydown',e=>{
   keys[e.key]=true;
-
-  if(gameState==='menu'){
-    if(e.key===' '||e.key==='Enter') startGame();
-    return;
-  }
-  if(gameState==='result'){
-    if(e.key===' '||e.key==='Enter'){ gameState='ranking'; }
-    return;
-  }
-  if(gameState==='ranking'){
-    if(e.key===' '||e.key==='Enter'){ gameState='menu'; }
-    return;
-  }
+  if(gameState==='menu'){if(e.key===' '||e.key==='Enter')startGame();return;}
+  if(gameState==='result'){if(e.key===' '||e.key==='Enter')gameState='ranking';return;}
+  if(gameState==='ranking'){if(e.key===' '||e.key==='Enter')gameState='menu';return;}
 
   if(gameState==='playing'&&player.state==='walk'){
     if(e.key===' '&&nearStall){
       e.preventDefault();
-      player.state='queue';
-      player.activeStall=nearStall;
-      activeStall=nearStall;
-      player.queueTimer=nearStall.queueWait;
-      player.x=nearStall.interactX-player.w/2;
-      player.y=nearStall.interactY+4;
-      gameState=nearStall.queueWait>0?'queueing':'shopping';
-      if(gameState==='shopping'){ player.state='shop'; menuItemIndex=0; }
+      activateStall(nearStall);
     }
   }
-
-  if(gameState==='shopping'||(player&&player.state==='shop')){
-    if(e.key==='ArrowUp'){
-      e.preventDefault();
-      menuItemIndex=Math.max(0,menuItemIndex-1);
-    }
-    if(e.key==='ArrowDown'){
-      e.preventDefault();
-      menuItemIndex=Math.min(activeStall.items.length-1,menuItemIndex+1);
-    }
-    if(e.key===' '){
-      e.preventDefault();
-      if(activeStall) buyItem(activeStall.items[menuItemIndex]);
-    }
-    if(e.key==='Escape'){
-      gameState='playing'; player.state='walk'; activeStall=null; nearStall=null;
-    }
+  if(gameState==='shopping'||player&&player.state==='shop'){
+    if(e.key==='ArrowUp'){e.preventDefault();menuItemIndex=Math.max(0,menuItemIndex-1);}
+    if(e.key==='ArrowDown'){e.preventDefault();
+      menuItemIndex=Math.min(activeStall.items.length-1,menuItemIndex+1);}
+    if(e.key===' '){e.preventDefault();if(activeStall)buyItem(activeStall.items[menuItemIndex]);}
+    if(e.key==='Escape'){gameState='playing';player.state='walk';activeStall=null;nearStall=null;}
   }
-
-  if(e.key===' ') e.preventDefault();
+  if(e.key===' ')e.preventDefault();
 });
+window.addEventListener('keyup',e=>{keys[e.key]=false;});
 
-window.addEventListener('keyup',e=>{ keys[e.key]=false; });
+function activateStall(s){
+  player.state='queue';player.activeStall=s;activeStall=s;
+  player.queueTimer=s.queueWait;
+  player.x=s.interactX-9;player.y=s.interactY+2;
+  gameState=s.queueWait>0?'queueing':'shopping';
+  if(gameState==='shopping'){player.state='shop';menuItemIndex=0;}
+}
 
 // ─── MOUSE ────────────────────────────────────────────────────────────────────
 canvas.addEventListener('click',e=>{
-  if(gameState==='menu'){ startGame(); return; }
-  if(gameState==='result'){ gameState='ranking'; return; }
-  if(gameState==='ranking'){ gameState='menu'; return; }
-
-  if(gameState==='shopping'){
-    // Check if click is outside menu panel → close
+  if(gameState==='menu'){startGame();return;}
+  if(gameState==='result'){gameState='ranking';return;}
+  if(gameState==='ranking'){
     const r=canvas.getBoundingClientRect();
-    const scaleX=W/r.width, scaleY=H/r.height;
-    const cx=(e.clientX-r.left)*scaleX;
-    const cy=(e.clientY-r.top)*scaleY;
-    const px=W/2-170, py=H/2-140;
+    const cx=(e.clientX-r.left)*(W/r.width),cy=(e.clientY-r.top)*(H/r.height);
+    if(cx>=W/2-90&&cx<=W/2+90&&cy>=H-80&&cy<=H-40)gameState='menu';
+    return;
+  }
+  if(gameState==='shopping'){
+    const r=canvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(W/r.width),cy=(e.clientY-r.top)*(H/r.height);
+    const px=W/2-170,py=H/2-140;
     if(cx<px||cx>px+340||cy<py||cy>py+280){
-      gameState='playing'; player.state='walk'; activeStall=null; nearStall=null;
+      gameState='playing';player.state='walk';activeStall=null;nearStall=null;
     }
   }
 });
 
 // ─── TOUCH / MOBILE ───────────────────────────────────────────────────────────
-const DPAD_CX=75, DPAD_CY=H-100, DPAD_R=55;
-const BUY_CX=W-80, BUY_CY=H-90, BUY_R=38;
+const DPAD_CX=75,DPAD_CY=H-100,DPAD_R=55;
+const BUY_CX=W-80,BUY_CY=H-90,BUY_R=38;
 
 function hitDpad(tx,ty){
-  const dx=tx-DPAD_CX, dy=ty-DPAD_CY;
-  const d=Math.sqrt(dx*dx+dy*dy);
-  if(d>DPAD_R+10) return null;
-  const angle=Math.atan2(dy,dx)*180/Math.PI;
-  if(angle>=-45&&angle<45)  return 'right';
-  if(angle>=45&&angle<135)  return 'down';
-  if(angle>=-135&&angle<-45)return 'up';
+  const dx=tx-DPAD_CX,dy=ty-DPAD_CY;
+  if(Math.sqrt(dx*dx+dy*dy)>DPAD_R+10)return null;
+  const a=Math.atan2(dy,dx)*180/Math.PI;
+  if(a>=-45&&a<45)return 'right';
+  if(a>=45&&a<135)return 'down';
+  if(a>=-135&&a<-45)return 'up';
   return 'left';
 }
-
 function processTouches(e){
   e.preventDefault();
   mobileKeys={up:false,down:false,left:false,right:false,buy:false};
   for(let t of e.touches){
     const r=canvas.getBoundingClientRect();
-    const scaleX=W/r.width, scaleY=H/r.height;
-    const tx=(t.clientX-r.left)*scaleX;
-    const ty=(t.clientY-r.top)*scaleY;
-    const dir=hitDpad(tx,ty);
-    if(dir) mobileKeys[dir]=true;
-    const bDx=tx-BUY_CX, bDy=ty-BUY_CY;
-    if(Math.sqrt(bDx*bDx+bDy*bDy)<BUY_R) mobileKeys.buy=true;
+    const tx=(t.clientX-r.left)*(W/r.width),ty=(t.clientY-r.top)*(H/r.height);
+    const dir=hitDpad(tx,ty);if(dir)mobileKeys[dir]=true;
+    const bDx=tx-BUY_CX,bDy=ty-BUY_CY;
+    if(Math.sqrt(bDx*bDx+bDy*bDy)<BUY_R)mobileKeys.buy=true;
   }
 }
-
 canvas.addEventListener('touchstart',e=>{
   processTouches(e);
-  // Menu/result/ranking tap
-  if(gameState==='menu'){ startGame(); return; }
-  if(gameState==='result'){ gameState='ranking'; return; }
-  if(gameState==='ranking'){ gameState='menu'; return; }
-  // BUY button action
+  if(gameState==='menu'){startGame();return;}
+  if(gameState==='result'){gameState='ranking';return;}
+  if(gameState==='ranking'){gameState='menu';return;}
   if(mobileKeys.buy){
-    if(gameState==='playing'&&player.state==='walk'&&nearStall){
-      player.state='queue';
-      player.activeStall=nearStall;
-      activeStall=nearStall;
-      player.queueTimer=nearStall.queueWait;
-      player.x=nearStall.interactX-player.w/2;
-      player.y=nearStall.interactY+4;
-      gameState=nearStall.queueWait>0?'queueing':'shopping';
-      if(gameState==='shopping'){ player.state='shop'; menuItemIndex=0; }
-    } else if(gameState==='shopping'&&player.state==='shop'){
-      if(activeStall) buyItem(activeStall.items[menuItemIndex]);
-    }
+    if(gameState==='playing'&&player&&player.state==='walk'&&nearStall)activateStall(nearStall);
+    else if(gameState==='shopping'&&player&&player.state==='shop'&&activeStall)
+      buyItem(activeStall.items[menuItemIndex]);
   }
-},{ passive:false });
-
-canvas.addEventListener('touchmove',e=>{ processTouches(e); },{passive:false});
-canvas.addEventListener('touchend',e=>{
-  processTouches(e);
 },{passive:false});
+canvas.addEventListener('touchmove',e=>processTouches(e),{passive:false});
+canvas.addEventListener('touchend',e=>processTouches(e),{passive:false});
 
 // ─── DRAW HELPERS ─────────────────────────────────────────────────────────────
 function rp(x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.lineTo(x+w-r,y);
-  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r);
-  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h);
-  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r);
-  ctx.quadraticCurveTo(x,y,x+r,y);
-  ctx.closePath();
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+function fmt(n){return 'Rp '+n.toLocaleString('id-ID');}
+function lighten(hex,p){
+  let r=parseInt(hex.slice(1,3),16)+p,g=parseInt(hex.slice(3,5),16)+p,b=parseInt(hex.slice(5,7),16)+p;
+  return '#'+[Math.min(255,r),Math.min(255,g),Math.min(255,b)].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 
-function fmt(n){ return 'Rp '+n.toLocaleString('id-ID'); }
-
-// ─── DRAW BACKGROUND ──────────────────────────────────────────────────────────
+// ─── DRAW BG ─────────────────────────────────────────────────────────────────
 function drawBG(){
-  // Dusk gradient sky
   const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'#1a0a2e');
-  grad.addColorStop(0.5,'#8b3a10');
-  grad.addColorStop(1,'#c85a20');
-  ctx.fillStyle=grad;
-  ctx.fillRect(0,0,W,H);
+  grad.addColorStop(0,'#1a0a2e');grad.addColorStop(0.5,'#8b3a10');grad.addColorStop(1,'#c85a20');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
 
   // Market floor
   ctx.fillStyle='#c8a060';
-  ctx.fillRect(50,30,700,540);
+  ctx.fillRect(50,HUD_H,700,H-HUD_H-20);
 
-  // Dark border walls
+  // Walls
   ctx.fillStyle='#3a2010';
-  ctx.fillRect(35,20,725,15);   // top wall
-  ctx.fillRect(35,555,725,15);  // bottom wall
-  ctx.fillRect(35,20,15,555);   // left wall
-  ctx.fillRect(745,20,15,555);  // right wall
+  ctx.fillRect(35,HUD_H-5,725,10);     // top wall
+  ctx.fillRect(35,H-22,725,10);        // bottom wall
+  ctx.fillRect(35,HUD_H-5,12,H-HUD_H); // left
+  ctx.fillRect(752,HUD_H-5,12,H-HUD_H);// right
 
-  // Entry arrow at bottom center
+  // Entry arrow
   ctx.fillStyle='#ffcc00';
-  ctx.beginPath();
-  ctx.moveTo(400,575); ctx.lineTo(390,560); ctx.lineTo(410,560);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle='#ffcc00';
-  ctx.fillRect(397,545,6,18);
+  ctx.beginPath();ctx.moveTo(400,H-4);ctx.lineTo(390,H-18);ctx.lineTo(410,H-18);ctx.closePath();ctx.fill();
+  ctx.fillRect(397,H-30,6,14);
 
-  // Lantern strings at top
-  const cols=['#ff6600','#ffcc00','#ff3366','#00ccff','#ff6600'];
+  // Lanterns
+  const lc=['#ff6600','#ffcc00','#ff3366','#00ccff','#ff6600'];
   for(let i=0;i<5;i++){
-    const lx=100+i*130, ly=32;
-    // String
-    if(i<4){
-      ctx.strokeStyle='#5a4020';
-      ctx.lineWidth=1;
-      ctx.beginPath();
-      ctx.moveTo(lx,ly); ctx.lineTo(lx+130,ly); ctx.stroke();
-    }
-    // Lantern
-    ctx.fillStyle=cols[i];
-    ctx.beginPath(); ctx.ellipse(lx,ly+5,5,8,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='rgba(255,200,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(lx,ly+5,10,14,0,0,Math.PI*2); ctx.fill();
+    const lx=90+i*140,ly=HUD_H+12;
+    if(i<4){ctx.strokeStyle='#5a4020';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(lx+140,ly);ctx.stroke();}
+    ctx.fillStyle=lc[i];
+    ctx.beginPath();ctx.ellipse(lx,ly+5,5,8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,200,0,0.25)';
+    ctx.beginPath();ctx.ellipse(lx,ly+5,10,14,0,0,Math.PI*2);ctx.fill();
   }
 }
 
-// ─── DRAW MARKET / STALLS ──────────────────────────────────────────────────────
+// ─── DRAW STALL ──────────────────────────────────────────────────────────────
 function drawStall(s){
   const isNear=nearStall===s;
-
-  // Glow when near
-  if(isNear){
-    ctx.save();
-    ctx.shadowColor='#ffcc00'; ctx.shadowBlur=18;
-  }
+  if(isNear){ctx.save();ctx.shadowColor='#ffff00';ctx.shadowBlur=22;}
 
   // Awning
   ctx.fillStyle=s.color;
-  rp(s.x,s.y,s.w,s.h,6);
-  ctx.fill();
+  rp(s.x,s.y,s.w,s.h,6);ctx.fill();
 
-  // Scalloped awning bottom
-  const scallW=12;
-  ctx.fillStyle=lighten(s.color,30);
-  for(let sx=s.x;sx<s.x+s.w-scallW/2;sx+=scallW){
-    ctx.beginPath();
-    ctx.arc(sx+scallW/2,s.y+s.h,scallW/2,0,Math.PI);
-    ctx.fill();
+  // Category color border (thick)
+  ctx.strokeStyle=CAT_COL[s.cat];ctx.lineWidth=3;
+  rp(s.x,s.y,s.w,s.h,6);ctx.stroke();
+
+  // Scallop
+  const scW=12;
+  ctx.fillStyle=lighten(s.color,25);
+  for(let sx=s.x;sx<s.x+s.w-scW/2;sx+=scW){
+    ctx.beginPath();ctx.arc(sx+scW/2,s.y+s.h,scW/2,0,Math.PI);ctx.fill();
   }
 
-  // Counter (dark wood on facing side)
+  // Counter
   ctx.fillStyle='#3d1a00';
-  const ct=8;
-  if(s.facing==='down'){
-    ctx.fillRect(s.x,s.y+s.h-ct,s.w,ct+6);
-  } else if(s.facing==='up'){
-    ctx.fillRect(s.x,s.y-6,s.w,ct+6);
-  } else if(s.facing==='left'){
-    ctx.fillRect(s.x-6,s.y,ct+6,s.h);
+  if(s.facing==='down')      ctx.fillRect(s.x,s.y+s.h-6,s.w,12);
+  else if(s.facing==='up')   ctx.fillRect(s.x,s.y-6,s.w,12);
+  else if(s.facing==='left') ctx.fillRect(s.x-6,s.y,12,s.h);
+  else                       ctx.fillRect(s.x+s.w-6,s.y,12,s.h);
+
+  if(isNear)ctx.restore();
+
+  // Stall name (two lines if needed)
+  ctx.fillStyle='#fff';
+  ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+  const name=s.name;
+  if(name.length>12){
+    const sp=name.lastIndexOf(' ',Math.floor(name.length/2)+2);
+    const l1=sp>0?name.slice(0,sp):name.slice(0,10);
+    const l2=sp>0?name.slice(sp+1):name.slice(10);
+    ctx.fillText(l1,s.x+s.w/2,s.y+12);
+    ctx.fillText(l2,s.x+s.w/2,s.y+22);
   } else {
-    ctx.fillRect(s.x+s.w-ct,s.y,ct+6,s.h);
+    ctx.fillText(name,s.x+s.w/2,s.y+14);
   }
 
-  if(isNear) ctx.restore();
-
-  // Stall name
-  ctx.fillStyle='#ffffff';
-  ctx.font='bold 9px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText(s.name,s.x+s.w/2,s.y+14);
-
-  // Queue dots
+  // Queue display (directly at counter face)
   drawQueueDots(s);
-
-  // Queue time badge
-  const qt=s.queueWait;
-  if(qt>0){
-    ctx.fillStyle=qt>6?'#cc2200':'#cc7700';
-    ctx.font='bold 9px sans-serif';
-    ctx.textAlign='left';
-    ctx.fillText('\u23f1 '+qt+'s',s.x+s.w+2,s.y+12);
-  }
 
   // Vendor figure
   drawVendor(s);
 
-  // Equipment / props
+  // Equipment
   drawEquipment(s);
 
-  // Near-stall interaction prompt
+  // SPACE prompt
   if(isNear&&gameState==='playing'&&player.state==='walk'){
-    ctx.fillStyle='rgba(0,0,0,0.7)';
-    ctx.font='bold 11px sans-serif';
-    ctx.textAlign='center';
-    const label=isMobile?'BELI':'SPACE';
-    ctx.fillStyle='#ffee44';
-    ctx.fillText(label,s.x+s.w/2,s.y-6);
+    ctx.save();ctx.shadowColor='#ffff00';ctx.shadowBlur=10;
+    ctx.fillStyle='#ffee44';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText(isMobile?'BELI':'SPACE',s.x+s.w/2,s.y-5);
+    ctx.restore();
   }
 }
 
-function lighten(hex,pct){
-  let r=parseInt(hex.slice(1,3),16)+pct;
-  let g=parseInt(hex.slice(3,5),16)+pct;
-  let b=parseInt(hex.slice(5,7),16)+pct;
-  r=Math.min(255,r); g=Math.min(255,g); b=Math.min(255,b);
-  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
-}
-
+// Queue dots: compact, directly at counter front, show number badge
 function drawQueueDots(s){
-  const qLen=s.queueLen;
-  if(!qLen) return;
-  for(let i=0;i<qLen;i++){
-    let dx=0, dy=0;
-    // Place dots extending away from counter
-    if(s.facing==='down')  { dx=(i-qLen/2)*12; dy=s.h+18+i*6; }
-    else if(s.facing==='up'){ dx=(i-qLen/2)*12; dy=-20-i*6; }
-    else if(s.facing==='left'){ dx=-20-i*8; dy=(i%2)*8-4; }
-    else { dx=s.w+8+i*8; dy=(i%2)*8-4; }
+  const q=s.queueLen;
+  if(!q)return;
 
-    const px=s.x+s.w/2+dx, py=s.y+s.h/2+dy;
-    // Head
+  // Position: right at the interact point (counter face)
+  const ix=s.interactX, iy=s.interactY;
+
+  // Draw up to 3 small person icons in a tight cluster
+  const show=Math.min(q,3);
+  for(let i=0;i<show;i++){
+    let px=ix,py=iy;
+    if(s.facing==='down')     {px=ix-10+(i*10);py=iy+4;}
+    else if(s.facing==='up')  {px=ix-10+(i*10);py=iy-4;}
+    else if(s.facing==='left'){px=ix-4;py=iy-8+(i*8);}
+    else                      {px=ix+4;py=iy-8+(i*8);}
+
     ctx.fillStyle='#e8b490';
-    ctx.beginPath(); ctx.arc(px,py-5,4,0,Math.PI*2); ctx.fill();
-    // Body
-    ctx.fillStyle='#5566aa';
-    ctx.fillRect(px-3,py-1,6,8);
+    ctx.beginPath();ctx.arc(px,py-4,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#6688bb';
+    ctx.fillRect(px-2,py-1,5,6);
+  }
+
+  // Number badge right at interact point
+  const bx=ix+4, by=iy-14;
+  ctx.fillStyle=q>3?'#dd2200':q>1?'#cc7700':'#448800';
+  rp(bx-1,by-9,18,13,4);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='left';
+  ctx.fillText(q+'x',bx+1,by);
+
+  // Wait time
+  if(s.queueWait>0){
+    ctx.fillStyle=s.queueWait>6?'#ff4400':'#ffaa00';
+    ctx.font='8px sans-serif';ctx.textAlign='center';
+    ctx.fillText(s.queueWait+'s',ix,iy+(s.facing==='down'?22:s.facing==='up'?-16:8));
   }
 }
 
 function drawVendor(s){
-  const cx=s.x+s.w/2, cy=s.y+s.h*0.5;
+  const cx=s.x+s.w/2,cy=s.y+s.h*0.52;
   if(s.vendor==='woman'){
-    // Hijab (dark oval)
-    ctx.fillStyle='#1a0a00';
-    ctx.beginPath(); ctx.ellipse(cx,cy-8,8,9,0,0,Math.PI*2); ctx.fill();
-    // Face
-    ctx.fillStyle='#e8b490';
-    ctx.beginPath(); ctx.arc(cx,cy-8,6,0,Math.PI*2); ctx.fill();
-    // Hijab wrap
-    ctx.fillStyle='#2a1a60';
-    ctx.beginPath();
-    ctx.ellipse(cx,cy-4,11,10,0,0,Math.PI);
-    ctx.fill();
-    // Apron body
-    ctx.fillStyle='#cc4466';
-    ctx.fillRect(cx-7,cy,14,14);
-    // Apron
-    ctx.fillStyle='#ffffff';
-    ctx.fillRect(cx-4,cy+2,8,10);
+    ctx.fillStyle='#1a0a00';ctx.beginPath();ctx.ellipse(cx,cy-8,8,9,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e8b490';ctx.beginPath();ctx.arc(cx,cy-8,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#2a1a60';ctx.beginPath();ctx.ellipse(cx,cy-4,11,10,0,0,Math.PI);ctx.fill();
+    ctx.fillStyle='#cc4466';ctx.fillRect(cx-7,cy,14,13);
+    ctx.fillStyle='#fff';ctx.fillRect(cx-4,cy+2,8,9);
   } else {
-    // Cap
-    ctx.fillStyle='#ffffff';
-    ctx.fillRect(cx-7,cy-16,14,5);
-    // Head
-    ctx.fillStyle='#e8b490';
-    ctx.beginPath(); ctx.arc(cx,cy-8,6,0,Math.PI*2); ctx.fill();
-    // Body with apron
-    ctx.fillStyle='#336699';
-    ctx.fillRect(cx-7,cy,14,14);
-    ctx.fillStyle='#ffffff';
-    ctx.fillRect(cx-4,cy+2,8,10);
+    ctx.fillStyle='#fff';ctx.fillRect(cx-7,cy-16,14,5);
+    ctx.fillStyle='#e8b490';ctx.beginPath();ctx.arc(cx,cy-8,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#336699';ctx.fillRect(cx-7,cy,14,13);
+    ctx.fillStyle='#fff';ctx.fillRect(cx-4,cy+2,8,9);
   }
 }
 
 function drawEquipment(s){
-  const cx=s.x+s.w/2, cy=s.y+s.h*0.35;
-  if(s.defId==='goreng'||s.defId==='grill'){
-    // Flame
-    ctx.fillStyle='rgba(255,120,0,0.7)';
-    ctx.beginPath(); ctx.ellipse(cx,cy+5,8,4,0,0,Math.PI*2); ctx.fill();
-    // Pan/grill
-    ctx.fillStyle='#1a1a1a';
-    ctx.beginPath(); ctx.ellipse(cx,cy+2,12,4,0,0,Math.PI*2); ctx.fill();
-  } else if(s.defId==='rawon'){
-    // Blue flame
-    ctx.fillStyle='rgba(80,120,255,0.6)';
-    ctx.beginPath(); ctx.ellipse(cx,cy+5,6,3,0,0,Math.PI*2); ctx.fill();
-    // Pot
-    ctx.fillStyle='#4a3010';
-    ctx.beginPath(); ctx.ellipse(cx,cy,10,7,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#3a2000';
-    ctx.fillRect(cx-10,cy-2,20,4);
-  } else if(s.defId==='teh'||s.defId==='minuman'){
-    // Fridge
-    ctx.fillStyle='#7a99bb';
-    ctx.fillRect(cx-8,cy-10,16,20);
-    ctx.fillStyle='#aaccee';
-    ctx.fillRect(cx-6,cy-8,12,4);
-  } else if(s.defId==='dessert1'||s.defId==='dessert2'){
-    // Colorful bowls
-    const colors=['#ff6600','#6699ff','#66cc44'];
-    for(let i=0;i<3;i++){
-      ctx.fillStyle=colors[i];
-      ctx.beginPath(); ctx.ellipse(cx-10+i*10,cy+4,5,3,0,0,Math.PI*2); ctx.fill();
-    }
+  const cx=s.x+s.w/2,cy=s.y+s.h*0.35;
+  const id=s.defId;
+  if(id==='nasiuduk'||id==='warteg'){
+    ctx.fillStyle='rgba(255,220,80,0.5)';ctx.beginPath();ctx.ellipse(cx,cy+4,10,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#5a3a10';ctx.beginPath();ctx.ellipse(cx,cy,9,5,0,0,Math.PI*2);ctx.fill();
+  } else if(id==='ayamandi'||id==='bebek'){
+    ctx.fillStyle='rgba(255,100,0,0.7)';ctx.beginPath();ctx.ellipse(cx,cy+5,8,4,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1a1a1a';ctx.beginPath();ctx.ellipse(cx,cy+2,12,4,0,0,Math.PI*2);ctx.fill();
+  } else if(id==='bakso'||id==='padang'){
+    ctx.fillStyle='rgba(80,140,255,0.6)';ctx.beginPath();ctx.ellipse(cx,cy+5,6,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4a3010';ctx.beginPath();ctx.ellipse(cx,cy,10,7,0,0,Math.PI*2);ctx.fill();
+  } else if(id==='dimsum'||id==='sate'){
+    ctx.fillStyle='#8a6020';
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(cx-8+i*8,cy+4,5,3,0,0,Math.PI*2);ctx.fill();}
+  } else if(id==='gadogado'||id==='warteg'){
+    ctx.fillStyle='#3a8a10';
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(cx-6+i*6,cy+3,4,0,Math.PI*2);ctx.fill();}
+  } else if(id==='jus'){
+    ctx.fillStyle='#7a99bb';ctx.fillRect(cx-8,cy-10,16,20);
+    ctx.fillStyle='#aaccee';ctx.fillRect(cx-6,cy-8,12,4);
+  } else if(id==='kolak'||id==='rumahes'){
+    const bc=['#ff6600','#6699ff','#66cc44'];
+    for(let i=0;i<3;i++){ctx.fillStyle=bc[i];ctx.beginPath();ctx.ellipse(cx-8+i*8,cy+4,5,3,0,0,Math.PI*2);ctx.fill();}
   }
 }
 
@@ -715,640 +638,436 @@ function drawMarket(){
 
 // ─── DRAW PLAYER ─────────────────────────────────────────────────────────────
 function drawPlayer(){
-  if(!player) return;
-  const px=Math.round(player.x), py=Math.round(player.y);
+  if(!player)return;
+  const px=Math.round(player.x),py=Math.round(player.y);
   const af=player.animFrame;
   const flip=player.facing==='left';
 
   ctx.save();
-  if(flip){ ctx.scale(-1,1); ctx.translate(-px*2-player.w,0); }
+  if(flip){ctx.scale(-1,1);ctx.translate(-px*2-player.w,0);}
 
   // Shadow
   ctx.fillStyle='rgba(0,0,0,0.25)';
-  ctx.beginPath(); ctx.ellipse(px+9,py+player.h,7,3,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath();ctx.ellipse(px+9,py+player.h,7,3,0,0,Math.PI*2);ctx.fill();
 
-  // Legs (shorts end mid-thigh)
   const legOff=af?2:-2;
-  ctx.fillStyle='#8844cc'; // shorts
-  ctx.fillRect(px+2,py+14,6,7);
-  ctx.fillRect(px+10,py+14,6,7);
-
-  // Skin legs below shorts
-  ctx.fillStyle='#e8b490';
-  ctx.fillRect(px+2,py+20,6,6);
-  ctx.fillRect(px+10,py+20,6,6);
-
+  // Shorts
+  ctx.fillStyle='#8844cc';ctx.fillRect(px+2,py+14,6,7);ctx.fillRect(px+10,py+14,6,7);
+  // Skin legs
+  ctx.fillStyle='#e8b490';ctx.fillRect(px+2,py+20,6,6);ctx.fillRect(px+10,py+20,6,6);
   // Sandals
   ctx.fillStyle='#4a2800';
-  ctx.beginPath(); ctx.ellipse(px+5+legOff,py+26,5,2,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(px+13-legOff,py+26,5,2,0,0,Math.PI*2); ctx.fill();
-
-  // Body (t-shirt)
-  ctx.fillStyle='#4488cc';
-  ctx.fillRect(px+1,py+6,16,12);
-
+  ctx.beginPath();ctx.ellipse(px+5+legOff,py+26,5,2,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(px+13-legOff,py+26,5,2,0,0,Math.PI*2);ctx.fill();
+  // T-shirt
+  ctx.fillStyle='#4488cc';ctx.fillRect(px+1,py+6,16,12);
   // Arms
   ctx.fillStyle='#e8b490';
-  const armSwing=af?2:-2;
-  ctx.fillRect(px-2,py+8+armSwing,4,8); // left arm
-  ctx.fillRect(px+16,py+8-armSwing,4,8); // right arm
-
+  ctx.fillRect(px-2,py+8+(af?2:-2),4,8);
+  ctx.fillRect(px+16,py+8+(af?-2:2),4,8);
   // Head
-  ctx.fillStyle='#e8b490';
-  ctx.beginPath(); ctx.arc(px+9,py+4,7,0,Math.PI*2); ctx.fill();
-
+  ctx.fillStyle='#e8b490';ctx.beginPath();ctx.arc(px+9,py+4,7,0,Math.PI*2);ctx.fill();
   // Hair
-  ctx.fillStyle='#2a1a08';
-  ctx.beginPath();
-  ctx.arc(px+9,py+4,7,Math.PI,0);
-  ctx.fill();
-
+  ctx.fillStyle='#2a1a08';ctx.beginPath();ctx.arc(px+9,py+4,7,Math.PI,0);ctx.fill();
   // Eyes
-  ctx.fillStyle='#1a0800';
-  ctx.fillRect(px+6,py+4,2,2);
-  ctx.fillRect(px+11,py+4,2,2);
-
+  ctx.fillStyle='#1a0800';ctx.fillRect(px+6,py+4,2,2);ctx.fillRect(px+11,py+4,2,2);
   ctx.restore();
 }
 
-// ─── DRAW QUEUE BAR ────────────────────────────────────────────────────────────
+// ─── DRAW QUEUE BAR ───────────────────────────────────────────────────────────
 function drawQueueBar(){
-  if(!activeStall||!player) return;
+  if(!activeStall||!player)return;
   const maxW=activeStall.queueWait||1;
   const ratio=1-(player.queueTimer/maxW);
-  const bx=activeStall.x, by=activeStall.y-28, bw=activeStall.w, bh=16;
-
-  ctx.fillStyle='rgba(0,0,0,0.8)';
-  rp(bx,by,bw,bh,4); ctx.fill();
-
-  ctx.fillStyle='#ffd700';
-  rp(bx+1,by+1,Math.max(0,(bw-2)*ratio),bh-2,3); ctx.fill();
-
-  ctx.fillStyle='#ffffff';
-  ctx.font='bold 10px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('Antri... '+Math.ceil(player.queueTimer)+'s',bx+bw/2,by+11);
+  const bx=activeStall.x,by=activeStall.y-26,bw=activeStall.w,bh=14;
+  ctx.fillStyle='rgba(0,0,0,0.8)';rp(bx,by,bw,bh,4);ctx.fill();
+  ctx.fillStyle='#ffd700';rp(bx+1,by+1,Math.max(0,(bw-2)*ratio),bh-2,3);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Antri... '+Math.ceil(player.queueTimer)+'s',bx+bw/2,by+10);
 }
 
 // ─── DRAW SHOPPING MENU ────────────────────────────────────────────────────────
 function drawShoppingMenu(){
-  if(!activeStall) return;
-  // Overlay
-  ctx.fillStyle='rgba(0,0,0,0.6)';
-  ctx.fillRect(0,0,W,H);
+  if(!activeStall)return;
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,H);
+  const pw=370,ph=Math.min(320,80+activeStall.items.length*46+30);
+  const px=W/2-pw/2,py=H/2-ph/2;
+  ctx.fillStyle='#1a1030';rp(px,py,pw,ph,10);ctx.fill();
 
-  // Panel
-  const pw=360, ph=Math.min(300, 80+activeStall.items.length*44+30);
-  const px=W/2-pw/2, py=H/2-ph/2;
+  // Category color border
+  ctx.strokeStyle=CAT_COL[activeStall.cat];ctx.lineWidth=3;
+  rp(px,py,pw,ph,10);ctx.stroke();
 
-  ctx.fillStyle='#1a1030';
-  rp(px,py,pw,ph,10); ctx.fill();
-  ctx.strokeStyle='#ffd700';
-  ctx.lineWidth=2;
-  rp(px,py,pw,ph,10); ctx.stroke();
-
-  // Header
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 15px sans-serif';
-  ctx.textAlign='center';
+  ctx.fillStyle='#ffd700';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
   ctx.fillText(activeStall.name,px+pw/2,py+22);
 
-  ctx.fillStyle='#aaaaff';
-  ctx.font='11px sans-serif';
-  ctx.fillText(isMobile?'Tap BELI untuk beli  •  Tap luar untuk keluar':'↑↓ pilih  •  SPACE beli  •  ESC keluar',px+pw/2,py+38);
+  // Category badge
+  ctx.fillStyle=CAT_COL[activeStall.cat];
+  rp(px+pw/2-35,py+28,70,14,4);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';
+  ctx.fillText(CAT_LABEL[activeStall.cat].toUpperCase(),px+pw/2,py+39);
 
-  // Items
-  const itemY=py+50;
+  ctx.fillStyle='#aaaaff';ctx.font='10px sans-serif';
+  ctx.fillText(isMobile?'Tap BELI beli  •  luar=tutup':'↑↓ pilih  •  SPACE beli  •  ESC tutup',px+pw/2,py+52);
+
+  const itemY=py+60;
   activeStall.items.forEach((item,i)=>{
-    const iy=itemY+i*44;
-    const sel=i===menuItemIndex;
-
+    const iy=itemY+i*46,sel=i===menuItemIndex;
     if(sel){
-      ctx.fillStyle='rgba(255,215,0,0.2)';
-      rp(px+8,iy,pw-16,40,4); ctx.fill();
-      ctx.strokeStyle='#ffd700'; ctx.lineWidth=1;
-      rp(px+8,iy,pw-16,40,4); ctx.stroke();
+      ctx.fillStyle='rgba(255,215,0,0.2)';rp(px+8,iy,pw-16,42,4);ctx.fill();
+      ctx.strokeStyle='#ffd700';ctx.lineWidth=1;rp(px+8,iy,pw-16,42,4);ctx.stroke();
     }
-
-    // Arrow
-    if(sel){ ctx.fillStyle='#ffd700'; ctx.fillText('>',px+18,iy+24); }
-
-    // Name
-    ctx.fillStyle=sel?'#ffffff':'#cccccc';
-    ctx.font=(sel?'bold ':'')+'12px sans-serif';
-    ctx.textAlign='left';
-    ctx.fillText(item.name,px+28,iy+18);
-
-    // Price & cal
-    ctx.fillStyle='#88ddaa';
-    ctx.font='10px sans-serif';
-    ctx.fillText(fmt(item.price),px+28,iy+32);
-    ctx.fillStyle='#ffaa44';
-    ctx.fillText(item.cal+' kcal',px+130,iy+32);
-
-    // Nutrient tags
-    const tagColors={fiber:'#44aa44',protein:'#4488ff',fat:'#ddaa00',carb:'#cc6600'};
+    if(sel){ctx.fillStyle='#ffd700';ctx.textAlign='left';ctx.fillText('>',px+16,iy+26);}
+    ctx.fillStyle=sel?'#fff':'#ccc';ctx.font=(sel?'bold ':'')+'12px sans-serif';ctx.textAlign='left';
+    ctx.fillText(item.name,px+28,iy+20);
+    ctx.fillStyle='#88ddaa';ctx.font='10px sans-serif';ctx.fillText(fmt(item.price),px+28,iy+34);
+    ctx.fillStyle='#ffaa44';ctx.fillText(item.cal+' kcal',px+145,iy+34);
+    const tagColors={fiber:'#44aa44',protein:'#4488ff',fat:'#ddaa00',carb:'#cc5500'};
     item.nutrients.forEach((n,ni)=>{
-      const tx=px+220+ni*48;
-      ctx.fillStyle=tagColors[n]||'#888';
-      rp(tx,iy+8,44,16,4); ctx.fill();
-      ctx.fillStyle='#ffffff';
-      ctx.font='9px sans-serif';
-      ctx.textAlign='center';
-      ctx.fillText(n,tx+22,iy+20);
+      const tx=px+235+ni*52;
+      ctx.fillStyle=tagColors[n]||'#888';rp(tx,iy+10,48,16,4);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='9px sans-serif';ctx.textAlign='center';
+      const labels={fiber:'serat',protein:'protein',fat:'lemak',carb:'karbo'};
+      ctx.fillText(labels[n]||n,tx+24,iy+22);
     });
   });
 }
 
-// ─── DRAW MISSION BAR ─────────────────────────────────────────────────────────
+// ─── DRAW MISSION BAR (PROMINENT) ────────────────────────────────────────────
 function drawMissionBar(){
-  if(!mission) return;
-  // Background strip
-  ctx.fillStyle='rgba(10,0,20,0.85)';
-  ctx.fillRect(0,0,W,44);
+  if(!mission)return;
 
-  // Mission title + desc
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 13px sans-serif';
-  ctx.textAlign='left';
-  ctx.fillText(mission.title,8,16);
-  ctx.fillStyle='#ffffff';
-  ctx.font='10px sans-serif';
-  ctx.fillText(mission.desc,8,30);
+  // Background
+  ctx.fillStyle='rgba(8,0,18,0.92)';
+  ctx.fillRect(0,0,W,HUD_H);
+  // Bottom glow line
+  ctx.fillStyle=mission.id==='sehat'?'#44aa44':mission.id==='protein_cal'?'#4466ff':
+                mission.id==='budget'?'#ffcc00':mission.id==='cal_target'?'#ff8800':'#aa44ff';
+  ctx.fillRect(0,HUD_H-2,W,2);
 
-  // Category progress
+  // ── MISSION TITLE (large, prominent) ──
+  ctx.save();
+  ctx.shadowColor='#ffd700';ctx.shadowBlur=18;
+  ctx.fillStyle='#ffd700';ctx.font='bold 22px sans-serif';ctx.textAlign='left';
+  ctx.fillText(mission.title,8,26);
+  ctx.restore();
+
+  ctx.fillStyle='#eeeeee';ctx.font='12px sans-serif';ctx.textAlign='left';
+  ctx.fillText(mission.desc,8,44);
+
+  // ── CATEGORY CHECKS ──
   const hasFood=cart.some(i=>i.cat==='food');
   const hasDrink=cart.some(i=>i.cat==='drink');
   const hasDessert=cart.some(i=>i.cat==='dessert');
-  const cats=[
-    {label:'\uD83C\uDF7D\uFE0F',ok:hasFood},
-    {label:'\uD83E\uDD64',ok:hasDrink},
-    {label:'\uD83C\uDF6E',ok:hasDessert},
-  ];
+  const cats=[{l:'Makanan',ok:hasFood,c:CAT_COL.food},{l:'Minuman',ok:hasDrink,c:CAT_COL.drink},{l:'Dessert',ok:hasDessert,c:CAT_COL.dessert}];
   cats.forEach((c,i)=>{
-    const cx=300+i*48;
-    ctx.font='14px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillStyle=c.ok?'#44ff44':'#666666';
-    ctx.fillText(c.label+(c.ok?'✓':'✗'),cx,22);
+    const cx=10+i*90;
+    ctx.fillStyle=c.ok?c.c:'rgba(255,255,255,0.18)';
+    rp(cx,HUD_H-30,82,22,4);ctx.fill();
+    ctx.fillStyle=c.ok?'#fff':'#888';ctx.font=(c.ok?'bold ':'')+'10px sans-serif';ctx.textAlign='center';
+    ctx.fillText((c.ok?'✓ ':'')+c.l,cx+41,HUD_H-15);
   });
 
-  // Ratio bar
-  const ratio=mission.ratio(cart);
-  const bx=450, by=8, bw=160, bh=16;
-  ctx.fillStyle='rgba(255,255,255,0.15)';
-  rp(bx,by,bw,bh,4); ctx.fill();
-  ctx.fillStyle=ratio>=1?'#44ff44':'#ffd700';
-  rp(bx,by,Math.max(0,bw*ratio),bh,4); ctx.fill();
-  ctx.fillStyle='#ffffff';
-  ctx.font='bold 10px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText(Math.round(ratio*100)+'%',bx+bw/2,by+12);
+  // ── GOAL PROGRESS BARS (right section) ──
+  const goals=mission.goals;
+  const bStartX=W-340, bEndX=W-110;
+  const bW=bEndX-bStartX;
+  goals.forEach((g,i)=>{
+    const rowY=6+i*22;
+    const val=g.get(cart);
+    const r=goalRatio(g,cart);
+    const done=r>=1;
 
-  // Cal / Price summary
-  ctx.fillStyle='#ffaa44';
-  ctx.font='10px sans-serif';
-  ctx.textAlign='right';
-  ctx.fillText(sumCal(cart)+' kcal  '+fmt(sumPrice(cart)),W-6,16);
-  ctx.fillStyle='#88ddaa';
-  ctx.fillText(cart.length+' item',W-6,30);
-}
+    // Label
+    ctx.fillStyle=done?'#44ff88':'#cccccc';
+    ctx.font=(done?'bold ':'')+'10px sans-serif';ctx.textAlign='right';
+    const dispVal=g.unit==='Rp'?fmt(val):val+(g.unit?(' '+g.unit):'');
+    const dispTarget=g.unit==='Rp'?fmt(g.target):g.target+(g.unit?(' '+g.unit):'');
+    const labelTxt=g.bool?(val?'✓ '+g.label:'✗ '+g.label):g.label+': '+dispVal+' / '+dispTarget;
+    ctx.fillText(labelTxt,bStartX-4,rowY+12);
 
-// ─── DRAW TIMER ───────────────────────────────────────────────────────────────
-function drawTimer(){
+    // Bar track
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    rp(bStartX,rowY+2,bW,14,3);ctx.fill();
+
+    // Bar fill
+    const fillColor=done?'#44ff88':r>0.6?'#ffd700':r>0.3?'#ff9900':'#ff4444';
+    ctx.fillStyle=fillColor;
+    rp(bStartX,rowY+2,Math.max(4,bW*Math.min(1,r)),14,3);ctx.fill();
+
+    // Percentage text
+    ctx.fillStyle=done?'#003300':'#000';
+    ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(Math.round(r*100)+'%',bStartX+bW*Math.min(1,r)/2+2,rowY+12);
+  });
+
+  // ── TIMER (large, right) ──
   const pulse=timer<10&&blinkOn;
   ctx.save();
-  if(pulse){ ctx.shadowColor='#ff2200'; ctx.shadowBlur=20; }
-  ctx.fillStyle=timer<10?'#ff4400':'#ffffff';
-  ctx.font='bold 28px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText(Math.ceil(timer),W/2,H-8);
-  ctx.font='11px sans-serif';
-  ctx.fillStyle='#aaaaaa';
-  ctx.fillText('detik',W/2,H+5);
+  if(pulse){ctx.shadowColor='#ff2200';ctx.shadowBlur=25;}
+  ctx.fillStyle=timer<10?'#ff4400':timer<20?'#ffaa00':'#ffffff';
+  ctx.font='bold 38px sans-serif';ctx.textAlign='center';
+  ctx.fillText(Math.ceil(timer),W-52,52);
   ctx.restore();
+  ctx.fillStyle='#888888';ctx.font='11px sans-serif';ctx.textAlign='center';
+  ctx.fillText('detik',W-52,70);
+
+  // ── LEGEND (small) ──
+  const cats2=[['food','Makanan'],['drink','Minuman'],['dessert','Dessert']];
+  cats2.forEach(([cat,lbl],i)=>{
+    const lx=W-105+i*35,ly=HUD_H-26;
+    ctx.fillStyle=CAT_COL[cat];
+    ctx.fillRect(lx,ly,12,12);
+    ctx.fillStyle='#aaa';ctx.font='8px sans-serif';ctx.textAlign='left';
+    // just color square; label shown in category checks above
+  });
 }
 
 // ─── DRAW CART SIDEBAR ────────────────────────────────────────────────────────
 function drawCart(){
-  const sx=W-185, sy=50, sw=180, sh=H-110;
-  ctx.fillStyle='rgba(0,0,0,0.6)';
-  rp(sx,sy,sw,sh,6); ctx.fill();
+  const sx=W-185,sy=HUD_H+4,sw=180,sh=H-HUD_H-60;
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  rp(sx,sy,sw,sh,6);ctx.fill();
 
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 11px sans-serif';
-  ctx.textAlign='left';
+  ctx.fillStyle='#ffd700';ctx.font='bold 11px sans-serif';ctx.textAlign='left';
   ctx.fillText('🛒 Keranjang',sx+6,sy+16);
+  ctx.fillStyle='#666';ctx.fillRect(sx+4,sy+20,sw-8,1);
 
-  ctx.fillStyle='#888888';
-  ctx.fillRect(sx+4,sy+20,sw-8,1);
-
-  const maxItems=Math.floor((sh-70)/18);
+  const maxItems=Math.floor((sh-70)/17);
   const visible=cart.slice(-maxItems);
-
   visible.forEach((item,i)=>{
-    const iy=sy+30+i*18;
-    ctx.fillStyle='#dddddd';
-    ctx.font='9px sans-serif';
-    ctx.textAlign='left';
-    const name=item.name.length>16?item.name.slice(0,15)+'…':item.name;
-    ctx.fillText(name,sx+6,iy);
-    ctx.fillStyle='#88ddaa';
-    ctx.textAlign='right';
+    const iy=sy+30+i*17;
+    const catC=CAT_COL[item.cat]||'#aaa';
+    ctx.fillStyle=catC;ctx.fillRect(sx+5,iy-8,3,10);
+    ctx.fillStyle='#ddd';ctx.font='9px sans-serif';ctx.textAlign='left';
+    const nm=item.name.length>15?item.name.slice(0,14)+'…':item.name;
+    ctx.fillText(nm,sx+12,iy);
+    ctx.fillStyle='#88ddaa';ctx.textAlign='right';
     ctx.fillText(fmt(item.price),sx+sw-4,iy);
   });
-
   if(cart.length>maxItems){
-    ctx.fillStyle='#666666';
-    ctx.font='9px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText('+'+(cart.length-maxItems)+' lagi',sx+sw/2,sy+32+maxItems*18);
+    ctx.fillStyle='#666';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText('+'+(cart.length-maxItems)+' lagi',sx+sw/2,sy+32+maxItems*17);
   }
 
-  // Totals
-  const by2=sy+sh-50;
-  ctx.fillStyle='rgba(255,255,255,0.1)';
-  ctx.fillRect(sx+4,by2-4,sw-8,1);
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 10px sans-serif';
-  ctx.textAlign='left';
-  ctx.fillText('TOTAL',sx+6,by2+12);
-  ctx.fillStyle='#88ddaa';
-  ctx.textAlign='right';
-  ctx.fillText(fmt(sumPrice(cart)),sx+sw-4,by2+12);
-  ctx.fillStyle='#ffaa44';
-  ctx.fillText(sumCal(cart)+' kcal',sx+sw-4,by2+26);
+  const by2=sy+sh-52;
+  ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fillRect(sx+4,by2-4,sw-8,1);
+  ctx.fillStyle='#ffd700';ctx.font='bold 10px sans-serif';ctx.textAlign='left';ctx.fillText('TOTAL',sx+6,by2+12);
+  ctx.fillStyle='#88ddaa';ctx.textAlign='right';ctx.fillText(fmt(sumPrice(cart)),sx+sw-4,by2+12);
+  ctx.fillStyle='#ffaa44';ctx.fillText(sumCal(cart)+' kcal',sx+sw-4,by2+26);
 }
 
 // ─── DRAW HUD ─────────────────────────────────────────────────────────────────
-function drawHUD(){
-  drawMissionBar();
-  drawTimer();
-  drawCart();
-}
+function drawHUD(){ drawMissionBar(); drawCart(); }
 
 // ─── DRAW FLOAT TEXTS ─────────────────────────────────────────────────────────
 function drawFloatTexts(){
   floatTexts.forEach(ft=>{
-    ctx.save();
-    ctx.globalAlpha=Math.min(1,ft.timer);
-    ctx.fillStyle=ft.color;
-    ctx.font='bold 13px sans-serif';
-    ctx.textAlign='center';
-    ctx.shadowColor=ft.color; ctx.shadowBlur=8;
-    ctx.fillText(ft.text,ft.x+9,ft.y);
-    ctx.restore();
+    ctx.save();ctx.globalAlpha=Math.min(1,ft.timer);
+    ctx.fillStyle=ft.color;ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.shadowColor=ft.color;ctx.shadowBlur=8;
+    ctx.fillText(ft.text,ft.x+9,ft.y);ctx.restore();
   });
 }
 
 // ─── DRAW MOBILE CONTROLS ─────────────────────────────────────────────────────
 function drawMobileControls(){
-  // D-pad background
   ctx.fillStyle='rgba(0,0,0,0.4)';
-  ctx.beginPath(); ctx.arc(DPAD_CX,DPAD_CY,DPAD_R+8,0,Math.PI*2); ctx.fill();
-
-  // D-pad arrows
-  const arrows=[
-    {label:'up',   angle:-Math.PI/2, dx:0, dy:-30},
-    {label:'down', angle: Math.PI/2, dx:0, dy: 30},
-    {label:'left', angle: Math.PI,   dx:-30,dy:0},
-    {label:'right',angle:0,          dx: 30,dy:0},
-  ];
+  ctx.beginPath();ctx.arc(DPAD_CX,DPAD_CY,DPAD_R+8,0,Math.PI*2);ctx.fill();
+  const arrows=[{k:'up',a:-Math.PI/2,dx:0,dy:-30},{k:'down',a:Math.PI/2,dx:0,dy:30},
+                {k:'left',a:Math.PI,dx:-30,dy:0},{k:'right',a:0,dx:30,dy:0}];
   arrows.forEach(a=>{
-    const ax=DPAD_CX+a.dx, ay=DPAD_CY+a.dy;
-    ctx.save();
-    ctx.translate(ax,ay);
-    ctx.rotate(a.angle);
-    ctx.fillStyle=mobileKeys[a.label]?'#ffd700':'rgba(255,255,255,0.7)';
-    ctx.beginPath();
-    ctx.moveTo(0,-10); ctx.lineTo(10,4); ctx.lineTo(-10,4);
-    ctx.closePath(); ctx.fill();
+    ctx.save();ctx.translate(DPAD_CX+a.dx,DPAD_CY+a.dy);ctx.rotate(a.a);
+    ctx.fillStyle=mobileKeys[a.k]?'#ffd700':'rgba(255,255,255,0.7)';
+    ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(10,4);ctx.lineTo(-10,4);ctx.closePath();ctx.fill();
     ctx.restore();
   });
-
-  // BUY button
-  const isNearActive=nearStall!==null&&gameState==='playing'&&player&&player.state==='walk';
-  const isShopping=gameState==='shopping'&&player&&player.state==='shop';
+  const active=(nearStall&&gameState==='playing'&&player&&player.state==='walk')||
+               (gameState==='shopping'&&player&&player.state==='shop');
   ctx.save();
-  if(isNearActive||isShopping){ ctx.shadowColor='#44ff44'; ctx.shadowBlur=18; }
+  if(active){ctx.shadowColor='#44ff44';ctx.shadowBlur=18;}
   ctx.fillStyle=mobileKeys.buy?'#ffd700':'rgba(255,200,0,0.85)';
-  ctx.beginPath(); ctx.arc(BUY_CX,BUY_CY,BUY_R,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#1a0a00';
-  ctx.font='bold 14px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('BELI',BUY_CX,BUY_CY+5);
-  ctx.restore();
+  ctx.beginPath();ctx.arc(BUY_CX,BUY_CY,BUY_R,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a0a00';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+  ctx.fillText('BELI',BUY_CX,BUY_CY+5);ctx.restore();
 }
 
 // ─── DRAW MENU ────────────────────────────────────────────────────────────────
 function drawMenu(){
-  // Background
   const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'#1a0a2e');
-  grad.addColorStop(0.5,'#8b3a10');
-  grad.addColorStop(1,'#c85a20');
-  ctx.fillStyle=grad;
-  ctx.fillRect(0,0,W,H);
+  grad.addColorStop(0,'#1a0a2e');grad.addColorStop(0.5,'#8b3a10');grad.addColorStop(1,'#c85a20');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
 
-  // Silhouette market shapes
-  ctx.fillStyle='rgba(0,0,0,0.3)';
   for(let i=0;i<6;i++){
+    ctx.fillStyle='rgba(0,0,0,0.3)';
     ctx.fillRect(50+i*120,H-120,80,80);
-    // Triangle roofs
-    ctx.beginPath();
-    ctx.moveTo(50+i*120-10,H-120);
-    ctx.lineTo(90+i*120,H-170);
-    ctx.lineTo(130+i*120+10,H-120);
-    ctx.closePath(); ctx.fill();
+    ctx.beginPath();ctx.moveTo(40+i*120,H-120);ctx.lineTo(90+i*120,H-175);ctx.lineTo(140+i*120,H-120);ctx.closePath();ctx.fill();
   }
-
-  // Lanterns
-  const cols=['#ff6600','#ffcc00','#ff3366','#00ccff','#ff6600'];
+  const lc=['#ff6600','#ffcc00','#ff3366','#00ccff','#ff6600'];
   for(let i=0;i<5;i++){
-    const lx=80+i*140, ly=50;
-    ctx.strokeStyle='#5a4020'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(lx-60,ly); ctx.lineTo(lx+80,ly); ctx.stroke();
-    ctx.fillStyle=cols[i];
-    ctx.beginPath(); ctx.ellipse(lx,ly+8,7,12,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='rgba(255,200,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(lx,ly+8,14,18,0,0,Math.PI*2); ctx.fill();
+    const lx=80+i*140,ly=50;
+    ctx.strokeStyle='#5a4020';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(lx-60,ly);ctx.lineTo(lx+80,ly);ctx.stroke();
+    ctx.fillStyle=lc[i];ctx.beginPath();ctx.ellipse(lx,ly+8,7,12,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,200,0,0.3)';ctx.beginPath();ctx.ellipse(lx,ly+8,14,18,0,0,Math.PI*2);ctx.fill();
   }
 
-  // Title
-  ctx.save();
-  ctx.shadowColor='#ffd700'; ctx.shadowBlur=30;
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 64px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('TAKJIL WAR',W/2,160);
-  ctx.restore();
+  ctx.save();ctx.shadowColor='#ffd700';ctx.shadowBlur=30;
+  ctx.fillStyle='#ffd700';ctx.font='bold 64px sans-serif';ctx.textAlign='center';
+  ctx.fillText('TAKJIL WAR',W/2,160);ctx.restore();
 
-  ctx.fillStyle='#ffcc88';
-  ctx.font='20px sans-serif';
-  ctx.textAlign='center';
+  ctx.fillStyle='#ffcc88';ctx.font='20px sans-serif';ctx.textAlign='center';
   ctx.fillText('Beli Makan Sebelum Buka Puasa!',W/2,195);
 
-  // Mission preview
-  const previewMission=MISSION_TYPES[Math.floor((Date.now()/3000)%MISSION_TYPES.length)];
-  ctx.fillStyle='rgba(0,0,0,0.5)';
-  rp(W/2-200,220,400,80,8); ctx.fill();
-  ctx.strokeStyle='#ffd700'; ctx.lineWidth=1;
-  rp(W/2-200,220,400,80,8); ctx.stroke();
+  const prev=MISSION_TYPES[Math.floor((Date.now()/3000)%MISSION_TYPES.length)];
+  ctx.fillStyle='rgba(0,0,0,0.5)';rp(W/2-200,218,400,80,8);ctx.fill();
+  ctx.strokeStyle='#ffd700';ctx.lineWidth=1;rp(W/2-200,218,400,80,8);ctx.stroke();
+  ctx.fillStyle='#ffd700';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Contoh Misi: '+prev.title,W/2,242);
+  ctx.fillStyle='#ccccff';ctx.font='12px sans-serif';ctx.fillText(prev.desc,W/2,262);
+  ctx.fillStyle='#888';ctx.font='11px sans-serif';ctx.fillText('(misi dipilih acak setiap permainan)',W/2,280);
 
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 14px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('Contoh Misi: '+previewMission.title,W/2,244);
-  ctx.fillStyle='#ccccff';
-  ctx.font='12px sans-serif';
-  ctx.fillText(previewMission.desc,W/2,264);
-  ctx.fillStyle='#888888';
-  ctx.font='11px sans-serif';
-  ctx.fillText('(misi dipilih acak setiap permainan)',W/2,284);
+  // Legend
+  ctx.fillStyle='rgba(0,0,0,0.5)';rp(W/2-200,300,400,48,8);ctx.fill();
+  ctx.fillStyle='#ccc';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText('Warna Warung:',W/2,320);
+  const leg=[['food','Makanan'],['drink','Minuman'],['dessert','Dessert']];
+  leg.forEach(([c,l],i)=>{
+    const lx=W/2-90+i*90;
+    ctx.fillStyle=CAT_COL[c];ctx.fillRect(lx-10,325,14,14);
+    ctx.fillStyle='#ddd';ctx.font='10px sans-serif';ctx.textAlign='left';ctx.fillText(l,lx+6,337);
+  });
 
-  // Controls
-  ctx.fillStyle='rgba(0,0,0,0.4)';
-  rp(W/2-200,318,400,80,8); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.4)';rp(W/2-200,356,400,80,8);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('Kontrol',W/2,376);
+  ctx.fillStyle='#ccc';ctx.font='11px sans-serif';
+  ctx.fillText('Keyboard: Arrow Keys  •  SPACE antri/beli  •  ESC tutup',W/2,396);
+  ctx.fillText('Mobile: D-pad kiri  •  Tombol BELI kanan  •  60 detik',W/2,414);
 
-  ctx.fillStyle='#ffffff';
-  ctx.font='bold 12px sans-serif';
-  ctx.fillText('Kontrol',W/2,338);
-  ctx.font='11px sans-serif';
-  ctx.fillStyle='#cccccc';
-  ctx.fillText('Keyboard: Arrow Keys bergerak  •  SPACE untuk antri/beli  •  ESC tutup menu',W/2,360);
-  ctx.fillText('Mobile: D-pad kiri untuk gerak  •  Tombol BELI kanan',W/2,378);
+  ctx.fillStyle='rgba(0,0,0,0.4)';rp(W/2-200,442,400,44,8);ctx.fill();
+  ctx.fillStyle='#ffaaaa';ctx.font='11px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Harus beli: Makanan + Minuman + Dessert',W/2,462);
+  ctx.fillStyle='#aaffaa';ctx.fillText('1 orang antrian = 3 detik  •  Waktu: 60 detik',W/2,478);
 
-  // Rules
-  ctx.fillStyle='rgba(0,0,0,0.4)';
-  rp(W/2-200,410,400,60,8); ctx.fill();
-  ctx.fillStyle='#aaffaa';
-  ctx.font='11px sans-serif';
-  ctx.fillText('Beli makanan + minuman + dessert dari warung yang ada antrenya!',W/2,432);
-  ctx.fillStyle='#ffaaaa';
-  ctx.fillText('1 orang antrian = 3 detik  •  Waktu total: 30 detik',W/2,450);
-
-  // Start prompt
   if(blinkOn){
-    ctx.save();
-    ctx.shadowColor='#ffffff'; ctx.shadowBlur=10;
-    ctx.fillStyle='#ffffff';
-    ctx.font='bold 18px sans-serif';
-    ctx.fillText('KLIK / SPACE UNTUK MULAI',W/2,502);
-    ctx.restore();
+    ctx.save();ctx.shadowColor='#fff';ctx.shadowBlur=10;
+    ctx.fillStyle='#fff';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
+    ctx.fillText('KLIK / SPACE UNTUK MULAI',W/2,520);ctx.restore();
   }
-
-  if(isMobile) drawMobileControls();
+  if(isMobile)drawMobileControls();
 }
 
-// ─── DRAW RESULT ──────────────────────────────────────────────────────────────
+// ─── DRAW RESULT ─────────────────────────────────────────────────────────────
 function drawResult(){
-  ctx.fillStyle='rgba(0,0,0,0.85)';
-  ctx.fillRect(0,0,W,H);
-
-  const s=score;
+  ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fillRect(0,0,W,H);
   ctx.save();
-  if(s>=80){ ctx.shadowColor='#ffd700'; ctx.shadowBlur=30; }
-  ctx.fillStyle=s>=80?'#ffd700':s>=50?'#88ddff':'#ff6666';
-  ctx.font='bold 80px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText(s,W/2,200);
-  ctx.restore();
+  if(score>=80){ctx.shadowColor='#ffd700';ctx.shadowBlur=30;}
+  ctx.fillStyle=score>=80?'#ffd700':score>=50?'#88ddff':'#ff6666';
+  ctx.font='bold 80px sans-serif';ctx.textAlign='center';ctx.fillText(score,W/2,185);ctx.restore();
+  ctx.fillStyle='#fff';ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.fillText('/ 120 POIN',W/2,215);
 
-  ctx.fillStyle='#ffffff';
-  ctx.font='bold 20px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('/ 120 POIN',W/2,230);
-
-  // Mission result
   const passed=mission.check(cart);
-  ctx.fillStyle=passed?'#44ff44':'#ff4444';
-  ctx.font='bold 16px sans-serif';
-  ctx.fillText(passed?'✓ Misi Tercapai!':'✗ Misi Gagal',W/2,265);
+  ctx.fillStyle=passed?'#44ff44':'#ff4444';ctx.font='bold 16px sans-serif';
+  ctx.fillText(passed?'✓ Misi Tercapai!':'✗ Misi Gagal',W/2,248);
 
-  // Category breakdown
-  const hasFood=cart.some(i=>i.cat==='food');
-  const hasDrink=cart.some(i=>i.cat==='drink');
-  const hasDessert=cart.some(i=>i.cat==='dessert');
-  const catRows=[
-    {label:'Makanan', ok:hasFood},
-    {label:'Minuman', ok:hasDrink},
-    {label:'Dessert', ok:hasDessert},
-  ];
-  catRows.forEach((c,i)=>{
-    ctx.fillStyle=c.ok?'#44ff44':'#ff4444';
-    ctx.font='13px sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText((c.ok?'✓':'✗')+' '+c.label,W/2-80+i*80,295);
+  // Goal breakdown
+  mission.goals.forEach((g,i)=>{
+    const r=goalRatio(g,cart);
+    const done=r>=1;
+    ctx.fillStyle=done?'#44ff88':'#ff6666';
+    ctx.font='12px sans-serif';ctx.textAlign='center';
+    const v=g.get(cart);
+    const disp=g.bool?(v?'✓':'\u2717'):g.label+': '+(g.unit==='Rp'?fmt(v):v+(g.unit?' '+g.unit:''))+' / '+(g.unit==='Rp'?fmt(g.target):g.target+(g.unit?' '+g.unit:''));
+    ctx.fillText(disp,W/2-100+i*100,272);
   });
 
-  // Stats
-  ctx.fillStyle='#aaaaff';
-  ctx.font='12px sans-serif';
-  ctx.fillText('Total: '+sumCal(cart)+' kcal  •  '+fmt(sumPrice(cart))+'  •  '+cart.length+' item',W/2,320);
-  ctx.fillText('Sisa waktu: '+Math.ceil(timer)+'s  •  Misi: '+mission.title,W/2,340);
+  // Cat checks
+  const hf=cart.some(i=>i.cat==='food'),hd=cart.some(i=>i.cat==='drink'),hde=cart.some(i=>i.cat==='dessert');
+  [{l:'Makanan',ok:hf},{l:'Minuman',ok:hd},{l:'Dessert',ok:hde}].forEach((c,i)=>{
+    ctx.fillStyle=c.ok?'#44ff44':'#ff4444';ctx.font='13px sans-serif';ctx.textAlign='center';
+    ctx.fillText((c.ok?'✓':'✗')+' '+c.l,W/2-80+i*80,300);
+  });
 
-  // Mission ratio
-  const ratio=mission.ratio(cart);
-  ctx.fillStyle='#cccccc';
-  ctx.fillText('Rasio misi: '+Math.round(ratio*100)+'%',W/2,360);
+  ctx.fillStyle='#aaaaff';ctx.font='12px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Total: '+sumCal(cart)+' kcal  •  '+fmt(sumPrice(cart))+'  •  '+cart.length+' item',W/2,325);
+  ctx.fillText('Sisa waktu: '+Math.ceil(timer)+'s  •  '+mission.title,W/2,345);
 
-  // Cart items bought
-  ctx.fillStyle='rgba(255,255,255,0.1)';
-  rp(W/2-220,375,440,100,6); ctx.fill();
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 11px sans-serif';
-  ctx.fillText('Yang dibeli:',W/2,392);
-  const perRow=3;
+  // Items bought
+  ctx.fillStyle='rgba(255,255,255,0.08)';rp(W/2-220,360,440,110,6);ctx.fill();
+  ctx.fillStyle='#ffd700';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText('Yang dibeli:',W/2,378);
   cart.slice(0,9).forEach((item,i)=>{
-    const col=i%perRow, row=Math.floor(i/perRow);
-    const ix=W/2-160+col*140, iy=408+row*20;
-    ctx.fillStyle='#cccccc';
-    ctx.font='10px sans-serif';
-    const n=item.name.length>16?item.name.slice(0,15)+'…':item.name;
-    ctx.fillText(n,ix,iy);
+    const col=i%3,row=Math.floor(i/3);
+    ctx.fillStyle=CAT_COL[item.cat]||'#aaa';ctx.font='10px sans-serif';ctx.textAlign='left';
+    const nm=item.name.length>16?item.name.slice(0,15)+'…':item.name;
+    ctx.fillText(nm,W/2-155+col*150,396+row*20);
   });
 
-  // Prompt
-  if(blinkOn){
-    ctx.fillStyle='#ffffff';
-    ctx.font='bold 15px sans-serif';
-    ctx.fillText('Klik / SPACE untuk lihat ranking →',W/2,500);
-  }
-
-  if(isMobile) drawMobileControls();
+  if(blinkOn){ctx.fillStyle='#fff';ctx.font='bold 15px sans-serif';ctx.textAlign='center';ctx.fillText('Klik / SPACE untuk lihat ranking \u2192',W/2,500);}
+  if(isMobile)drawMobileControls();
 }
 
 // ─── DRAW RANKING ─────────────────────────────────────────────────────────────
 function drawRanking(){
-  ctx.fillStyle='rgba(0,0,0,0.9)';
-  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,0,0,0.92)';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#ffd700';ctx.font='bold 24px sans-serif';ctx.textAlign='center';
+  ctx.fillText('🏆 PAPAN SKOR — '+mission.title,W/2,45);
 
-  ctx.fillStyle='#ffd700';
-  ctx.font='bold 24px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('🏆 PAPAN SKOR — '+mission.title,W/2,50);
-
-  // Build leaderboard
-  const entries=[
-    {name:'KAMU',score:score,isPlayer:true},
-    ...npcScores,
-  ].sort((a,b)=>b.score-a.score);
-
-  const tw=520, th=42, tx=W/2-tw/2, ty=70;
-  const medals=['🥇','🥈','🥉'];
+  const entries=[{name:'KAMU',score,isPlayer:true},...npcScores].sort((a,b)=>b.score-a.score);
+  const medals=['🥇','🥈','🥉'],tw=520,th=42,tx=W/2-260,ty=65;
 
   entries.forEach((e,i)=>{
     const ey=ty+i*(th+4);
-    if(e.isPlayer){
-      ctx.fillStyle='rgba(255,215,0,0.15)';
-      rp(tx,ey,tw,th,6); ctx.fill();
-      ctx.strokeStyle='#ffd700'; ctx.lineWidth=2;
-      rp(tx,ey,tw,th,6); ctx.stroke();
-    } else {
-      ctx.fillStyle='rgba(255,255,255,0.05)';
-      rp(tx,ey,tw,th,6); ctx.fill();
-    }
-
-    // Medal
-    ctx.font='20px sans-serif';
-    ctx.textAlign='left';
-    ctx.fillText(i<3?medals[i]:(i+1)+'.',tx+10,ey+28);
-
-    // Name
-    ctx.fillStyle=e.isPlayer?'#ffd700':'#ffffff';
+    if(e.isPlayer){ctx.fillStyle='rgba(255,215,0,0.15)';rp(tx,ey,tw,th,6);ctx.fill();
+      ctx.strokeStyle='#ffd700';ctx.lineWidth=2;rp(tx,ey,tw,th,6);ctx.stroke();}
+    else{ctx.fillStyle='rgba(255,255,255,0.04)';rp(tx,ey,tw,th,6);ctx.fill();}
+    ctx.font='20px sans-serif';ctx.textAlign='left';
+    ctx.fillText(i<3?medals[i]:(i+1)+'.',tx+8,ey+28);
+    ctx.fillStyle=e.isPlayer?'#ffd700':'#fff';
     ctx.font=e.isPlayer?'bold 16px sans-serif':'14px sans-serif';
-    ctx.fillText(e.name+(e.isPlayer?' ◄ KAMU':''),tx+56,ey+26);
-
-    // Score bar
-    const barX=tx+220, barW=tw-240, barH=14;
-    ctx.fillStyle='rgba(255,255,255,0.1)';
-    rp(barX,ey+14,barW,barH,4); ctx.fill();
-    const scoreRatio=e.score/120;
-    const barColor=e.score>=80?'#ffd700':e.score>=50?'#44aaff':'#ff6644';
-    ctx.fillStyle=barColor;
-    rp(barX,ey+14,Math.max(0,barW*scoreRatio),barH,4); ctx.fill();
-
-    // Score text
-    ctx.fillStyle=e.isPlayer?'#ffd700':'#ffffff';
-    ctx.font='bold 15px sans-serif';
-    ctx.textAlign='right';
-    ctx.fillText(e.score+' poin',tx+tw-8,ey+26);
+    ctx.fillText(e.name+(e.isPlayer?' ◄':''),tx+52,ey+26);
+    const bx=tx+220,bw=tw-240,bh=14;
+    ctx.fillStyle='rgba(255,255,255,0.1)';rp(bx,ey+14,bw,bh,4);ctx.fill();
+    const sr=e.score/120,bc=e.score>=80?'#ffd700':e.score>=50?'#44aaff':'#ff6644';
+    ctx.fillStyle=bc;rp(bx,ey+14,Math.max(0,bw*sr),bh,4);ctx.fill();
+    ctx.fillStyle=e.isPlayer?'#ffd700':'#fff';ctx.font='bold 15px sans-serif';ctx.textAlign='right';
+    ctx.fillText(e.score+' poin',tx+tw-6,ey+26);
   });
 
-  // Player rank
-  const playerRank=entries.findIndex(e=>e.isPlayer)+1;
-  ctx.fillStyle='#aaffaa';
-  ctx.font='14px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('Kamu peringkat ke-'+playerRank+' dari '+entries.length+' peserta!',W/2,ty+entries.length*(th+4)+20);
+  const rank=entries.findIndex(e=>e.isPlayer)+1;
+  ctx.fillStyle='#aaffaa';ctx.font='14px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Kamu peringkat ke-'+rank+' dari '+entries.length+' peserta!',W/2,ty+entries.length*(th+4)+20);
 
-  // Main Lagi button
-  const bx=W/2-90, by2=H-80;
-  ctx.fillStyle='#ffd700';
-  rp(bx,by2,180,40,8); ctx.fill();
-  ctx.fillStyle='#1a0a00';
-  ctx.font='bold 16px sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('▶ Main Lagi',W/2,by2+26);
-
-  if(isMobile) drawMobileControls();
+  ctx.fillStyle='#ffd700';rp(W/2-90,H-80,180,40,8);ctx.fill();
+  ctx.fillStyle='#1a0a00';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+  ctx.fillText('\u25b6 Main Lagi',W/2,H-53);
+  if(isMobile)drawMobileControls();
 }
 
-// ─── RANKING CLICK → MAIN LAGI ────────────────────────────────────────────────
-canvas.addEventListener('click',e=>{
-  if(gameState!=='ranking') return;
-  const r=canvas.getBoundingClientRect();
-  const scaleX=W/r.width, scaleY=H/r.height;
-  const cx=(e.clientX-r.left)*scaleX;
-  const cy=(e.clientY-r.top)*scaleY;
-  // Main Lagi button area
-  if(cx>=W/2-90&&cx<=W/2+90&&cy>=H-80&&cy<=H-40){
-    gameState='menu';
-  }
-},{capture:false});
-
-// ─── MAIN LOOP ─────────────────────────────────────────────────────────────────
+// ─── MAIN LOOP ────────────────────────────────────────────────────────────────
 let lastTime=0;
 function loop(ts){
   const dt=Math.min((ts-lastTime)/1000,0.05);
   lastTime=ts;
 
+  blinkTimer+=dt;if(blinkTimer>0.5){blinkTimer=0;blinkOn=!blinkOn;}
   ctx.clearRect(0,0,W,H);
-  blinkTimer+=dt;
-  if(blinkTimer>0.5){ blinkTimer=0; blinkOn=!blinkOn; }
 
   switch(gameState){
-    case 'menu':
-      drawMenu();
-      break;
-    case 'playing':
-    case 'queueing':
-    case 'shopping':
+    case 'menu': drawMenu(); break;
+    case 'playing':case 'queueing':case 'shopping':
       update(dt);
-      drawBG();
-      drawMarket();
-      drawFloatTexts();
-      drawPlayer();
-      drawHUD();
-      if(gameState==='queueing') drawQueueBar();
-      if(gameState==='shopping') drawShoppingMenu();
-      if(isMobile) drawMobileControls();
+      drawBG();drawMarket();drawFloatTexts();drawPlayer();drawHUD();
+      if(gameState==='queueing')drawQueueBar();
+      if(gameState==='shopping')drawShoppingMenu();
+      if(isMobile)drawMobileControls();
       break;
-    case 'result':
-      drawResult();
-      break;
-    case 'ranking':
-      drawRanking();
-      break;
+    case 'result':  drawResult();  break;
+    case 'ranking': drawRanking(); break;
   }
-
   requestAnimationFrame(loop);
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-// Pre-generate a mission for the menu preview
 generateMarket();
-requestAnimationFrame(ts=>{ lastTime=ts; loop(ts); });
+requestAnimationFrame(ts=>{lastTime=ts;loop(ts);});
 </script>
 </body>
 </html>
