@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Scandalous 💋</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0d0018 0%, #1a0030 50%, #0d0018 100%);
+      font-family: 'Segoe UI', Helvetica, sans-serif;
+      color: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #app {
+      width: min(390px, 100vw);
+      height: min(780px, 100vh);
+      background: #13131f;
+      border-radius: 32px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 80px rgba(220, 50, 120, 0.35), 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .screen { position: absolute; inset: 0; display: none; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      padding: 18px 20px 10px;
+      background: #13131f;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .topbar h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #ff4d7d, #c44dff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      flex: 1;
+      text-align: center;
+    }
+    .back-btn {
+      width: 32px; height: 32px;
+      cursor: pointer; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      color: #888;
+    }
+    .inbox-btn {
+      width: 32px; height: 32px;
+      cursor: pointer; font-size: 1.3rem;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .match-badge {
+      position: absolute; top: -2px; right: -2px;
+      background: #ff4d7d; color: white;
+      font-size: 0.6rem; font-weight: bold;
+      border-radius: 8px; padding: 1px 4px;
+      min-width: 16px; text-align: center; display: none;
+    }
+    .match-badge.show { display: block; }
+
+    /* ── WELCOME ── */
+    #screen-welcome {
+      background: linear-gradient(180deg, #1a0025 0%, #0d0018 100%);
+      align-items: center; justify-content: center;
+    }
+    .welcome-logo { font-size: 4rem; margin-bottom: 4px; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    .welcome-title {
+      font-size: 2.8rem; font-weight: 900;
+      background: linear-gradient(135deg, #ff4d7d, #c44dff, #ff4d7d);
+      background-size: 200%;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
+      margin-bottom: 6px; letter-spacing: 0.06em;
+    }
+    @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+    .welcome-sub { color: #a888c0; font-size: 0.88rem; margin-bottom: 50px; letter-spacing: 0.04em; }
+    .role-cards { display: flex; gap: 18px; margin-bottom: 40px; }
+    .role-card {
+      width: 140px; padding: 28px 16px;
+      border-radius: 20px; text-align: center;
+      cursor: pointer; border: 2px solid transparent;
+      transition: all 0.22s; background: rgba(255,255,255,0.04);
+    }
+    .role-card:hover { transform: translateY(-4px); border-color: #ff4d7d; background: rgba(255,77,125,0.08); }
+    .role-card .role-emoji { font-size: 2.8rem; display: block; margin-bottom: 10px; }
+    .role-card .role-name { font-weight: 700; font-size: 1rem; color: #f0d0e0; }
+    .role-card .role-sub { font-size: 0.75rem; color: #888; margin-top: 4px; }
+
+    /* ── SETUP ── */
+    #screen-setup { background: #13131f; }
+    .setup-body {
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .setup-body::-webkit-scrollbar { width: 3px; }
+    .setup-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    .setup-section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 16px;
+    }
+    .setup-section h3 {
+      font-size: 0.78rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: #ff4d7d; margin-bottom: 12px;
+    }
+    .setup-section p.desc {
+      font-size: 0.8rem; color: #666;
+      margin-top: -8px; margin-bottom: 12px;
+    }
+    .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid #333; background: transparent;
+      color: #999; font-size: 0.8rem; cursor: pointer;
+      transition: all 0.16s; user-select: none;
+    }
+    .pill:hover { border-color: #ff4d7d; color: #ff8daa; }
+    .pill.selected { border-color: #ff4d7d; background: rgba(255,77,125,0.15); color: #ff4d7d; font-weight: 600; }
+    .budget-display {
+      font-size: 1.6rem; font-weight: 800;
+      color: #ffd700; text-align: center; margin: 8px 0;
+    }
+    input[type=range] {
+      width: 100%; -webkit-appearance: none;
+      height: 4px; border-radius: 2px; background: #333; outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 20px; height: 20px;
+      border-radius: 50%; background: linear-gradient(135deg, #ff4d7d, #c44dff);
+      cursor: pointer; box-shadow: 0 0 8px rgba(255,77,125,0.5);
+    }
+    .continue-btn {
+      margin: 0 20px 20px; padding: 16px;
+      background: linear-gradient(135deg, #ff4d7d, #c44dff);
+      color: white; font-size: 1rem; font-weight: 700;
+      border: none; border-radius: 16px; cursor: pointer;
+      letter-spacing: 0.05em; transition: all 0.18s; flex-shrink: 0;
+    }
+    .continue-btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+
+    /* ── SWIPE ── */
+    #screen-swipe { background: #0e0e1a; }
+    .swipe-area {
+      flex: 1; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .swipe-card {
+      position: absolute; width: 320px;
+      background: #1e1e2e; border-radius: 24px; overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      cursor: grab; user-select: none;
+    }
+    .swipe-card:active { cursor: grabbing; }
+    .swipe-card.snap-back { transition: transform 0.4s cubic-bezier(.175,.885,.32,1.275); }
+    .swipe-card.fly-right {
+      transition: transform 0.5s ease-in, opacity 0.5s;
+      transform: translateX(130%) rotate(28deg) !important; opacity: 0;
+    }
+    .swipe-card.fly-left {
+      transition: transform 0.5s ease-in, opacity 0.5s;
+      transform: translateX(-130%) rotate(-28deg) !important; opacity: 0;
+    }
+    .card-avatar {
+      height: 230px; display: flex; align-items: center;
+      justify-content: center; font-size: 5rem; position: relative;
+    }
+    .card-age-badge {
+      position: absolute; bottom: 10px; right: 12px;
+      background: rgba(0,0,0,0.55); color: #fff;
+      font-size: 0.75rem; padding: 3px 9px; border-radius: 12px;
+    }
+    .card-like-stamp {
+      position: absolute; top: 24px; left: 18px;
+      font-size: 1.8rem; font-weight: 900; color: #00e676;
+      border: 3px solid #00e676; border-radius: 8px;
+      padding: 4px 12px; opacity: 0; transform: rotate(-20deg);
+    }
+    .card-nope-stamp {
+      position: absolute; top: 24px; right: 18px;
+      font-size: 1.8rem; font-weight: 900; color: #ff4d7d;
+      border: 3px solid #ff4d7d; border-radius: 8px;
+      padding: 4px 12px; opacity: 0; transform: rotate(20deg);
+    }
+    .card-info { padding: 14px 18px; }
+    .card-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 2px; }
+    .card-city { font-size: 0.8rem; color: #888; margin-bottom: 8px; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .card-tag {
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 0.7rem; font-weight: 600;
+    }
+    .tag-gold   { background: rgba(255,215,0,0.12); color: #ffd700; border: 1px solid rgba(255,215,0,0.25); }
+    .tag-pink   { background: rgba(255,77,125,0.12); color: #ff4d7d; border: 1px solid rgba(255,77,125,0.25); }
+    .tag-purple { background: rgba(196,77,255,0.12); color: #c44dff; border: 1px solid rgba(196,77,255,0.25); }
+    .tag-teal   { background: rgba(0,188,188,0.12);  color: #00bcbc; border: 1px solid rgba(0,188,188,0.25); }
+    .card-bio { font-size: 0.78rem; color: #aaa; line-height: 1.45; }
+    .swipe-buttons {
+      display: flex; justify-content: center;
+      align-items: center; gap: 20px; padding: 14px 0 18px; flex-shrink: 0;
+    }
+    .swipe-btn {
+      width: 58px; height: 58px; border-radius: 50%; border: none;
+      font-size: 1.5rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .swipe-btn.nope { background: #ff4d7d; }
+    .swipe-btn.nope:hover { transform: scale(1.12); background: #ff1a5c; }
+    .swipe-btn.like { background: #00c853; }
+    .swipe-btn.like:hover { transform: scale(1.12); background: #00a846; }
+    .swipe-btn.super { background: #4daaff; width: 44px; height: 44px; font-size: 1.1rem; }
+    .swipe-btn.super:hover { transform: scale(1.12); }
+    .cards-counter {
+      position: absolute; top: 8px; right: 14px;
+      font-size: 0.73rem; color: #555; z-index: 20;
+    }
+    .key-hint {
+      position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+      font-size: 0.65rem; color: #333; white-space: nowrap;
+    }
+    .empty-swipe {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 12px; color: #666;
+      text-align: center; padding: 40px;
+    }
+    .empty-swipe .ee { font-size: 3.5rem; }
+    .empty-swipe h3 { color: #999; font-size: 1.1rem; }
+    .empty-swipe p { font-size: 0.85rem; line-height: 1.5; }
+    .go-inbox-btn {
+      margin-top: 10px; padding: 12px 28px;
+      background: linear-gradient(135deg, #ff4d7d, #c44dff);
+      color: white; font-weight: 700; font-size: 0.9rem;
+      border: none; border-radius: 14px; cursor: pointer; transition: all 0.18s;
+    }
+    .go-inbox-btn:hover { transform: scale(1.04); }
+
+    /* ── MATCH OVERLAY ── */
+    #match-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 100; gap: 14px;
+    }
+    #match-overlay.show { display: flex; }
+    .match-title {
+      font-size: 2.4rem; font-weight: 900;
+      background: linear-gradient(135deg, #ff4d7d, #ffd700, #c44dff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: pop 0.4s ease-out;
+    }
+    @keyframes pop { 0%{transform:scale(0.4);opacity:0} 100%{transform:scale(1);opacity:1} }
+    .match-avatars { display: flex; gap: 16px; align-items: center; }
+    .match-av {
+      width: 88px; height: 88px; border-radius: 50%;
+      font-size: 3rem; display: flex; align-items: center; justify-content: center;
+      border: 3px solid; animation: pop 0.4s ease-out 0.12s both;
+    }
+    .match-av.player { border-color: #ff4d7d; background: rgba(255,77,125,0.12); }
+    .match-av.them   { border-color: #ffd700; background: rgba(255,215,0,0.10); }
+    .match-heart { font-size: 2rem; }
+    .match-name  { font-size: 1.05rem; color: #e0c0d0; font-weight: 600; text-align: center; }
+    .match-compat{ font-size: 0.85rem; color: #aaa; margin-top: -6px; }
+    .match-btn {
+      padding: 13px 32px;
+      background: linear-gradient(135deg, #ff4d7d, #c44dff);
+      color: white; font-weight: 700; font-size: 0.9rem;
+      border: none; border-radius: 14px; cursor: pointer; transition: all 0.18s;
+    }
+    .match-btn:hover { transform: scale(1.04); }
+    .match-btn.ghost { background: rgba(255,255,255,0.07); margin-top: -6px; }
+    .confetti-piece {
+      position: absolute; border-radius: 50%;
+      animation: cffall 1.6s ease-in forwards;
+    }
+    @keyframes cffall {
+      0%   { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(820px) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── INBOX ── */
+    #screen-inbox { background: #13131f; }
+    .inbox-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
+    .inbox-body::-webkit-scrollbar { width: 3px; }
+    .inbox-body::-webkit-scrollbar-thumb { background: #333; }
+    .inbox-empty {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; padding: 60px 20px; color: #666; text-align: center;
+    }
+    .inbox-empty .ie { font-size: 3rem; }
+    .match-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 12px; border-radius: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 10px; animation: pop 0.3s ease-out;
+    }
+    .match-row-av {
+      width: 54px; height: 54px; border-radius: 50%;
+      font-size: 1.9rem; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; border: 2px solid rgba(255,215,0,0.35);
+      background: rgba(255,215,0,0.07);
+    }
+    .match-row-info { flex: 1; }
+    .match-row-name { font-weight: 700; font-size: 0.93rem; margin-bottom: 2px; }
+    .match-row-sub  { font-size: 0.72rem; color: #888; }
+    .match-row-sub2 { font-size: 0.7rem; color: #555; margin-top: 2px; }
+    .match-row-compat { font-size: 0.9rem; font-weight: 700; color: #ffd700; }
+
+    @media (max-width: 420px) {
+      #app { border-radius: 0; width: 100vw; height: 100svh; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- WELCOME -->
+  <div class="screen" id="screen-welcome">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px">
+      <div class="welcome-logo">💋</div>
+      <div class="welcome-title">Scandalous</div>
+      <div class="welcome-sub">Temukan pasangan impianmu</div>
+      <div class="role-cards">
+        <div class="role-card" onclick="chooseRole('daddy')">
+          <span class="role-emoji">🎩</span>
+          <div class="role-name">Sugar Daddy</div>
+          <div class="role-sub">Berikan yang terbaik</div>
+        </div>
+        <div class="role-card" onclick="chooseRole('baby')">
+          <span class="role-emoji">💄</span>
+          <div class="role-name">Sugar Baby</div>
+          <div class="role-sub">Tampil memukau</div>
+        </div>
+      </div>
+      <div style="font-size:0.72rem;color:#444;text-align:center;max-width:270px;line-height:1.5">
+        Pilih peranmu, isi profil apa yang kamu <em style="color:#666">tawarkan</em>, lalu mulai swipe!
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="screen" id="screen-setup">
+    <div class="topbar">
+      <div class="back-btn" onclick="showScreen('welcome')">←</div>
+      <h2 id="setup-title">Profil</h2>
+      <div style="width:32px"></div>
+    </div>
+    <div class="setup-body" id="setup-body"></div>
+    <button class="continue-btn" id="setup-continue" onclick="startSwiping()">Mulai Swipe 🔥</button>
+  </div>
+
+  <!-- SWIPE -->
+  <div class="screen" id="screen-swipe">
+    <div class="topbar">
+      <div style="width:32px"></div>
+      <h2>Scandalous 💋</h2>
+      <div class="inbox-btn" onclick="showScreen('inbox')">
+        💌
+        <div class="match-badge" id="match-badge">0</div>
+      </div>
+    </div>
+    <div class="swipe-area" id="swipe-area">
+      <div class="cards-counter" id="cards-counter"></div>
+      <div class="key-hint">← Nope &nbsp;|&nbsp; ↑ Super ⭐ &nbsp;|&nbsp; → Like</div>
+    </div>
+    <div class="swipe-buttons">
+      <button class="swipe-btn nope"  onclick="doSwipe('left')"  title="Nope (← arrow)">✕</button>
+      <button class="swipe-btn super" onclick="doSwipe('super')" title="Super Like (↑ arrow)">⭐</button>
+      <button class="swipe-btn like"  onclick="doSwipe('right')" title="Like (→ arrow)">♥</button>
+    </div>
+  </div>
+
+  <!-- INBOX -->
+  <div class="screen" id="screen-inbox">
+    <div class="topbar">
+      <div class="back-btn" onclick="showScreen('swipe')">←</div>
+      <h2>Matches 💌</h2>
+      <div style="width:32px"></div>
+    </div>
+    <div class="inbox-body" id="inbox-body"></div>
+  </div>
+
+  <!-- MATCH OVERLAY -->
+  <div id="match-overlay">
+    <div class="match-title">IT'S A MATCH! 🔥</div>
+    <div class="match-avatars">
+      <div class="match-av player" id="mo-player-av">🎩</div>
+      <div class="match-heart">❤️</div>
+      <div class="match-av them"   id="mo-them-av">💄</div>
+    </div>
+    <div class="match-name"   id="mo-name"></div>
+    <div class="match-compat" id="mo-compat"></div>
+    <button class="match-btn"       onclick="dismissMatch()">Lanjut Swipe →</button>
+    <button class="match-btn ghost" onclick="dismissMatch();showScreen('inbox')">Lihat Semua Match 💌</button>
+  </div>
+
+</div>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// POOL DATA
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DADDY_POOL = [
+  { name:'Pak Rudi',    age:48, city:'Jakarta Selatan', emoji:'🧔',  avatarBg:'linear-gradient(135deg,#1a2a4a,#2a4a6a)',
+    budget:50000000, housing:'apartment',   car:'mewah',    vacation:20000000,
+    bio:'Pengusaha properti, suka nonton bola dan makan sate bersama.' },
+  { name:'Pak Hendra',  age:52, city:'Surabaya',        emoji:'👨‍💼', avatarBg:'linear-gradient(135deg,#2a1a0a,#4a3a1a)',
+    budget:30000000, housing:'apartment',   car:'menengah', vacation:10000000,
+    bio:'Direktur logistik, hobi golf dan travel Asia setiap tahun.' },
+  { name:'Om Dedi',     age:45, city:'Bandung',         emoji:'🕵️', avatarBg:'linear-gradient(135deg,#1a0a2a,#3a1a5a)',
+    budget:20000000, housing:'kost',        car:'ekonomi',  vacation:0,
+    bio:'Konsultan IT freelance, senang hiking dan kopi specialty.' },
+  { name:'Pak Surya',   age:55, city:'Bali',            emoji:'🌴', avatarBg:'linear-gradient(135deg,#0a2a1a,#1a5a3a)',
+    budget:100000000,housing:'prime_house', car:'supercar', vacation:50000000,
+    bio:'Investor forex, punya villa di Seminyak dan yacht pribadi.' },
+  { name:'Pak Anton',   age:49, city:'Jakarta Barat',   emoji:'💼', avatarBg:'linear-gradient(135deg,#1a1a0a,#3a3a1a)',
+    budget:40000000, housing:'apartment',   car:'mewah',    vacation:20000000,
+    bio:'COO perusahaan retail nasional, suka wine dan jazz malam.' },
+  { name:'Mas Bayu',    age:38, city:'Yogyakarta',      emoji:'🎸', avatarBg:'linear-gradient(135deg,#2a0a1a,#4a1a2a)',
+    budget:15000000, housing:'kost',        car:'ekonomi',  vacation:0,
+    bio:'Musisi dan content creator, traveling keliling Indonesia.' },
+  { name:'Pak Wahyu',   age:51, city:'Medan',           emoji:'🏗️', avatarBg:'linear-gradient(135deg,#1a0a0a,#4a1a1a)',
+    budget:75000000, housing:'prime_house', car:'supercar', vacation:30000000,
+    bio:'Developer perumahan, koleksi jam tangan luxury dan mobil klasik.' },
+  { name:'Bang Ferry',  age:43, city:'Makassar',        emoji:'⚓', avatarBg:'linear-gradient(135deg,#0a1a2a,#1a3a4a)',
+    budget:25000000, housing:'apartment',   car:'menengah', vacation:10000000,
+    bio:'Pengusaha ekspor ikan, hobi memancing dan scuba diving.' },
+  { name:'Pak Eko',     age:47, city:'Semarang',        emoji:'🏭', avatarBg:'linear-gradient(135deg,#1a1a1a,#3a3a3a)',
+    budget:35000000, housing:'apartment',   car:'menengah', vacation:10000000,
+    bio:'Direktur pabrik tekstil, rutin badminton dan senang memasak.' },
+  { name:'Bro Kevin',   age:36, city:'Jakarta Utara',   emoji:'🌟', avatarBg:'linear-gradient(135deg,#0a0a2a,#1a1a5a)',
+    budget:60000000, housing:'prime_house', car:'mewah',    vacation:30000000,
+    bio:'Startup founder yang sudah IPO, digital nomad part-time.' },
+  { name:'Pak Slamet',  age:58, city:'Solo',            emoji:'🎋', avatarBg:'linear-gradient(135deg,#1a2a0a,#3a4a1a)',
+    budget:10000000, housing:'kost',        car:'ekonomi',  vacation:0,
+    bio:'Pensiunan PNS, gemar berkebun dan membaca buku sejarah.' },
+  { name:'Mas Rizky',   age:40, city:'Tangerang',       emoji:'✈️', avatarBg:'linear-gradient(135deg,#0a1a1a,#1a4a4a)',
+    budget:45000000, housing:'apartment',   car:'mewah',    vacation:20000000,
+    bio:'Pilot maskapai nasional, hobi photography dan aviation.' },
+];
+
+const BABY_POOL = [
+  { name:'Sari',   age:22, city:'Jakarta Selatan', emoji:'👸', avatarBg:'linear-gradient(135deg,#2a0a1a,#5a1a3a)',
+    availability:'3x/week', education:'S1',  status:'mahasiswi',
+    bio:'Anak Fisip UI, suka K-drama dan explore restoran baru.' },
+  { name:'Dewi',   age:24, city:'Bandung',         emoji:'🌸', avatarBg:'linear-gradient(135deg,#1a0a2a,#4a1a5a)',
+    availability:'1x/week', education:'S1',  status:'wanita_karir',
+    bio:'Brand manager di startup fashion, hobi pilates dan yoga.' },
+  { name:'Nadia',  age:21, city:'Surabaya',        emoji:'🦋', avatarBg:'linear-gradient(135deg,#0a1a2a,#1a3a5a)',
+    availability:'2x/month',education:'SMA', status:'tidak_bekerja',
+    bio:'Fresh graduate SMA, prepare S1. Suka baking dan skin care.' },
+  { name:'Putri',  age:26, city:'Bali',            emoji:'🌺', avatarBg:'linear-gradient(135deg,#2a1a0a,#5a3a1a)',
+    availability:'daily',   education:'S1',  status:'entrepreneur',
+    bio:'Online shop owner 200k followers IG, digital creator penuh ide.' },
+  { name:'Alya',   age:23, city:'Yogyakarta',      emoji:'🎓', avatarBg:'linear-gradient(135deg,#0a2a0a,#1a5a2a)',
+    availability:'1x/month',education:'S2',  status:'mahasiswi',
+    bio:'Mahasiswi S2 Ekonomi UGM, riset ekonomi digital dan fintech.' },
+  { name:'Rara',   age:25, city:'Jakarta Barat',   emoji:'💅', avatarBg:'linear-gradient(135deg,#2a0a0a,#5a1a1a)',
+    availability:'3x/week', education:'D3',  status:'wanita_karir',
+    bio:'Beauty consultant brand Korea, freelance MUA di wedding.' },
+  { name:'Tika',   age:27, city:'Medan',           emoji:'🌿', avatarBg:'linear-gradient(135deg,#0a2a1a,#1a5a3a)',
+    availability:'1x/week', education:'S1',  status:'wanita_karir',
+    bio:'Dokter muda di klinik swasta, suka hiking dan lari pagi.' },
+  { name:'Cindy',  age:20, city:'Jakarta Timur',   emoji:'✨', avatarBg:'linear-gradient(135deg,#1a1a2a,#3a3a5a)',
+    availability:'2x/month',education:'SMA', status:'mahasiswi',
+    bio:'Maba FEB Trisakti, aktif di BEM, hobi menyanyi dan dance.' },
+  { name:'Mega',   age:28, city:'Makassar',        emoji:'🦩', avatarBg:'linear-gradient(135deg,#2a0a2a,#5a1a5a)',
+    availability:'2x/month',education:'S1',  status:'entrepreneur',
+    bio:'Founder catering halal, ex-atlet renang, suka masak fusion.' },
+  { name:'Wulan',  age:22, city:'Semarang',        emoji:'🌙', avatarBg:'linear-gradient(135deg,#0a0a2a,#1a1a5a)',
+    availability:'1x/week', education:'S1',  status:'mahasiswi',
+    bio:'Anak Undip Arsitektur, illustrator freelance part-time.' },
+  { name:'Fira',   age:24, city:'Tangerang',       emoji:'🎤', avatarBg:'linear-gradient(135deg,#2a1a1a,#5a3a3a)',
+    availability:'3x/week', education:'D3',  status:'wanita_karir',
+    bio:'Penyiar radio dan host event, 50k followers TikTok.' },
+  { name:'Bella',  age:26, city:'Solo',            emoji:'🌹', avatarBg:'linear-gradient(135deg,#1a0a2a,#3a1a5a)',
+    availability:'daily',   education:'S1',  status:'entrepreneur',
+    bio:'Wedding organizer muda, suka travel dan photography landscape.' },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+let playerRole    = '';
+let playerProfile = {};
+let playerEmoji   = '🎩';
+let playerScore   = 0;
+let cardPool      = [];
+let cardIdx       = 0;
+let matches       = [];
+
+// Drag
+let dragCard  = null;
+let dragSX    = 0;
+let dragging  = false;
+let dragDX    = 0;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCORING
+// ─────────────────────────────────────────────────────────────────────────────
+
+function calcDaddyScore(p) {
+  const b = { 5000000:5,10000000:15,20000000:28,30000000:40,40000000:52,50000000:63,75000000:78,100000000:100 };
+  const h = { none:0, kost:10, apartment:28, prime_house:50 };
+  const c = { none:0, ekonomi:8, menengah:22, mewah:38, supercar:50 };
+  const v = { 0:0, 10000000:10, 20000000:20, 30000000:30, 50000000:50 };
+  return Math.round((b[p.budget]||0)*0.40 + (h[p.housing]||0)*0.25 + (c[p.car]||0)*0.20 + (v[p.vacation]||0)*0.15);
+}
+
+function calcBabyScore(p) {
+  const a = { '1x/month':18,'2x/month':38,'1x/week':55,'3x/week':75,'daily':100 };
+  const e = { SMA:15, D3:40, S1:70, S2:100 };
+  const s = { tidak_bekerja:8, mahasiswi:32, entrepreneur:68, wanita_karir:90 };
+  return Math.round((a[p.availability]||0)*0.45 + (e[p.education]||0)*0.25 + (s[p.status]||0)*0.30);
+}
+
+function likeBackProb(ps) { return Math.min(0.95, 0.12 + ps / 108); }
+
+function compatPct(ps, cs) { return Math.max(32, Math.round(100 - Math.abs(ps - cs) * 0.48)); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SETUP FORM
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BUDGETS = [5,10,20,30,40,50,75,100].map(m => m * 1000000);
+
+function fmtBudget(v) {
+  return `Rp ${(v / 1000000).toFixed(0)}.000.000`;
+}
+
+function buildSetupForm(role) {
+  const body = document.getElementById('setup-body');
+  if (role === 'daddy') {
+    playerProfile = { budget: BUDGETS[2], housing:'apartment', car:'menengah', vacation:10000000 };
+    body.innerHTML = `
+      <div class="setup-section">
+        <h3>Peran</h3>
+        <div style="background:rgba(255,77,125,0.06);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:2rem;margin-bottom:6px">🎩</div>
+          <div style="font-size:0.82rem;color:#c088a0">Sugar Daddy — Sosok yang memberikan support &amp; pengalaman terbaik untuk pasangannya</div>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Budget Bulanan</h3>
+        <div class="budget-display" id="budget-display">${fmtBudget(BUDGETS[2])}</div>
+        <input type="range" id="budget-slider" min="0" max="7" value="2" oninput="onBudgetChange(this.value)">
+        <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:#555;margin-top:4px">
+          <span>5 Jt</span><span>100 Jt</span>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Fasilitas Hunian</h3>
+        <div class="pill-group" id="housing-group">
+          <div class="pill"          onclick="selectPill('housing','none',this)">Tidak Ada 😅</div>
+          <div class="pill"          onclick="selectPill('housing','kost',this)">Kost 🏠</div>
+          <div class="pill selected" onclick="selectPill('housing','apartment',this)">Apartment 🏢</div>
+          <div class="pill"          onclick="selectPill('housing','prime_house',this)">Rumah Mewah 🏡</div>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Fasilitas Kendaraan</h3>
+        <div class="pill-group" id="car-group">
+          <div class="pill"          onclick="selectPill('car','none',this)">Tidak Ada</div>
+          <div class="pill"          onclick="selectPill('car','ekonomi',this)">Ekonomi 🚗</div>
+          <div class="pill selected" onclick="selectPill('car','menengah',this)">Menengah 🚙</div>
+          <div class="pill"          onclick="selectPill('car','mewah',this)">Mewah 🏎️</div>
+          <div class="pill"          onclick="selectPill('car','supercar',this)">Supercar 🚀</div>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Budget Liburan / Tahun</h3>
+        <div class="pill-group" id="vacation-group">
+          <div class="pill"          onclick="selectPill('vacation',0,this)">Skip 😬</div>
+          <div class="pill selected" onclick="selectPill('vacation',10000000,this)">Rp 10 Jt ✈️</div>
+          <div class="pill"          onclick="selectPill('vacation',20000000,this)">Rp 20 Jt 🏝️</div>
+          <div class="pill"          onclick="selectPill('vacation',30000000,this)">Rp 30 Jt 🌍</div>
+          <div class="pill"          onclick="selectPill('vacation',50000000,this)">Rp 50 Jt 💎</div>
+        </div>
+      </div>`;
+  } else {
+    playerProfile = { availability:'1x/week', education:'S1', status:'wanita_karir' };
+    body.innerHTML = `
+      <div class="setup-section">
+        <h3>Peran</h3>
+        <div style="background:rgba(196,77,255,0.06);border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:2rem;margin-bottom:6px">💄</div>
+          <div style="font-size:0.82rem;color:#c088d0">Sugar Baby — Cantik, cerdas, dan tahu apa yang diinginkan</div>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Ketersediaan (Availability)</h3>
+        <div class="pill-group" id="availability-group">
+          <div class="pill"          onclick="selectPill('availability','1x/month',this)">1x / Bulan 🌙</div>
+          <div class="pill"          onclick="selectPill('availability','2x/month',this)">2x / Bulan 🌟</div>
+          <div class="pill selected" onclick="selectPill('availability','1x/week',this)">1x / Minggu ⭐</div>
+          <div class="pill"          onclick="selectPill('availability','3x/week',this)">3x / Minggu 🔥</div>
+          <div class="pill"          onclick="selectPill('availability','daily',this)">Setiap Hari 💫</div>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Pendidikan Terakhir</h3>
+        <div class="pill-group" id="education-group">
+          <div class="pill"          onclick="selectPill('education','SMA',this)">SMA / SMK 📚</div>
+          <div class="pill"          onclick="selectPill('education','D3',this)">D3 Diploma 🎓</div>
+          <div class="pill selected" onclick="selectPill('education','S1',this)">S1 / Sarjana 🏫</div>
+          <div class="pill"          onclick="selectPill('education','S2',this)">S2 / Master 👑</div>
+        </div>
+      </div>
+      <div class="setup-section">
+        <h3>Status Profesional</h3>
+        <div class="pill-group" id="status-group">
+          <div class="pill"          onclick="selectPill('status','tidak_bekerja',this)">Tidak Bekerja 🏠</div>
+          <div class="pill"          onclick="selectPill('status','mahasiswi',this)">Mahasiswi 🎒</div>
+          <div class="pill"          onclick="selectPill('status','entrepreneur',this)">Entrepreneur 💼</div>
+          <div class="pill selected" onclick="selectPill('status','wanita_karir',this)">Wanita Karir 👩‍💼</div>
+        </div>
+      </div>`;
+  }
+}
+
+function onBudgetChange(idx) {
+  const val = BUDGETS[parseInt(idx)];
+  playerProfile.budget = val;
+  document.getElementById('budget-display').textContent = fmtBudget(val);
+}
+
+function selectPill(field, value, el) {
+  const grp = el.closest('.pill-group');
+  if (grp) grp.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  playerProfile[field] = (typeof value === 'number') ? value : value;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREENS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'inbox') renderInbox();
+}
+
+function chooseRole(role) {
+  playerRole  = role;
+  playerEmoji = role === 'daddy' ? '🎩' : '💄';
+  document.getElementById('setup-title').textContent =
+    role === 'daddy' ? '🎩 Profil Sugar Daddy' : '💄 Profil Sugar Baby';
+  buildSetupForm(role);
+  showScreen('setup');
+}
+
+function startSwiping() {
+  const pool = playerRole === 'daddy' ? [...BABY_POOL] : [...DADDY_POOL];
+  cardPool = pool.sort(() => Math.random() - 0.5);
+  cardIdx  = 0;
+  matches  = [];
+
+  playerScore = playerRole === 'daddy'
+    ? calcDaddyScore(playerProfile)
+    : calcBabyScore(playerProfile);
+
+  const prob = likeBackProb(playerScore);
+  cardPool.forEach(c => {
+    c._cs         = playerRole === 'daddy' ? calcBabyScore(c) : calcDaddyScore(c);
+    c._likesBack  = Math.random() < prob;
+  });
+
+  renderSwipeArea();
+  updateBadge();
+  showScreen('swipe');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CARD TAGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function tagsForDaddy(p) {
+  const t = [];
+  t.push({ text:`Rp ${(p.budget/1000000).toFixed(0)}Jt/bln`, cls:'tag-gold' });
+  const hm = { kost:'🏠 Kost', apartment:'🏢 Apartment', prime_house:'🏡 Rumah Mewah' };
+  if (hm[p.housing]) t.push({ text:hm[p.housing], cls: p.housing==='prime_house'?'tag-gold':'tag-purple' });
+  const cm = { ekonomi:'🚗 Ekonomi', menengah:'🚙 Menengah', mewah:'🏎️ Mewah', supercar:'🚀 Supercar' };
+  if (cm[p.car]) t.push({ text:cm[p.car], cls: p.car==='supercar'||p.car==='mewah'?'tag-pink':'tag-teal' });
+  if (p.vacation >= 30000000) t.push({ text:'✈️ Liburan Mewah', cls:'tag-gold' });
+  else if (p.vacation >= 10000000) t.push({ text:'🏝️ Liburan', cls:'tag-teal' });
+  return t;
+}
+
+function tagsForBaby(p) {
+  const t = [];
+  const al = {'1x/month':'1x/Bln','2x/month':'2x/Bln','1x/week':'1x/Mgg','3x/week':'3x/Mgg','daily':'Daily'};
+  t.push({ text: al[p.availability]||p.availability, cls:'tag-pink' });
+  t.push({ text: p.education, cls:'tag-purple' });
+  const sl = { tidak_bekerja:'Tidak Bekerja', mahasiswi:'Mahasiswi', entrepreneur:'Entrepreneur', wanita_karir:'Wanita Karir' };
+  t.push({ text: sl[p.status]||p.status, cls:'tag-teal' });
+  return t;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SWIPE AREA
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderSwipeArea() {
+  const area = document.getElementById('swipe-area');
+  // Keep static children (counter + key hint) — rebuild dynamic cards
+  const counter  = area.querySelector('.cards-counter');
+  const keyHint  = area.querySelector('.key-hint');
+  // Remove old cards
+  area.querySelectorAll('.swipe-card').forEach(c => c.remove());
+
+  if (cardIdx >= cardPool.length) {
+    area.innerHTML = `
+      <div class="empty-swipe">
+        <div class="ee">🎉</div>
+        <h3>Semua profil sudah dilihat!</h3>
+        <p>Kamu telah swipe ${cardPool.length} profil.<br>Cek match-mu sekarang!</p>
+        <button class="go-inbox-btn" onclick="showScreen('inbox')">
+          Lihat ${matches.length} Match 💌
+        </button>
+      </div>`;
+    return;
+  }
+
+  if (counter) counter.textContent = `${cardIdx + 1} / ${cardPool.length}`;
+
+  // Render up to 3 stacked cards back-to-front
+  const end = Math.min(cardIdx + 3, cardPool.length);
+  for (let k = end - 1; k >= cardIdx; k--) {
+    const p   = cardPool[k];
+    const off = k - cardIdx;
+    const tags = playerRole === 'daddy' ? tagsForBaby(p) : tagsForDaddy(p);
+    const tagsHTML = tags.map(t => `<span class="card-tag ${t.cls}">${t.text}</span>`).join('');
+
+    const card = document.createElement('div');
+    card.className = 'swipe-card';
+    if (k === cardIdx) card.id = 'top-card';
+    card.style.transform = `scale(${1 - off * 0.025}) translateY(${off * 8}px)`;
+    card.style.zIndex    = 10 - off;
+    card.innerHTML = `
+      <div class="card-avatar" style="background:${p.avatarBg}">
+        <span style="filter:drop-shadow(0 2px 10px rgba(0,0,0,0.5))">${p.emoji}</span>
+        <div class="card-age-badge">${p.age} thn · ${p.city}</div>
+        <div class="card-like-stamp" id="ls">SUKA!</div>
+        <div class="card-nope-stamp" id="ns">NOPE</div>
+      </div>
+      <div class="card-info">
+        <div class="card-name">${p.name}</div>
+        <div class="card-city">${p.city}</div>
+        <div class="card-tags">${tagsHTML}</div>
+        <div class="card-bio">${p.bio}</div>
+      </div>`;
+    if (k === cardIdx) addDrag(card);
+    area.appendChild(card);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRAG
+// ─────────────────────────────────────────────────────────────────────────────
+
+function addDrag(card) {
+  card.addEventListener('mousedown',  startDrag);
+  card.addEventListener('touchstart', startDrag, { passive:true });
+}
+
+function startDrag(e) {
+  const tc = document.getElementById('top-card');
+  if (!tc) return;
+  dragCard = tc;
+  dragging = true;
+  dragDX   = 0;
+  dragSX   = e.touches ? e.touches[0].clientX : e.clientX;
+  dragCard.style.transition = 'none';
+}
+
+document.addEventListener('mousemove', moveDrag);
+document.addEventListener('touchmove', moveDrag, { passive:true });
+
+function moveDrag(e) {
+  if (!dragging || !dragCard) return;
+  dragDX = (e.touches ? e.touches[0].clientX : e.clientX) - dragSX;
+  const rot = dragDX * 0.07;
+  dragCard.style.transform = `translateX(${dragDX}px) rotate(${rot}deg)`;
+  const ls = dragCard.querySelector('#ls');
+  const ns = dragCard.querySelector('#ns');
+  if (ls) ls.style.opacity = dragDX >  30 ? Math.min(1,(dragDX -30)/55) : 0;
+  if (ns) ns.style.opacity = dragDX < -30 ? Math.min(1,(-dragDX-30)/55) : 0;
+}
+
+document.addEventListener('mouseup',  endDrag);
+document.addEventListener('touchend', endDrag);
+
+function endDrag() {
+  if (!dragging || !dragCard) return;
+  dragging = false;
+  const dx = dragDX;
+  dragCard  = null;
+  const card = document.getElementById('top-card');
+  if (!card) return;
+  if (dx > 85) {
+    flyCard(card, 'right');
+  } else if (dx < -85) {
+    flyCard(card, 'left');
+  } else {
+    // Snap back
+    card.classList.add('snap-back');
+    card.style.transform = '';
+    const ls = card.querySelector('#ls');
+    const ns = card.querySelector('#ns');
+    if (ls) ls.style.opacity = 0;
+    if (ns) ns.style.opacity = 0;
+    card.addEventListener('transitionend', () => card.classList.remove('snap-back'), { once:true });
+  }
+}
+
+function flyCard(card, dir) {
+  const isLike = dir === 'right' || dir === 'super';
+  card.classList.add(isLike ? 'fly-right' : 'fly-left');
+  if (isLike) processLike();
+  card.addEventListener('transitionend', () => {
+    cardIdx++;
+    renderSwipeArea();
+    updateBadge();
+  }, { once:true });
+}
+
+function doSwipe(dir) {
+  if (cardIdx >= cardPool.length) return;
+  const card = document.getElementById('top-card');
+  if (!card) return;
+  flyCard(card, dir);
+}
+
+function processLike() {
+  const p = cardPool[cardIdx];
+  if (!p._likesBack) return;
+  const cp = compatPct(playerScore, p._cs);
+  matches.push({ profile:p, compat:cp });
+  setTimeout(() => showMatchOverlay(p, cp), 520);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MATCH OVERLAY
+// ─────────────────────────────────────────────────────────────────────────────
+
+function showMatchOverlay(p, cp) {
+  document.getElementById('mo-player-av').textContent = playerEmoji;
+  document.getElementById('mo-them-av').textContent   = p.emoji;
+  document.getElementById('mo-name').textContent      = `Kamu & ${p.name} cocok! 💖`;
+  document.getElementById('mo-compat').textContent    = `Kompatibilitas: ${cp}%`;
+  spawnConfetti();
+  document.getElementById('match-overlay').classList.add('show');
+}
+
+function dismissMatch() {
+  document.getElementById('match-overlay').classList.remove('show');
+  document.querySelectorAll('.confetti-piece').forEach(c => c.remove());
+}
+
+function spawnConfetti() {
+  const ol     = document.getElementById('match-overlay');
+  const colors = ['#ff4d7d','#ffd700','#c44dff','#00c853','#4daaff','#ff6b35'];
+  for (let i = 0; i < 44; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left             = Math.random() * 100 + '%';
+    el.style.top              = '-16px';
+    el.style.background       = colors[Math.floor(Math.random() * colors.length)];
+    const sz = 5 + Math.random() * 9;
+    el.style.width            = sz + 'px';
+    el.style.height           = sz + 'px';
+    el.style.borderRadius     = Math.random() > 0.5 ? '50%' : '3px';
+    el.style.animationDelay   = (Math.random() * 0.9) + 's';
+    el.style.animationDuration= (1.2 + Math.random() * 0.9) + 's';
+    ol.appendChild(el);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INBOX
+// ─────────────────────────────────────────────────────────────────────────────
+
+function updateBadge() {
+  const b = document.getElementById('match-badge');
+  if (matches.length > 0) {
+    b.textContent = matches.length;
+    b.classList.add('show');
+  } else {
+    b.classList.remove('show');
+  }
+}
+
+function renderInbox() {
+  const body = document.getElementById('inbox-body');
+  if (matches.length === 0) {
+    body.innerHTML = `
+      <div class="inbox-empty">
+        <div class="ie">💔</div>
+        <div style="color:#888;font-weight:600">Belum ada match</div>
+        <div style="font-size:0.8rem;color:#555;margin-top:4px">Terus swipe dan temukan pasanganmu!</div>
+      </div>`;
+    return;
+  }
+  body.innerHTML = '';
+  const sl = { tidak_bekerja:'Tidak Bekerja', mahasiswi:'Mahasiswi', entrepreneur:'Entrepreneur', wanita_karir:'Wanita Karir' };
+  const al = { '1x/month':'1x/Bln','2x/month':'2x/Bln','1x/week':'1x/Mgg','3x/week':'3x/Mgg','daily':'Daily' };
+  [...matches].sort((a,b) => b.compat - a.compat).forEach(m => {
+    const p   = m.profile;
+    const sub = p.availability
+      ? `${al[p.availability]||p.availability} · ${p.education} · ${sl[p.status]||p.status}`
+      : `Rp ${(p.budget/1000000).toFixed(0)}Jt/bln · ${p.city}`;
+    const row = document.createElement('div');
+    row.className = 'match-row';
+    row.innerHTML = `
+      <div class="match-row-av" style="background:${p.avatarBg||'#222'}">${p.emoji}</div>
+      <div class="match-row-info">
+        <div class="match-row-name">${p.name} <span style="font-size:0.75rem;color:#666;font-weight:400">${p.age} thn · ${p.city}</span></div>
+        <div class="match-row-sub">${sub}</div>
+        <div class="match-row-sub2">${p.bio}</div>
+      </div>
+      <div class="match-row-compat">${m.compat}%</div>`;
+    body.appendChild(row);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KEYBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('match-overlay').classList.contains('show')) {
+    if (e.key === 'Escape' || e.key === 'Enter') dismissMatch();
+    return;
+  }
+  if (!document.getElementById('screen-swipe').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); doSwipe('left');  }
+  if (e.key === 'ArrowRight') { e.preventDefault(); doSwipe('right'); }
+  if (e.key === 'ArrowUp')    { e.preventDefault(); doSwipe('super'); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+
+showScreen('welcome');
+</script>
+</body>
+</html>
