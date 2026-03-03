@@ -29,6 +29,11 @@
     /* ── Mode selector ── */
     #mode-select { display: flex; gap: 10px; }
 
+    /* ── Difficulty selector ── */
+    #diff-row { display: none; flex-direction: column; align-items: center; gap: 5px; }
+    #diff-label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.08em; }
+    #diff-select { display: flex; gap: 8px; }
+
     .mode-btn {
       padding: 0.45rem 1.4rem;
       font-size: 0.88rem;
@@ -129,6 +134,15 @@
   <button class="mode-btn"        data-mode="ai">vs Computer</button>
 </div>
 
+<div id="diff-row">
+  <div id="diff-label">Difficulty</div>
+  <div id="diff-select">
+    <button class="mode-btn" data-diff="baby">🍼 Baby</button>
+    <button class="mode-btn" data-diff="kids">🧒 Kids</button>
+    <button class="mode-btn active" data-diff="adult">🧑 Adult</button>
+  </div>
+</div>
+
 <div id="scores">
   <div class="score-box">
     <span class="score-label">X Wins</span>
@@ -157,7 +171,7 @@
   const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
 
   let board, current, gameOver, thinking, aiGen;
-  let mode = '2p';
+  let mode = '2p', difficulty = 'adult';
   const scores = { X: 0, O: 0, D: 0 };
 
   // ── DOM ───────────────────────────────────────────────────────────
@@ -179,12 +193,24 @@
   }
 
   // ── Mode buttons ─────────────────────────────────────────────────
-  document.querySelectorAll('.mode-btn').forEach(btn => {
+  const diffRow = document.getElementById('diff-row');
+  document.querySelectorAll('#mode-select .mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       mode = btn.dataset.mode;
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#mode-select .mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       oLabel.textContent = mode === 'ai' ? 'Computer' : 'O Wins';
+      diffRow.style.display = mode === 'ai' ? 'flex' : 'none';
+      reset();
+    });
+  });
+
+  // ── Difficulty buttons ────────────────────────────────────────────
+  document.querySelectorAll('#diff-select .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      difficulty = btn.dataset.diff;
+      document.querySelectorAll('#diff-select .mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
       reset();
     });
   });
@@ -270,13 +296,35 @@
   }
 
   // ── AI ────────────────────────────────────────────────────────────
-  // Scores an empty cell for a given player based on connected sequences.
+  function emptySquares() {
+    return board.reduce((a, v, i) => (v ? a : [...a, i]), []);
+  }
+
+  // 🍼 Baby — completely random (kids can always win with any strategy)
+  function aiMoveBaby() {
+    const empty = emptySquares();
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  // 🧒 Kids — wins/blocks an immediate 5-in-a-row, otherwise random
+  function aiMoveKids() {
+    const total = GRID * GRID;
+    for (let i = 0; i < total; i++) {
+      if (!board[i]) { board[i] = 'O'; const w = checkWin(); board[i] = null; if (w) return i; }
+    }
+    for (let i = 0; i < total; i++) {
+      if (!board[i]) { board[i] = 'X'; const w = checkWin(); board[i] = null; if (w) return i; }
+    }
+    const empty = emptySquares();
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  // 🧑 Adult — full heuristic: win > block > scored attack/defence + proximity
   function evalCell(idx, player) {
     const r = Math.floor(idx / GRID), c = idx % GRID;
     let score = 0;
     for (const [dr, dc] of DIRS) {
       let count = 1, openEnds = 0;
-      // Positive direction
       for (let k = 1; k < WIN; k++) {
         const nr = r + dr * k, nc = c + dc * k;
         if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) break;
@@ -285,7 +333,6 @@
         else if (!board[ni])           { openEnds++; break; }
         else                           break;
       }
-      // Negative direction
       for (let k = 1; k < WIN; k++) {
         const nr = r - dr * k, nc = c - dc * k;
         if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) break;
@@ -294,7 +341,7 @@
         else if (!board[ni])           { openEnds++; break; }
         else                           break;
       }
-      if      (count >= WIN)                      score += 100000;
+      if      (count >= WIN)                       score += 100000;
       else if (count === WIN - 1 && openEnds >= 1) score += 10000;
       else if (count === WIN - 2 && openEnds >= 2) score += 1000;
       else if (count === WIN - 2 && openEnds >= 1) score += 200;
@@ -304,31 +351,15 @@
     return score;
   }
 
-  function aiMove() {
+  function aiMoveAdult() {
     const total = GRID * GRID;
     const center = Math.floor(GRID / 2);
-
-    // 1. Take a winning move immediately
     for (let i = 0; i < total; i++) {
-      if (!board[i]) {
-        board[i] = 'O';
-        const w = checkWin();
-        board[i] = null;
-        if (w) return i;
-      }
+      if (!board[i]) { board[i] = 'O'; const w = checkWin(); board[i] = null; if (w) return i; }
     }
-
-    // 2. Block opponent from winning
     for (let i = 0; i < total; i++) {
-      if (!board[i]) {
-        board[i] = 'X';
-        const w = checkWin();
-        board[i] = null;
-        if (w) return i;
-      }
+      if (!board[i]) { board[i] = 'X'; const w = checkWin(); board[i] = null; if (w) return i; }
     }
-
-    // 3. Heuristic: attack score × 2 + defence score × 3 + centre proximity
     let best = -1, bestScore = -Infinity;
     for (let i = 0; i < total; i++) {
       if (board[i]) continue;
@@ -338,10 +369,14 @@
       if (s > bestScore) { bestScore = s; best = i; }
     }
     if (best !== -1) return best;
-
-    // 4. Fallback: centre then first empty
     const mid = center * GRID + center;
     return !board[mid] ? mid : board.findIndex(x => !x);
+  }
+
+  function aiMove() {
+    if (difficulty === 'baby')  return aiMoveBaby();
+    if (difficulty === 'kids')  return aiMoveKids();
+    return aiMoveAdult();
   }
 
   // ── Scores ────────────────────────────────────────────────────────
