@@ -11,7 +11,7 @@ A collection of standalone browser games. Each game is a **single self-contained
 | `tictactoe.html` | Tic Tac Toe — two-player, persistent score tracking |
 | `snake.html` | Snake — mouse-steered, timed auto-growth |
 | `shooter.html` | Star Blaster — retro 2D top-down shooter |
-| `cave.html` | Cave Rescue — side-scrolling platformer with 3 enemy types |
+| `greenlantern.html` | Green Lantern — side-scrolling cave platformer with 6 enemy types |
 
 ## Development workflow
 
@@ -21,7 +21,7 @@ No build step. To test a game, open the file in a browser:
 open tictactoe.html
 open snake.html
 open shooter.html
-open cave.html
+open greenlantern.html
 ```
 
 **After every change — no exceptions — commit and push to GitHub:**
@@ -60,11 +60,11 @@ All three games follow the same single-file structure:
 
 **`tictactoe.html`** uses plain DOM manipulation (no canvas); board state is a `Array(9)` of `null | 'X' | 'O'`.
 
-**`cave.html`** is a side-scrolling cave rescue platformer:
-- 9000px scrolling world; player has 3 lives and a double-jump (double-tap `↑`)
-- Three enemy types: `snake` (patrols ground, 2 HP), `dwarf` (walks fast, 1 HP), `bird` (hovers, shoots bullets)
+**`greenlantern.html`** is a side-scrolling cave platformer:
+- 9000px scrolling world; player has 3 lives, a double-jump (double-tap `↑`), and a long-jump (`→+↑`)
+- Six enemy types: `snake`, `dwarf`, `bird`, `hairwhip`, `flycroc`, `giant`
 - Goal: reach the prisoner at the end of the cave; `gameState` cycles through `menu | playing | gameover | win`
-- Movement and physics are **dt-based** (`GRAVITY`, `JUMP_V`, `DJUMP_V`, `PSPEED` are the primary tuning knobs)
+- Movement and physics are **dt-based** (`GRAVITY`, `JUMP_V`, `DJUMP_V`, `LGJUMP_V`, `PSPEED` are the primary tuning knobs)
 
 ## Git config
 
