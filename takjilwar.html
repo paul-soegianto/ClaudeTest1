@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Takjil War</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0010; display:flex; justify-content:center; align-items:center;
+       min-height:100vh; overflow:hidden; font-family:'Segoe UI',sans-serif; }
+canvas { display:block; image-rendering:pixelated; touch-action:none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const W=800, H=600;
+const QUEUE_SEC=3;
+const TOTAL_TIME=30;
+const PSPEED=130;
+
+// ─── ITEM DATA ────────────────────────────────────────────────────────────────
+const STALL_DEFS=[
+  {id:'goreng',  name:'Warung Goreng-an',  color:'#cc5500', vendor:'woman', queueBase:2,
+   items:[
+     {name:'Nasi Goreng Murah',  price:20000,cal:850, nutrients:['carb'],           cat:'food'},
+     {name:'Mie Goreng',         price:12000,cal:350, nutrients:['carb'],           cat:'food'},
+     {name:'Tahu Goreng',        price: 5000,cal:150, nutrients:['protein'],        cat:'food'},
+     {name:'Tempe Goreng',       price: 5000,cal:100, nutrients:['fat','protein'],  cat:'food'},
+   ]},
+  {id:'grill',   name:'Warung Panggang',   color:'#8b2200', vendor:'man',   queueBase:1,
+   items:[
+     {name:'Ayam Goreng Kampung',price:40000,cal:1000,nutrients:['protein'],        cat:'food'},
+     {name:'Steak Sapi',         price:55000,cal:520, nutrients:['protein','fat'],  cat:'food'},
+   ]},
+  {id:'veggie',  name:'Warung Sehat',      color:'#336600', vendor:'woman', queueBase:0,
+   items:[
+     {name:'Gado-Gado',          price:25000,cal:400, nutrients:['fiber'],          cat:'food'},
+     {name:'Pecel',              price:18000,cal:220, nutrients:['fiber'],          cat:'food'},
+     {name:'Lalapan',            price: 8000,cal:120, nutrients:['fiber'],          cat:'food'},
+   ]},
+  {id:'rawon',   name:'Warung Berkuah',    color:'#664400', vendor:'woman', queueBase:3,
+   items:[
+     {name:'Rawon',              price:22000,cal:380, nutrients:['fat'],            cat:'food'},
+     {name:'Soto Ayam',          price:18000,cal:260, nutrients:['protein'],        cat:'food'},
+     {name:'Bakso',              price:15000,cal:290, nutrients:['protein','fat'],  cat:'food'},
+   ]},
+  {id:'rice',    name:'Warung Nasi',       color:'#cc9900', vendor:'man',   queueBase:1,
+   items:[
+     {name:'Nasi Uduk',          price:12000,cal:320, nutrients:['carb'],          cat:'food'},
+     {name:'Lontong Sayur',      price:10000,cal:250, nutrients:['carb','fiber'],  cat:'food'},
+   ]},
+  {id:'teh',     name:'Warung Teh',        color:'#445500', vendor:'man',   queueBase:0,
+   items:[
+     {name:'Teh Manis',          price: 3000,cal: 80, nutrients:['carb'],          cat:'drink'},
+     {name:'Teh Tawar',          price: 2000,cal:  5, nutrients:['fiber'],         cat:'drink'},
+     {name:'Es Teh',             price: 5000,cal: 60, nutrients:['carb'],          cat:'drink'},
+   ]},
+  {id:'minuman', name:'Warung Minuman',    color:'#003366', vendor:'man',   queueBase:1,
+   items:[
+     {name:'Coca-Cola',          price: 8000,cal:150, nutrients:['carb'],          cat:'drink'},
+     {name:'Es Jeruk',           price: 7000,cal:100, nutrients:['fiber'],         cat:'drink'},
+     {name:'Air Mineral',        price: 3000,cal:  0, nutrients:[],               cat:'drink'},
+     {name:'Jus Alpukat',        price:12000,cal:200, nutrients:['fiber','fat'],   cat:'drink'},
+   ]},
+  {id:'dessert1',name:'Warung Kolak',      color:'#aa6600', vendor:'woman', queueBase:1,
+   items:[
+     {name:'Kolak Pisang',       price: 8000,cal:180, nutrients:['fiber','carb'],  cat:'dessert'},
+     {name:'Bubur Sumsum',       price: 6000,cal:150, nutrients:['carb'],          cat:'dessert'},
+   ]},
+  {id:'dessert2',name:'Warung Es',         color:'#004466', vendor:'man',   queueBase:2,
+   items:[
+     {name:'Es Campur',          price:12000,cal:220, nutrients:['carb','fiber'],  cat:'dessert'},
+     {name:'Es Krim',            price: 8000,cal:190, nutrients:['fat','carb'],    cat:'dessert'},
+     {name:'Cendol',             price: 7000,cal:160, nutrients:['carb'],          cat:'dessert'},
+   ]},
+];
+
+// ─── MISSION HELPERS ──────────────────────────────────────────────────────────
+function hasAllCats(c){
+  return c.some(i=>i.cat==='food') && c.some(i=>i.cat==='drink') && c.some(i=>i.cat==='dessert');
+}
+function sumPrice(c){ return c.reduce((s,i)=>s+i.price,0); }
+function sumCal(c)  { return c.reduce((s,i)=>s+i.cal,0); }
+function calByNutrient(c,n){ return c.filter(i=>i.nutrients.includes(n)).reduce((s,i)=>s+i.cal,0); }
+
+const MISSION_TYPES=[
+  {id:'fiber_budget', title:'🥗 SEHAT & HEMAT',
+   desc:'Beli makanan BERSERAT di bawah Rp 35.000!',
+   check:c=>hasAllCats(c)&&c.every(i=>i.nutrients.includes('fiber'))&&sumPrice(c)<=35000,
+   ratio:c=>{if(!c.every(i=>i.nutrients.includes('fiber')))return 0;
+             return hasAllCats(c)?Math.min(1,35000/Math.max(sumPrice(c),1)):0;}},
+  {id:'protein_cal',  title:'💪 PROTEIN POWER',
+   desc:'Capai 1.500 kalori dari makanan berPROTEIN!',
+   check:c=>hasAllCats(c)&&calByNutrient(c,'protein')>=1500,
+   ratio:c=>hasAllCats(c)?Math.min(1,calByNutrient(c,'protein')/1500):0},
+  {id:'budget',       title:'💰 BUDGET HUNT',
+   desc:'Belanja SEBANYAK MUNGKIN di bawah Rp 30.000!',
+   check:c=>hasAllCats(c)&&sumPrice(c)<=30000,
+   ratio:c=>hasAllCats(c)&&sumPrice(c)<=30000?Math.min(1,c.length/5):0},
+  {id:'cal_target',   title:'🎯 KALORI TEPAT',
+   desc:'Capai tepat 1.200 kalori (\u00b1 100 kcal)!',
+   check:c=>hasAllCats(c)&&Math.abs(sumCal(c)-1200)<=100,
+   ratio:c=>hasAllCats(c)?Math.max(0,1-Math.abs(sumCal(c)-1200)/1200):0},
+  {id:'variety',      title:'🛒 FOOD EXPLORER',
+   desc:'Beli dari minimal 4 warung berbeda!',
+   check:c=>hasAllCats(c)&&new Set(c.map(i=>i.stallId)).size>=4,
+   ratio:c=>hasAllCats(c)?Math.min(1,new Set(c.map(i=>i.stallId)).size/4):0},
+];
+
+// ─── GLOBALS ──────────────────────────────────────────────────────────────────
+let gameState='menu', timer=TOTAL_TIME, mission=null;
+let cart=[], score=0, npcScores=[];
+let stalls=[], nearStall=null, activeStall=null;
+let player, floatTexts=[];
+let keys={}, menuItemIndex=0;
+let isMobile=false;
+let mobileKeys={up:false,down:false,left:false,right:false,buy:false};
+let blinkTimer=0, blinkOn=true;
+let resultClicked=false;
+
+const NPC_NAMES=['Budi','Sari','Andi','Dewi','Reza'];
+
+// ─── CANVAS SETUP ─────────────────────────────────────────────────────────────
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+canvas.width=W; canvas.height=H;
+
+isMobile='ontouchstart' in window || screen.width<700;
+if(isMobile){ canvas.style.width='100%'; canvas.style.height='auto'; }
+
+// ─── MARKET LAYOUT ────────────────────────────────────────────────────────────
+// 16 stall positions (we'll use all 9 defs + repeat some)
+const STALL_LAYOUT=[
+  // Top row (5 stalls facing down)
+  {x:75, y:45,  w:90,h:55, facing:'down', defIdx:0},
+  {x:185,y:45,  w:90,h:55, facing:'down', defIdx:1},
+  {x:295,y:45,  w:90,h:55, facing:'down', defIdx:2},
+  {x:405,y:45,  w:90,h:55, facing:'down', defIdx:3},
+  {x:515,y:45,  w:90,h:55, facing:'down', defIdx:4},
+  // Right column (3 stalls facing left)
+  {x:655,y:60,  w:90,h:55, facing:'left', defIdx:5},
+  {x:655,y:155, w:90,h:55, facing:'left', defIdx:6},
+  {x:655,y:250, w:90,h:55, facing:'left', defIdx:7},
+  // Left column (3 stalls facing right)
+  {x:55, y:155, w:90,h:55, facing:'right',defIdx:8},
+  {x:55, y:250, w:90,h:55, facing:'right',defIdx:0},
+  {x:55, y:345, w:90,h:55, facing:'right',defIdx:1},
+  // Interior cluster (3 stalls)
+  {x:260,y:180, w:90,h:55, facing:'down', defIdx:2},
+  {x:380,y:180, w:90,h:55, facing:'down', defIdx:3},
+  {x:260,y:290, w:90,h:55, facing:'down', defIdx:5},
+  {x:380,y:290, w:90,h:55, facing:'down', defIdx:6},
+  // Bottom interior stall
+  {x:500,y:180, w:90,h:55, facing:'down', defIdx:7},
+];
+
+function generateMarket(){
+  stalls=[];
+  STALL_LAYOUT.forEach((sl,idx)=>{
+    const def=STALL_DEFS[sl.defIdx];
+    const qLen=Math.floor(Math.random()*5);
+    const qWait=qLen*QUEUE_SEC;
+
+    // Compute interact point (center of counter-facing side)
+    let ix=sl.x+sl.w/2, iy=sl.y+sl.h/2;
+    if(sl.facing==='down') { iy=sl.y+sl.h+10; }
+    else if(sl.facing==='up')   { iy=sl.y-10; }
+    else if(sl.facing==='left') { ix=sl.x-10; }
+    else if(sl.facing==='right'){ ix=sl.x+sl.w+10; }
+
+    // Counter rect (the interaction boundary)
+    let cr={x:sl.x,y:sl.y,w:sl.w,h:sl.h};
+
+    stalls.push({
+      defId:def.id, stallIdx:idx,
+      x:sl.x, y:sl.y, w:sl.w, h:sl.h,
+      facing:sl.facing,
+      queueLen:qLen, queueWait:qWait,
+      color:def.color, name:def.name,
+      items:def.items.map(i=>({...i})),
+      vendor:def.vendor,
+      interactX:ix, interactY:iy,
+      counterRect:cr,
+    });
+  });
+}
+
+// ─── PLAYER ───────────────────────────────────────────────────────────────────
+function makePlayer(){
+  player={
+    x:400, y:540, vx:0, vy:0, w:18, h:24,
+    state:'walk',
+    activeStall:null, queueTimer:0,
+    animFrame:0, animTimer:0, facing:'up'
+  };
+}
+
+// ─── SCORING ──────────────────────────────────────────────────────────────────
+function calcScore(){
+  const ratio=mission.ratio(cart);
+  const base=Math.round(ratio*100);
+  const timeBonus=timer>15?20:timer>5?10:0;
+  return Math.min(120,base+timeBonus);
+}
+
+function randNPC(){
+  const u=Math.random()||0.0001, v=Math.random();
+  return Math.max(0,Math.min(120,Math.round(62+22*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v))));
+}
+
+// ─── GAME START / END ─────────────────────────────────────────────────────────
+function startGame(){
+  generateMarket();
+  makePlayer();
+  mission=MISSION_TYPES[Math.floor(Math.random()*MISSION_TYPES.length)];
+  npcScores=NPC_NAMES.map(name=>({name,score:randNPC()}));
+  cart=[]; timer=TOTAL_TIME; score=0; floatTexts=[];
+  activeStall=null; nearStall=null; menuItemIndex=0;
+  resultClicked=false;
+  gameState='playing';
+}
+
+function endGame(){
+  score=calcScore();
+  gameState='result';
+}
+
+// ─── BUY ITEM ─────────────────────────────────────────────────────────────────
+function buyItem(item){
+  cart.push({...item, stallId:activeStall.defId});
+  floatTexts.push({x:player.x,y:player.y-20,text:'+'+item.name,timer:1.6,color:'#ffee44'});
+  gameState='playing';
+  player.state='walk';
+  activeStall=null;
+  nearStall=null;
+}
+
+// ─── AABB COLLISION ───────────────────────────────────────────────────────────
+function aabbCollide(ax,ay,aw,ah,bx,by,bw,bh){
+  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+}
+
+function pushOut(p, r){
+  // push player out of rect r
+  const overlapL=p.x+p.w-r.x;
+  const overlapR=r.x+r.w-p.x;
+  const overlapT=p.y+p.h-r.y;
+  const overlapB=r.y+r.h-p.y;
+  const minX=Math.min(overlapL,overlapR);
+  const minY=Math.min(overlapT,overlapB);
+  if(minX<minY){
+    if(overlapL<overlapR) p.x-=overlapL; else p.x+=overlapR;
+  } else {
+    if(overlapT<overlapB) p.y-=overlapT; else p.y+=overlapB;
+  }
+}
+
+// ─── UPDATE ───────────────────────────────────────────────────────────────────
+function update(dt){
+  // Timer countdown
+  if(gameState==='playing'||gameState==='queueing'||gameState==='shopping'){
+    timer-=dt;
+    if(timer<=0){ timer=0; endGame(); return; }
+  }
+
+  blinkTimer+=dt;
+  if(blinkTimer>0.5){ blinkTimer=0; blinkOn=!blinkOn; }
+
+  // Float texts
+  floatTexts.forEach(ft=>{ft.timer-=dt; ft.y-=30*dt;});
+  floatTexts=floatTexts.filter(ft=>ft.timer>0);
+
+  if(player.state==='queue'){
+    player.queueTimer-=dt;
+    if(player.queueTimer<=0){
+      player.queueTimer=0;
+      gameState='shopping';
+      player.state='shop';
+      menuItemIndex=0;
+    }
+    return;
+  }
+
+  if(player.state==='shop') return;
+
+  // Walking
+  let vx=0, vy=0;
+  const up=keys['ArrowUp']||keys['w']||keys['W']||mobileKeys.up;
+  const down=keys['ArrowDown']||keys['s']||keys['S']||mobileKeys.down;
+  const left=keys['ArrowLeft']||keys['a']||keys['A']||mobileKeys.left;
+  const right=keys['ArrowRight']||keys['d']||keys['D']||mobileKeys.right;
+
+  if(up)    vy=-PSPEED;
+  if(down)  vy= PSPEED;
+  if(left)  vx=-PSPEED;
+  if(right) vx= PSPEED;
+  if(vx&&vy){ vx*=0.707; vy*=0.707; }
+
+  player.x+=vx*dt;
+  player.y+=vy*dt;
+
+  // Update facing
+  if(vx<0) player.facing='left';
+  else if(vx>0) player.facing='right';
+  else if(vy<0) player.facing='up';
+  else if(vy>0) player.facing='down';
+
+  // Walk animation
+  if(vx||vy){
+    player.animTimer+=dt;
+    if(player.animTimer>0.18){ player.animTimer=0; player.animFrame^=1; }
+  } else {
+    player.animFrame=0;
+  }
+
+  // Stall collision
+  stalls.forEach(s=>{
+    const pad=4;
+    const r={x:s.counterRect.x-pad, y:s.counterRect.y-pad,
+              w:s.counterRect.w+pad*2, h:s.counterRect.h+pad*2};
+    if(aabbCollide(player.x,player.y,player.w,player.h,r.x,r.y,r.w,r.h)){
+      pushOut(player,r);
+    }
+  });
+
+  // Clamp to market bounds
+  const MX=50, MY=30, MW=700, MH=540;
+  player.x=Math.max(MX,Math.min(MX+MW-player.w,player.x));
+  player.y=Math.max(MY,Math.min(MY+MH-player.h,player.y));
+
+  // Find nearStall
+  let best=null, bestDist=52;
+  stalls.forEach(s=>{
+    const dx=player.x+player.w/2-s.interactX;
+    const dy=player.y+player.h/2-s.interactY;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<bestDist){ bestDist=d; best=s; }
+  });
+  nearStall=best;
+}
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────────
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+
+  if(gameState==='menu'){
+    if(e.key===' '||e.key==='Enter') startGame();
+    return;
+  }
+  if(gameState==='result'){
+    if(e.key===' '||e.key==='Enter'){ gameState='ranking'; }
+    return;
+  }
+  if(gameState==='ranking'){
+    if(e.key===' '||e.key==='Enter'){ gameState='menu'; }
+    return;
+  }
+
+  if(gameState==='playing'&&player.state==='walk'){
+    if(e.key===' '&&nearStall){
+      e.preventDefault();
+      player.state='queue';
+      player.activeStall=nearStall;
+      activeStall=nearStall;
+      player.queueTimer=nearStall.queueWait;
+      player.x=nearStall.interactX-player.w/2;
+      player.y=nearStall.interactY+4;
+      gameState=nearStall.queueWait>0?'queueing':'shopping';
+      if(gameState==='shopping'){ player.state='shop'; menuItemIndex=0; }
+    }
+  }
+
+  if(gameState==='shopping'||(player&&player.state==='shop')){
+    if(e.key==='ArrowUp'){
+      e.preventDefault();
+      menuItemIndex=Math.max(0,menuItemIndex-1);
+    }
+    if(e.key==='ArrowDown'){
+      e.preventDefault();
+      menuItemIndex=Math.min(activeStall.items.length-1,menuItemIndex+1);
+    }
+    if(e.key===' '){
+      e.preventDefault();
+      if(activeStall) buyItem(activeStall.items[menuItemIndex]);
+    }
+    if(e.key==='Escape'){
+      gameState='playing'; player.state='walk'; activeStall=null; nearStall=null;
+    }
+  }
+
+  if(e.key===' ') e.preventDefault();
+});
+
+window.addEventListener('keyup',e=>{ keys[e.key]=false; });
+
+// ─── MOUSE ────────────────────────────────────────────────────────────────────
+canvas.addEventListener('click',e=>{
+  if(gameState==='menu'){ startGame(); return; }
+  if(gameState==='result'){ gameState='ranking'; return; }
+  if(gameState==='ranking'){ gameState='menu'; return; }
+
+  if(gameState==='shopping'){
+    // Check if click is outside menu panel → close
+    const r=canvas.getBoundingClientRect();
+    const scaleX=W/r.width, scaleY=H/r.height;
+    const cx=(e.clientX-r.left)*scaleX;
+    const cy=(e.clientY-r.top)*scaleY;
+    const px=W/2-170, py=H/2-140;
+    if(cx<px||cx>px+340||cy<py||cy>py+280){
+      gameState='playing'; player.state='walk'; activeStall=null; nearStall=null;
+    }
+  }
+});
+
+// ─── TOUCH / MOBILE ───────────────────────────────────────────────────────────
+const DPAD_CX=75, DPAD_CY=H-100, DPAD_R=55;
+const BUY_CX=W-80, BUY_CY=H-90, BUY_R=38;
+
+function hitDpad(tx,ty){
+  const dx=tx-DPAD_CX, dy=ty-DPAD_CY;
+  const d=Math.sqrt(dx*dx+dy*dy);
+  if(d>DPAD_R+10) return null;
+  const angle=Math.atan2(dy,dx)*180/Math.PI;
+  if(angle>=-45&&angle<45)  return 'right';
+  if(angle>=45&&angle<135)  return 'down';
+  if(angle>=-135&&angle<-45)return 'up';
+  return 'left';
+}
+
+function processTouches(e){
+  e.preventDefault();
+  mobileKeys={up:false,down:false,left:false,right:false,buy:false};
+  for(let t of e.touches){
+    const r=canvas.getBoundingClientRect();
+    const scaleX=W/r.width, scaleY=H/r.height;
+    const tx=(t.clientX-r.left)*scaleX;
+    const ty=(t.clientY-r.top)*scaleY;
+    const dir=hitDpad(tx,ty);
+    if(dir) mobileKeys[dir]=true;
+    const bDx=tx-BUY_CX, bDy=ty-BUY_CY;
+    if(Math.sqrt(bDx*bDx+bDy*bDy)<BUY_R) mobileKeys.buy=true;
+  }
+}
+
+canvas.addEventListener('touchstart',e=>{
+  processTouches(e);
+  // Menu/result/ranking tap
+  if(gameState==='menu'){ startGame(); return; }
+  if(gameState==='result'){ gameState='ranking'; return; }
+  if(gameState==='ranking'){ gameState='menu'; return; }
+  // BUY button action
+  if(mobileKeys.buy){
+    if(gameState==='playing'&&player.state==='walk'&&nearStall){
+      player.state='queue';
+      player.activeStall=nearStall;
+      activeStall=nearStall;
+      player.queueTimer=nearStall.queueWait;
+      player.x=nearStall.interactX-player.w/2;
+      player.y=nearStall.interactY+4;
+      gameState=nearStall.queueWait>0?'queueing':'shopping';
+      if(gameState==='shopping'){ player.state='shop'; menuItemIndex=0; }
+    } else if(gameState==='shopping'&&player.state==='shop'){
+      if(activeStall) buyItem(activeStall.items[menuItemIndex]);
+    }
+  }
+},{ passive:false });
+
+canvas.addEventListener('touchmove',e=>{ processTouches(e); },{passive:false});
+canvas.addEventListener('touchend',e=>{
+  processTouches(e);
+},{passive:false});
+
+// ─── DRAW HELPERS ─────────────────────────────────────────────────────────────
+function rp(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+function fmt(n){ return 'Rp '+n.toLocaleString('id-ID'); }
+
+// ─── DRAW BACKGROUND ──────────────────────────────────────────────────────────
+function drawBG(){
+  // Dusk gradient sky
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#1a0a2e');
+  grad.addColorStop(0.5,'#8b3a10');
+  grad.addColorStop(1,'#c85a20');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  // Market floor
+  ctx.fillStyle='#c8a060';
+  ctx.fillRect(50,30,700,540);
+
+  // Dark border walls
+  ctx.fillStyle='#3a2010';
+  ctx.fillRect(35,20,725,15);   // top wall
+  ctx.fillRect(35,555,725,15);  // bottom wall
+  ctx.fillRect(35,20,15,555);   // left wall
+  ctx.fillRect(745,20,15,555);  // right wall
+
+  // Entry arrow at bottom center
+  ctx.fillStyle='#ffcc00';
+  ctx.beginPath();
+  ctx.moveTo(400,575); ctx.lineTo(390,560); ctx.lineTo(410,560);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#ffcc00';
+  ctx.fillRect(397,545,6,18);
+
+  // Lantern strings at top
+  const cols=['#ff6600','#ffcc00','#ff3366','#00ccff','#ff6600'];
+  for(let i=0;i<5;i++){
+    const lx=100+i*130, ly=32;
+    // String
+    if(i<4){
+      ctx.strokeStyle='#5a4020';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(lx,ly); ctx.lineTo(lx+130,ly); ctx.stroke();
+    }
+    // Lantern
+    ctx.fillStyle=cols[i];
+    ctx.beginPath(); ctx.ellipse(lx,ly+5,5,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,200,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(lx,ly+5,10,14,0,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ─── DRAW MARKET / STALLS ──────────────────────────────────────────────────────
+function drawStall(s){
+  const isNear=nearStall===s;
+
+  // Glow when near
+  if(isNear){
+    ctx.save();
+    ctx.shadowColor='#ffcc00'; ctx.shadowBlur=18;
+  }
+
+  // Awning
+  ctx.fillStyle=s.color;
+  rp(s.x,s.y,s.w,s.h,6);
+  ctx.fill();
+
+  // Scalloped awning bottom
+  const scallW=12;
+  ctx.fillStyle=lighten(s.color,30);
+  for(let sx=s.x;sx<s.x+s.w-scallW/2;sx+=scallW){
+    ctx.beginPath();
+    ctx.arc(sx+scallW/2,s.y+s.h,scallW/2,0,Math.PI);
+    ctx.fill();
+  }
+
+  // Counter (dark wood on facing side)
+  ctx.fillStyle='#3d1a00';
+  const ct=8;
+  if(s.facing==='down'){
+    ctx.fillRect(s.x,s.y+s.h-ct,s.w,ct+6);
+  } else if(s.facing==='up'){
+    ctx.fillRect(s.x,s.y-6,s.w,ct+6);
+  } else if(s.facing==='left'){
+    ctx.fillRect(s.x-6,s.y,ct+6,s.h);
+  } else {
+    ctx.fillRect(s.x+s.w-ct,s.y,ct+6,s.h);
+  }
+
+  if(isNear) ctx.restore();
+
+  // Stall name
+  ctx.fillStyle='#ffffff';
+  ctx.font='bold 9px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(s.name,s.x+s.w/2,s.y+14);
+
+  // Queue dots
+  drawQueueDots(s);
+
+  // Queue time badge
+  const qt=s.queueWait;
+  if(qt>0){
+    ctx.fillStyle=qt>6?'#cc2200':'#cc7700';
+    ctx.font='bold 9px sans-serif';
+    ctx.textAlign='left';
+    ctx.fillText('\u23f1 '+qt+'s',s.x+s.w+2,s.y+12);
+  }
+
+  // Vendor figure
+  drawVendor(s);
+
+  // Equipment / props
+  drawEquipment(s);
+
+  // Near-stall interaction prompt
+  if(isNear&&gameState==='playing'&&player.state==='walk'){
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.font='bold 11px sans-serif';
+    ctx.textAlign='center';
+    const label=isMobile?'BELI':'SPACE';
+    ctx.fillStyle='#ffee44';
+    ctx.fillText(label,s.x+s.w/2,s.y-6);
+  }
+}
+
+function lighten(hex,pct){
+  let r=parseInt(hex.slice(1,3),16)+pct;
+  let g=parseInt(hex.slice(3,5),16)+pct;
+  let b=parseInt(hex.slice(5,7),16)+pct;
+  r=Math.min(255,r); g=Math.min(255,g); b=Math.min(255,b);
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function drawQueueDots(s){
+  const qLen=s.queueLen;
+  if(!qLen) return;
+  for(let i=0;i<qLen;i++){
+    let dx=0, dy=0;
+    // Place dots extending away from counter
+    if(s.facing==='down')  { dx=(i-qLen/2)*12; dy=s.h+18+i*6; }
+    else if(s.facing==='up'){ dx=(i-qLen/2)*12; dy=-20-i*6; }
+    else if(s.facing==='left'){ dx=-20-i*8; dy=(i%2)*8-4; }
+    else { dx=s.w+8+i*8; dy=(i%2)*8-4; }
+
+    const px=s.x+s.w/2+dx, py=s.y+s.h/2+dy;
+    // Head
+    ctx.fillStyle='#e8b490';
+    ctx.beginPath(); ctx.arc(px,py-5,4,0,Math.PI*2); ctx.fill();
+    // Body
+    ctx.fillStyle='#5566aa';
+    ctx.fillRect(px-3,py-1,6,8);
+  }
+}
+
+function drawVendor(s){
+  const cx=s.x+s.w/2, cy=s.y+s.h*0.5;
+  if(s.vendor==='woman'){
+    // Hijab (dark oval)
+    ctx.fillStyle='#1a0a00';
+    ctx.beginPath(); ctx.ellipse(cx,cy-8,8,9,0,0,Math.PI*2); ctx.fill();
+    // Face
+    ctx.fillStyle='#e8b490';
+    ctx.beginPath(); ctx.arc(cx,cy-8,6,0,Math.PI*2); ctx.fill();
+    // Hijab wrap
+    ctx.fillStyle='#2a1a60';
+    ctx.beginPath();
+    ctx.ellipse(cx,cy-4,11,10,0,0,Math.PI);
+    ctx.fill();
+    // Apron body
+    ctx.fillStyle='#cc4466';
+    ctx.fillRect(cx-7,cy,14,14);
+    // Apron
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(cx-4,cy+2,8,10);
+  } else {
+    // Cap
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(cx-7,cy-16,14,5);
+    // Head
+    ctx.fillStyle='#e8b490';
+    ctx.beginPath(); ctx.arc(cx,cy-8,6,0,Math.PI*2); ctx.fill();
+    // Body with apron
+    ctx.fillStyle='#336699';
+    ctx.fillRect(cx-7,cy,14,14);
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(cx-4,cy+2,8,10);
+  }
+}
+
+function drawEquipment(s){
+  const cx=s.x+s.w/2, cy=s.y+s.h*0.35;
+  if(s.defId==='goreng'||s.defId==='grill'){
+    // Flame
+    ctx.fillStyle='rgba(255,120,0,0.7)';
+    ctx.beginPath(); ctx.ellipse(cx,cy+5,8,4,0,0,Math.PI*2); ctx.fill();
+    // Pan/grill
+    ctx.fillStyle='#1a1a1a';
+    ctx.beginPath(); ctx.ellipse(cx,cy+2,12,4,0,0,Math.PI*2); ctx.fill();
+  } else if(s.defId==='rawon'){
+    // Blue flame
+    ctx.fillStyle='rgba(80,120,255,0.6)';
+    ctx.beginPath(); ctx.ellipse(cx,cy+5,6,3,0,0,Math.PI*2); ctx.fill();
+    // Pot
+    ctx.fillStyle='#4a3010';
+    ctx.beginPath(); ctx.ellipse(cx,cy,10,7,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#3a2000';
+    ctx.fillRect(cx-10,cy-2,20,4);
+  } else if(s.defId==='teh'||s.defId==='minuman'){
+    // Fridge
+    ctx.fillStyle='#7a99bb';
+    ctx.fillRect(cx-8,cy-10,16,20);
+    ctx.fillStyle='#aaccee';
+    ctx.fillRect(cx-6,cy-8,12,4);
+  } else if(s.defId==='dessert1'||s.defId==='dessert2'){
+    // Colorful bowls
+    const colors=['#ff6600','#6699ff','#66cc44'];
+    for(let i=0;i<3;i++){
+      ctx.fillStyle=colors[i];
+      ctx.beginPath(); ctx.ellipse(cx-10+i*10,cy+4,5,3,0,0,Math.PI*2); ctx.fill();
+    }
+  }
+}
+
+function drawMarket(){
+  stalls.forEach(s=>drawStall(s));
+}
+
+// ─── DRAW PLAYER ─────────────────────────────────────────────────────────────
+function drawPlayer(){
+  if(!player) return;
+  const px=Math.round(player.x), py=Math.round(player.y);
+  const af=player.animFrame;
+  const flip=player.facing==='left';
+
+  ctx.save();
+  if(flip){ ctx.scale(-1,1); ctx.translate(-px*2-player.w,0); }
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(px+9,py+player.h,7,3,0,0,Math.PI*2); ctx.fill();
+
+  // Legs (shorts end mid-thigh)
+  const legOff=af?2:-2;
+  ctx.fillStyle='#8844cc'; // shorts
+  ctx.fillRect(px+2,py+14,6,7);
+  ctx.fillRect(px+10,py+14,6,7);
+
+  // Skin legs below shorts
+  ctx.fillStyle='#e8b490';
+  ctx.fillRect(px+2,py+20,6,6);
+  ctx.fillRect(px+10,py+20,6,6);
+
+  // Sandals
+  ctx.fillStyle='#4a2800';
+  ctx.beginPath(); ctx.ellipse(px+5+legOff,py+26,5,2,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(px+13-legOff,py+26,5,2,0,0,Math.PI*2); ctx.fill();
+
+  // Body (t-shirt)
+  ctx.fillStyle='#4488cc';
+  ctx.fillRect(px+1,py+6,16,12);
+
+  // Arms
+  ctx.fillStyle='#e8b490';
+  const armSwing=af?2:-2;
+  ctx.fillRect(px-2,py+8+armSwing,4,8); // left arm
+  ctx.fillRect(px+16,py+8-armSwing,4,8); // right arm
+
+  // Head
+  ctx.fillStyle='#e8b490';
+  ctx.beginPath(); ctx.arc(px+9,py+4,7,0,Math.PI*2); ctx.fill();
+
+  // Hair
+  ctx.fillStyle='#2a1a08';
+  ctx.beginPath();
+  ctx.arc(px+9,py+4,7,Math.PI,0);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle='#1a0800';
+  ctx.fillRect(px+6,py+4,2,2);
+  ctx.fillRect(px+11,py+4,2,2);
+
+  ctx.restore();
+}
+
+// ─── DRAW QUEUE BAR ────────────────────────────────────────────────────────────
+function drawQueueBar(){
+  if(!activeStall||!player) return;
+  const maxW=activeStall.queueWait||1;
+  const ratio=1-(player.queueTimer/maxW);
+  const bx=activeStall.x, by=activeStall.y-28, bw=activeStall.w, bh=16;
+
+  ctx.fillStyle='rgba(0,0,0,0.8)';
+  rp(bx,by,bw,bh,4); ctx.fill();
+
+  ctx.fillStyle='#ffd700';
+  rp(bx+1,by+1,Math.max(0,(bw-2)*ratio),bh-2,3); ctx.fill();
+
+  ctx.fillStyle='#ffffff';
+  ctx.font='bold 10px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Antri... '+Math.ceil(player.queueTimer)+'s',bx+bw/2,by+11);
+}
+
+// ─── DRAW SHOPPING MENU ────────────────────────────────────────────────────────
+function drawShoppingMenu(){
+  if(!activeStall) return;
+  // Overlay
+  ctx.fillStyle='rgba(0,0,0,0.6)';
+  ctx.fillRect(0,0,W,H);
+
+  // Panel
+  const pw=360, ph=Math.min(300, 80+activeStall.items.length*44+30);
+  const px=W/2-pw/2, py=H/2-ph/2;
+
+  ctx.fillStyle='#1a1030';
+  rp(px,py,pw,ph,10); ctx.fill();
+  ctx.strokeStyle='#ffd700';
+  ctx.lineWidth=2;
+  rp(px,py,pw,ph,10); ctx.stroke();
+
+  // Header
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 15px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(activeStall.name,px+pw/2,py+22);
+
+  ctx.fillStyle='#aaaaff';
+  ctx.font='11px sans-serif';
+  ctx.fillText(isMobile?'Tap BELI untuk beli  •  Tap luar untuk keluar':'↑↓ pilih  •  SPACE beli  •  ESC keluar',px+pw/2,py+38);
+
+  // Items
+  const itemY=py+50;
+  activeStall.items.forEach((item,i)=>{
+    const iy=itemY+i*44;
+    const sel=i===menuItemIndex;
+
+    if(sel){
+      ctx.fillStyle='rgba(255,215,0,0.2)';
+      rp(px+8,iy,pw-16,40,4); ctx.fill();
+      ctx.strokeStyle='#ffd700'; ctx.lineWidth=1;
+      rp(px+8,iy,pw-16,40,4); ctx.stroke();
+    }
+
+    // Arrow
+    if(sel){ ctx.fillStyle='#ffd700'; ctx.fillText('>',px+18,iy+24); }
+
+    // Name
+    ctx.fillStyle=sel?'#ffffff':'#cccccc';
+    ctx.font=(sel?'bold ':'')+'12px sans-serif';
+    ctx.textAlign='left';
+    ctx.fillText(item.name,px+28,iy+18);
+
+    // Price & cal
+    ctx.fillStyle='#88ddaa';
+    ctx.font='10px sans-serif';
+    ctx.fillText(fmt(item.price),px+28,iy+32);
+    ctx.fillStyle='#ffaa44';
+    ctx.fillText(item.cal+' kcal',px+130,iy+32);
+
+    // Nutrient tags
+    const tagColors={fiber:'#44aa44',protein:'#4488ff',fat:'#ddaa00',carb:'#cc6600'};
+    item.nutrients.forEach((n,ni)=>{
+      const tx=px+220+ni*48;
+      ctx.fillStyle=tagColors[n]||'#888';
+      rp(tx,iy+8,44,16,4); ctx.fill();
+      ctx.fillStyle='#ffffff';
+      ctx.font='9px sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText(n,tx+22,iy+20);
+    });
+  });
+}
+
+// ─── DRAW MISSION BAR ─────────────────────────────────────────────────────────
+function drawMissionBar(){
+  if(!mission) return;
+  // Background strip
+  ctx.fillStyle='rgba(10,0,20,0.85)';
+  ctx.fillRect(0,0,W,44);
+
+  // Mission title + desc
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 13px sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText(mission.title,8,16);
+  ctx.fillStyle='#ffffff';
+  ctx.font='10px sans-serif';
+  ctx.fillText(mission.desc,8,30);
+
+  // Category progress
+  const hasFood=cart.some(i=>i.cat==='food');
+  const hasDrink=cart.some(i=>i.cat==='drink');
+  const hasDessert=cart.some(i=>i.cat==='dessert');
+  const cats=[
+    {label:'\uD83C\uDF7D\uFE0F',ok:hasFood},
+    {label:'\uD83E\uDD64',ok:hasDrink},
+    {label:'\uD83C\uDF6E',ok:hasDessert},
+  ];
+  cats.forEach((c,i)=>{
+    const cx=300+i*48;
+    ctx.font='14px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillStyle=c.ok?'#44ff44':'#666666';
+    ctx.fillText(c.label+(c.ok?'✓':'✗'),cx,22);
+  });
+
+  // Ratio bar
+  const ratio=mission.ratio(cart);
+  const bx=450, by=8, bw=160, bh=16;
+  ctx.fillStyle='rgba(255,255,255,0.15)';
+  rp(bx,by,bw,bh,4); ctx.fill();
+  ctx.fillStyle=ratio>=1?'#44ff44':'#ffd700';
+  rp(bx,by,Math.max(0,bw*ratio),bh,4); ctx.fill();
+  ctx.fillStyle='#ffffff';
+  ctx.font='bold 10px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(Math.round(ratio*100)+'%',bx+bw/2,by+12);
+
+  // Cal / Price summary
+  ctx.fillStyle='#ffaa44';
+  ctx.font='10px sans-serif';
+  ctx.textAlign='right';
+  ctx.fillText(sumCal(cart)+' kcal  '+fmt(sumPrice(cart)),W-6,16);
+  ctx.fillStyle='#88ddaa';
+  ctx.fillText(cart.length+' item',W-6,30);
+}
+
+// ─── DRAW TIMER ───────────────────────────────────────────────────────────────
+function drawTimer(){
+  const pulse=timer<10&&blinkOn;
+  ctx.save();
+  if(pulse){ ctx.shadowColor='#ff2200'; ctx.shadowBlur=20; }
+  ctx.fillStyle=timer<10?'#ff4400':'#ffffff';
+  ctx.font='bold 28px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(Math.ceil(timer),W/2,H-8);
+  ctx.font='11px sans-serif';
+  ctx.fillStyle='#aaaaaa';
+  ctx.fillText('detik',W/2,H+5);
+  ctx.restore();
+}
+
+// ─── DRAW CART SIDEBAR ────────────────────────────────────────────────────────
+function drawCart(){
+  const sx=W-185, sy=50, sw=180, sh=H-110;
+  ctx.fillStyle='rgba(0,0,0,0.6)';
+  rp(sx,sy,sw,sh,6); ctx.fill();
+
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 11px sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('🛒 Keranjang',sx+6,sy+16);
+
+  ctx.fillStyle='#888888';
+  ctx.fillRect(sx+4,sy+20,sw-8,1);
+
+  const maxItems=Math.floor((sh-70)/18);
+  const visible=cart.slice(-maxItems);
+
+  visible.forEach((item,i)=>{
+    const iy=sy+30+i*18;
+    ctx.fillStyle='#dddddd';
+    ctx.font='9px sans-serif';
+    ctx.textAlign='left';
+    const name=item.name.length>16?item.name.slice(0,15)+'…':item.name;
+    ctx.fillText(name,sx+6,iy);
+    ctx.fillStyle='#88ddaa';
+    ctx.textAlign='right';
+    ctx.fillText(fmt(item.price),sx+sw-4,iy);
+  });
+
+  if(cart.length>maxItems){
+    ctx.fillStyle='#666666';
+    ctx.font='9px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('+'+(cart.length-maxItems)+' lagi',sx+sw/2,sy+32+maxItems*18);
+  }
+
+  // Totals
+  const by2=sy+sh-50;
+  ctx.fillStyle='rgba(255,255,255,0.1)';
+  ctx.fillRect(sx+4,by2-4,sw-8,1);
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 10px sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('TOTAL',sx+6,by2+12);
+  ctx.fillStyle='#88ddaa';
+  ctx.textAlign='right';
+  ctx.fillText(fmt(sumPrice(cart)),sx+sw-4,by2+12);
+  ctx.fillStyle='#ffaa44';
+  ctx.fillText(sumCal(cart)+' kcal',sx+sw-4,by2+26);
+}
+
+// ─── DRAW HUD ─────────────────────────────────────────────────────────────────
+function drawHUD(){
+  drawMissionBar();
+  drawTimer();
+  drawCart();
+}
+
+// ─── DRAW FLOAT TEXTS ─────────────────────────────────────────────────────────
+function drawFloatTexts(){
+  floatTexts.forEach(ft=>{
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,ft.timer);
+    ctx.fillStyle=ft.color;
+    ctx.font='bold 13px sans-serif';
+    ctx.textAlign='center';
+    ctx.shadowColor=ft.color; ctx.shadowBlur=8;
+    ctx.fillText(ft.text,ft.x+9,ft.y);
+    ctx.restore();
+  });
+}
+
+// ─── DRAW MOBILE CONTROLS ─────────────────────────────────────────────────────
+function drawMobileControls(){
+  // D-pad background
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.arc(DPAD_CX,DPAD_CY,DPAD_R+8,0,Math.PI*2); ctx.fill();
+
+  // D-pad arrows
+  const arrows=[
+    {label:'up',   angle:-Math.PI/2, dx:0, dy:-30},
+    {label:'down', angle: Math.PI/2, dx:0, dy: 30},
+    {label:'left', angle: Math.PI,   dx:-30,dy:0},
+    {label:'right',angle:0,          dx: 30,dy:0},
+  ];
+  arrows.forEach(a=>{
+    const ax=DPAD_CX+a.dx, ay=DPAD_CY+a.dy;
+    ctx.save();
+    ctx.translate(ax,ay);
+    ctx.rotate(a.angle);
+    ctx.fillStyle=mobileKeys[a.label]?'#ffd700':'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.moveTo(0,-10); ctx.lineTo(10,4); ctx.lineTo(-10,4);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  });
+
+  // BUY button
+  const isNearActive=nearStall!==null&&gameState==='playing'&&player&&player.state==='walk';
+  const isShopping=gameState==='shopping'&&player&&player.state==='shop';
+  ctx.save();
+  if(isNearActive||isShopping){ ctx.shadowColor='#44ff44'; ctx.shadowBlur=18; }
+  ctx.fillStyle=mobileKeys.buy?'#ffd700':'rgba(255,200,0,0.85)';
+  ctx.beginPath(); ctx.arc(BUY_CX,BUY_CY,BUY_R,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#1a0a00';
+  ctx.font='bold 14px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('BELI',BUY_CX,BUY_CY+5);
+  ctx.restore();
+}
+
+// ─── DRAW MENU ────────────────────────────────────────────────────────────────
+function drawMenu(){
+  // Background
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#1a0a2e');
+  grad.addColorStop(0.5,'#8b3a10');
+  grad.addColorStop(1,'#c85a20');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  // Silhouette market shapes
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  for(let i=0;i<6;i++){
+    ctx.fillRect(50+i*120,H-120,80,80);
+    // Triangle roofs
+    ctx.beginPath();
+    ctx.moveTo(50+i*120-10,H-120);
+    ctx.lineTo(90+i*120,H-170);
+    ctx.lineTo(130+i*120+10,H-120);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Lanterns
+  const cols=['#ff6600','#ffcc00','#ff3366','#00ccff','#ff6600'];
+  for(let i=0;i<5;i++){
+    const lx=80+i*140, ly=50;
+    ctx.strokeStyle='#5a4020'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(lx-60,ly); ctx.lineTo(lx+80,ly); ctx.stroke();
+    ctx.fillStyle=cols[i];
+    ctx.beginPath(); ctx.ellipse(lx,ly+8,7,12,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,200,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(lx,ly+8,14,18,0,0,Math.PI*2); ctx.fill();
+  }
+
+  // Title
+  ctx.save();
+  ctx.shadowColor='#ffd700'; ctx.shadowBlur=30;
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 64px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('TAKJIL WAR',W/2,160);
+  ctx.restore();
+
+  ctx.fillStyle='#ffcc88';
+  ctx.font='20px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Beli Makan Sebelum Buka Puasa!',W/2,195);
+
+  // Mission preview
+  const previewMission=MISSION_TYPES[Math.floor((Date.now()/3000)%MISSION_TYPES.length)];
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  rp(W/2-200,220,400,80,8); ctx.fill();
+  ctx.strokeStyle='#ffd700'; ctx.lineWidth=1;
+  rp(W/2-200,220,400,80,8); ctx.stroke();
+
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 14px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Contoh Misi: '+previewMission.title,W/2,244);
+  ctx.fillStyle='#ccccff';
+  ctx.font='12px sans-serif';
+  ctx.fillText(previewMission.desc,W/2,264);
+  ctx.fillStyle='#888888';
+  ctx.font='11px sans-serif';
+  ctx.fillText('(misi dipilih acak setiap permainan)',W/2,284);
+
+  // Controls
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  rp(W/2-200,318,400,80,8); ctx.fill();
+
+  ctx.fillStyle='#ffffff';
+  ctx.font='bold 12px sans-serif';
+  ctx.fillText('Kontrol',W/2,338);
+  ctx.font='11px sans-serif';
+  ctx.fillStyle='#cccccc';
+  ctx.fillText('Keyboard: Arrow Keys bergerak  •  SPACE untuk antri/beli  •  ESC tutup menu',W/2,360);
+  ctx.fillText('Mobile: D-pad kiri untuk gerak  •  Tombol BELI kanan',W/2,378);
+
+  // Rules
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  rp(W/2-200,410,400,60,8); ctx.fill();
+  ctx.fillStyle='#aaffaa';
+  ctx.font='11px sans-serif';
+  ctx.fillText('Beli makanan + minuman + dessert dari warung yang ada antrenya!',W/2,432);
+  ctx.fillStyle='#ffaaaa';
+  ctx.fillText('1 orang antrian = 3 detik  •  Waktu total: 30 detik',W/2,450);
+
+  // Start prompt
+  if(blinkOn){
+    ctx.save();
+    ctx.shadowColor='#ffffff'; ctx.shadowBlur=10;
+    ctx.fillStyle='#ffffff';
+    ctx.font='bold 18px sans-serif';
+    ctx.fillText('KLIK / SPACE UNTUK MULAI',W/2,502);
+    ctx.restore();
+  }
+
+  if(isMobile) drawMobileControls();
+}
+
+// ─── DRAW RESULT ──────────────────────────────────────────────────────────────
+function drawResult(){
+  ctx.fillStyle='rgba(0,0,0,0.85)';
+  ctx.fillRect(0,0,W,H);
+
+  const s=score;
+  ctx.save();
+  if(s>=80){ ctx.shadowColor='#ffd700'; ctx.shadowBlur=30; }
+  ctx.fillStyle=s>=80?'#ffd700':s>=50?'#88ddff':'#ff6666';
+  ctx.font='bold 80px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(s,W/2,200);
+  ctx.restore();
+
+  ctx.fillStyle='#ffffff';
+  ctx.font='bold 20px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('/ 120 POIN',W/2,230);
+
+  // Mission result
+  const passed=mission.check(cart);
+  ctx.fillStyle=passed?'#44ff44':'#ff4444';
+  ctx.font='bold 16px sans-serif';
+  ctx.fillText(passed?'✓ Misi Tercapai!':'✗ Misi Gagal',W/2,265);
+
+  // Category breakdown
+  const hasFood=cart.some(i=>i.cat==='food');
+  const hasDrink=cart.some(i=>i.cat==='drink');
+  const hasDessert=cart.some(i=>i.cat==='dessert');
+  const catRows=[
+    {label:'Makanan', ok:hasFood},
+    {label:'Minuman', ok:hasDrink},
+    {label:'Dessert', ok:hasDessert},
+  ];
+  catRows.forEach((c,i)=>{
+    ctx.fillStyle=c.ok?'#44ff44':'#ff4444';
+    ctx.font='13px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText((c.ok?'✓':'✗')+' '+c.label,W/2-80+i*80,295);
+  });
+
+  // Stats
+  ctx.fillStyle='#aaaaff';
+  ctx.font='12px sans-serif';
+  ctx.fillText('Total: '+sumCal(cart)+' kcal  •  '+fmt(sumPrice(cart))+'  •  '+cart.length+' item',W/2,320);
+  ctx.fillText('Sisa waktu: '+Math.ceil(timer)+'s  •  Misi: '+mission.title,W/2,340);
+
+  // Mission ratio
+  const ratio=mission.ratio(cart);
+  ctx.fillStyle='#cccccc';
+  ctx.fillText('Rasio misi: '+Math.round(ratio*100)+'%',W/2,360);
+
+  // Cart items bought
+  ctx.fillStyle='rgba(255,255,255,0.1)';
+  rp(W/2-220,375,440,100,6); ctx.fill();
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 11px sans-serif';
+  ctx.fillText('Yang dibeli:',W/2,392);
+  const perRow=3;
+  cart.slice(0,9).forEach((item,i)=>{
+    const col=i%perRow, row=Math.floor(i/perRow);
+    const ix=W/2-160+col*140, iy=408+row*20;
+    ctx.fillStyle='#cccccc';
+    ctx.font='10px sans-serif';
+    const n=item.name.length>16?item.name.slice(0,15)+'…':item.name;
+    ctx.fillText(n,ix,iy);
+  });
+
+  // Prompt
+  if(blinkOn){
+    ctx.fillStyle='#ffffff';
+    ctx.font='bold 15px sans-serif';
+    ctx.fillText('Klik / SPACE untuk lihat ranking →',W/2,500);
+  }
+
+  if(isMobile) drawMobileControls();
+}
+
+// ─── DRAW RANKING ─────────────────────────────────────────────────────────────
+function drawRanking(){
+  ctx.fillStyle='rgba(0,0,0,0.9)';
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='#ffd700';
+  ctx.font='bold 24px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('🏆 PAPAN SKOR — '+mission.title,W/2,50);
+
+  // Build leaderboard
+  const entries=[
+    {name:'KAMU',score:score,isPlayer:true},
+    ...npcScores,
+  ].sort((a,b)=>b.score-a.score);
+
+  const tw=520, th=42, tx=W/2-tw/2, ty=70;
+  const medals=['🥇','🥈','🥉'];
+
+  entries.forEach((e,i)=>{
+    const ey=ty+i*(th+4);
+    if(e.isPlayer){
+      ctx.fillStyle='rgba(255,215,0,0.15)';
+      rp(tx,ey,tw,th,6); ctx.fill();
+      ctx.strokeStyle='#ffd700'; ctx.lineWidth=2;
+      rp(tx,ey,tw,th,6); ctx.stroke();
+    } else {
+      ctx.fillStyle='rgba(255,255,255,0.05)';
+      rp(tx,ey,tw,th,6); ctx.fill();
+    }
+
+    // Medal
+    ctx.font='20px sans-serif';
+    ctx.textAlign='left';
+    ctx.fillText(i<3?medals[i]:(i+1)+'.',tx+10,ey+28);
+
+    // Name
+    ctx.fillStyle=e.isPlayer?'#ffd700':'#ffffff';
+    ctx.font=e.isPlayer?'bold 16px sans-serif':'14px sans-serif';
+    ctx.fillText(e.name+(e.isPlayer?' ◄ KAMU':''),tx+56,ey+26);
+
+    // Score bar
+    const barX=tx+220, barW=tw-240, barH=14;
+    ctx.fillStyle='rgba(255,255,255,0.1)';
+    rp(barX,ey+14,barW,barH,4); ctx.fill();
+    const scoreRatio=e.score/120;
+    const barColor=e.score>=80?'#ffd700':e.score>=50?'#44aaff':'#ff6644';
+    ctx.fillStyle=barColor;
+    rp(barX,ey+14,Math.max(0,barW*scoreRatio),barH,4); ctx.fill();
+
+    // Score text
+    ctx.fillStyle=e.isPlayer?'#ffd700':'#ffffff';
+    ctx.font='bold 15px sans-serif';
+    ctx.textAlign='right';
+    ctx.fillText(e.score+' poin',tx+tw-8,ey+26);
+  });
+
+  // Player rank
+  const playerRank=entries.findIndex(e=>e.isPlayer)+1;
+  ctx.fillStyle='#aaffaa';
+  ctx.font='14px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Kamu peringkat ke-'+playerRank+' dari '+entries.length+' peserta!',W/2,ty+entries.length*(th+4)+20);
+
+  // Main Lagi button
+  const bx=W/2-90, by2=H-80;
+  ctx.fillStyle='#ffd700';
+  rp(bx,by2,180,40,8); ctx.fill();
+  ctx.fillStyle='#1a0a00';
+  ctx.font='bold 16px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('▶ Main Lagi',W/2,by2+26);
+
+  if(isMobile) drawMobileControls();
+}
+
+// ─── RANKING CLICK → MAIN LAGI ────────────────────────────────────────────────
+canvas.addEventListener('click',e=>{
+  if(gameState!=='ranking') return;
+  const r=canvas.getBoundingClientRect();
+  const scaleX=W/r.width, scaleY=H/r.height;
+  const cx=(e.clientX-r.left)*scaleX;
+  const cy=(e.clientY-r.top)*scaleY;
+  // Main Lagi button area
+  if(cx>=W/2-90&&cx<=W/2+90&&cy>=H-80&&cy<=H-40){
+    gameState='menu';
+  }
+},{capture:false});
+
+// ─── MAIN LOOP ─────────────────────────────────────────────────────────────────
+let lastTime=0;
+function loop(ts){
+  const dt=Math.min((ts-lastTime)/1000,0.05);
+  lastTime=ts;
+
+  ctx.clearRect(0,0,W,H);
+  blinkTimer+=dt;
+  if(blinkTimer>0.5){ blinkTimer=0; blinkOn=!blinkOn; }
+
+  switch(gameState){
+    case 'menu':
+      drawMenu();
+      break;
+    case 'playing':
+    case 'queueing':
+    case 'shopping':
+      update(dt);
+      drawBG();
+      drawMarket();
+      drawFloatTexts();
+      drawPlayer();
+      drawHUD();
+      if(gameState==='queueing') drawQueueBar();
+      if(gameState==='shopping') drawShoppingMenu();
+      if(isMobile) drawMobileControls();
+      break;
+    case 'result':
+      drawResult();
+      break;
+    case 'ranking':
+      drawRanking();
+      break;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// Pre-generate a mission for the menu preview
+generateMarket();
+requestAnimationFrame(ts=>{ lastTime=ts; loop(ts); });
+</script>
+</body>
+</html>
