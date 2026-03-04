@@ -1,0 +1,19 @@
+{
+  "name": "Scandalous 💋",
+  "short_name": "Scandalous",
+  "description": "Sugar dating simulation game — swipe, match, and score!",
+  "start_url": "/ClaudeTest1/scandal-game.html",
+  "scope": "/ClaudeTest1/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0018",
+  "theme_color": "#1a0030",
+  "icons": [
+    {
+      "src": "scandal-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

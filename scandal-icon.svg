@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#1a0030"/>
+      <stop offset="100%" stop-color="#3d0060"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="38" fill="url(#bg)"/>
+  <!-- lips / kiss mark -->
+  <g transform="translate(90,82)">
+    <!-- upper lip -->
+    <path d="M-36,0 C-36,-22 -18,-30 0,-20 C18,-30 36,-22 36,0
+             C28,-8 18,-12 0,-8 C-18,-12 -28,-8 -36,0 Z"
+          fill="#ff4081"/>
+    <!-- lower lip -->
+    <path d="M-36,0 C-28,20 -14,32 0,28 C14,32 28,20 36,0
+             C28,4 14,8 0,6 C-14,8 -28,4 -36,0 Z"
+          fill="#e91e63"/>
+    <!-- highlight -->
+    <ellipse cx="-14" cy="14" rx="8" ry="5" fill="rgba(255,255,255,0.18)" transform="rotate(-15,-14,14)"/>
+  </g>
+  <!-- title text -->
+  <text x="90" y="148" font-family="'Helvetica Neue',Helvetica,sans-serif"
+        font-size="18" font-weight="800" fill="#cc99ff"
+        text-anchor="middle" letter-spacing="2">SCANDALOUS</text>
+</svg>

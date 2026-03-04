@@ -2,13 +2,23 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Scandalous 💋</title>
+
+  <!-- PWA / iOS Home Screen -->
+  <link rel="manifest" href="scandal-manifest.json" />
+  <meta name="apple-mobile-web-app-capable"          content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title"            content="Scandalous" />
+  <link rel="apple-touch-icon"                       href="scandal-icon.svg" />
+  <meta name="theme-color"                           content="#1a0030" />
+  <meta name="mobile-web-app-capable"                content="yes" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       background: linear-gradient(135deg, #0d0018 0%, #1a0030 50%, #0d0018 100%);
       font-family: 'Segoe UI', Helvetica, sans-serif;
       color: #eee;
@@ -16,11 +26,14 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      /* iOS safe-area: status bar + home indicator */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     #app {
       width: min(390px, 100vw);
-      height: min(780px, 100vh);
+      height: min(780px, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
       background: #13131f;
       border-radius: 32px;
       overflow: hidden;
