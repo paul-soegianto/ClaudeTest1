@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Food Event Planner</title>
+  <script src="food-event-db.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a14;--surf:#141422;--surf2:#1e1e30;--border:#2a2a3e;
+      --accent:#ff6b35;--text:#e8e8f0;--muted:#888;
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh}
+    .screen{display:none}
+    .screen.active{display:flex;flex-direction:column;min-height:100vh}
+    /* ── login ── */
+    .login-page{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+    .login-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;
+      padding:32px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px}
+    .login-card h1{font-size:22px;font-weight:800;text-align:center}
+    .login-card p{color:var(--muted);font-size:13px;text-align:center}
+    /* ── top bar ── */
+    .top-bar{display:flex;align-items:center;gap:12px;padding:12px 20px;
+      background:var(--surf);border-bottom:1px solid var(--border);flex-shrink:0}
+    .top-bar h1{font-size:16px;font-weight:700;flex:1}
+    .top-bar-actions{display:flex;gap:8px;align-items:center}
+    /* ── main layout ── */
+    .main-layout{display:flex;flex:1;overflow:hidden}
+    .sidebar{width:340px;min-width:280px;background:var(--surf);border-right:1px solid var(--border);
+      display:flex;flex-direction:column;overflow:hidden}
+    .sidebar-section{padding:12px 14px;border-bottom:1px solid var(--border)}
+    .sidebar-section h3{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;
+      letter-spacing:.06em;margin-bottom:10px}
+    .map-settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+    .map-settings-grid label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}
+    .stall-list{flex:1;overflow-y:auto;padding:8px}
+    .stall-item{background:var(--surf2);border:1px solid var(--border);border-radius:10px;
+      padding:10px;margin-bottom:6px;cursor:pointer;display:flex;gap:10px;align-items:center;
+      transition:border-color .2s}
+    .stall-item:hover{border-color:var(--accent)}
+    .stall-item.selected{border-color:var(--accent);background:#1a100a}
+    .si-color{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;
+      justify-content:center;font-size:18px;flex-shrink:0}
+    .si-info{flex:1;min-width:0}
+    .si-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .si-sub{font-size:11px;color:var(--muted);margin-top:1px}
+    .si-actions{display:flex;gap:2px;flex-shrink:0}
+    .icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 5px;
+      border-radius:6px;font-size:15px;transition:background .15s,color .15s}
+    .icon-btn:hover{background:var(--border);color:var(--text)}
+    .icon-btn.moving{color:#f59e0b;background:#1a1000}
+    /* ── map area ── */
+    .map-area{flex:1;overflow:auto;padding:20px;background:var(--bg);position:relative}
+    .map-hint{font-size:12px;color:var(--muted);margin-bottom:12px;padding:8px 12px;
+      background:var(--surf);border-radius:8px;border:1px solid var(--border)}
+    .map-hint.moving-active{background:#1a1000;border-color:#f59e0b;color:#f59e0b}
+    .map-container{position:relative;display:inline-block}
+    .plan-cell{position:absolute;background:var(--surf2);border-radius:8px;
+      border:1px solid var(--border);display:flex;align-items:flex-end;justify-content:flex-start;padding:3px}
+    .plan-cell.droppable{background:#0a1a0a;border-color:#22c55e;cursor:pointer}
+    .plan-cell.droppable:hover{background:#0d280d;border-color:#4ade80}
+    .plan-cell.current-pos{background:#1a1000;border-color:#f59e0b}
+    .cell-label{font-size:9px;color:var(--border)}
+    .plan-stall{position:absolute;border-radius:10px;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;text-align:center;padding:8px 4px;
+      color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);cursor:pointer;z-index:2;
+      transition:box-shadow .15s,opacity .15s}
+    .plan-stall:hover{box-shadow:0 0 0 2px rgba(255,255,255,.5)}
+    .plan-stall.is-selected{box-shadow:0 0 0 3px #fff}
+    .plan-stall.is-moving{opacity:.5;pointer-events:none}
+    .plan-stall-name{font-size:11px;font-weight:700;margin-top:4px;
+      white-space:nowrap;overflow:hidden;max-width:90%}
+    .plan-stall-sub{font-size:9px;opacity:.8;margin-top:1px}
+    /* ── form elements ── */
+    input,select,textarea{background:var(--surf2);border:1px solid var(--border);
+      border-radius:8px;color:var(--text);padding:9px 12px;font-size:13px;width:100%;
+      font-family:inherit;transition:border-color .2s}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+    input[type=color]{padding:3px;height:38px;cursor:pointer}
+    input[type=number]{-moz-appearance:textfield}
+    .primary-btn{background:var(--accent);border:none;border-radius:8px;color:#fff;
+      padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+    .ghost-btn{background:none;border:1px solid var(--border);border-radius:8px;
+      color:var(--text);padding:9px 16px;font-size:13px;cursor:pointer}
+    .danger-btn{background:#2a0000;border:1px solid #4a0000;border-radius:8px;
+      color:#ef4444;padding:9px 16px;font-size:13px;cursor:pointer}
+    .danger-btn:hover{background:#3a0000}
+    .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+    .form-group label{font-size:12px;font-weight:600;color:var(--muted)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .error{color:#ef4444;font-size:13px;padding:8px;background:#1a0000;
+      border-radius:8px;border:1px solid #4a0000}
+    /* ── modal ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);
+      display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+    .modal-overlay.hidden{display:none}
+    .modal-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;
+      width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
+    .modal-card-header{display:flex;align-items:center;justify-content:space-between;
+      padding:16px 20px;border-bottom:1px solid var(--border)}
+    .modal-card-header h3{font-size:16px;font-weight:700}
+    .modal-body{padding:20px}
+    .modal-footer{display:flex;gap:8px;justify-content:flex-end;padding:16px 20px;
+      border-top:1px solid var(--border)}
+    /* ── add stall btn ── */
+    .add-stall-btn{margin:8px;padding:10px;background:var(--surf2);border:1px dashed var(--border);
+      border-radius:10px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;
+      width:calc(100% - 16px);transition:border-color .2s,background .2s}
+    .add-stall-btn:hover{border-color:var(--accent);background:#1a0d05}
+    /* ── reset btn ── */
+    .reset-link{font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline}
+    .reset-link:hover{color:#ef4444}
+    /* ── responsive ── */
+    @media(max-width:600px){
+      .sidebar{width:100%;min-width:unset;max-height:40vh}
+      .main-layout{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ LOGIN -->
+<div id="scr-login" class="screen active">
+  <div class="login-page">
+    <div class="login-card">
+      <div style="font-size:48px;text-align:center">🗺️</div>
+      <h1>Food Event Planner</h1>
+      <p>Atur tata letak dan data stall untuk event makanan Anda</p>
+      <div class="form-group">
+        <label>Password Planner</label>
+        <input id="planner-pw" type="password" placeholder="Masukkan password planner"/>
+      </div>
+      <div id="login-error" class="error" style="display:none"></div>
+      <button class="primary-btn" onclick="plannerLogin()">Masuk sebagai Planner →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ MAIN -->
+<div id="scr-main" class="screen">
+  <div class="top-bar">
+    <h1>🗺️ Food Event Planner</h1>
+    <div class="top-bar-actions">
+      <span id="event-name-badge" style="font-size:12px;color:var(--muted)"></span>
+      <button class="ghost-btn" onclick="if(confirm('Reset semua ke data default?')){resetToDefault()}">Reset DB</button>
+      <button class="ghost-btn" onclick="showScreen('scr-login')">Keluar</button>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <!-- ── sidebar ── -->
+    <div class="sidebar">
+      <!-- Map settings -->
+      <div class="sidebar-section">
+        <h3>Pengaturan Peta</h3>
+        <div class="map-settings-grid">
+          <div>
+            <label>Kolom</label>
+            <input id="map-cols" type="number" min="2" max="12" value="6"/>
+          </div>
+          <div>
+            <label>Baris</label>
+            <input id="map-rows" type="number" min="2" max="8" value="4"/>
+          </div>
+          <div>
+            <label>Ukuran sel</label>
+            <input id="map-cell" type="number" min="60" max="150" value="110"/>
+          </div>
+        </div>
+        <button class="primary-btn" onclick="applyMapSettings()" style="font-size:13px;padding:8px">
+          Terapkan Ukuran Peta
+        </button>
+      </div>
+
+      <!-- Stall list -->
+      <div class="sidebar-section" style="border-bottom:none;padding-bottom:0">
+        <h3>Daftar Stall (<span id="stall-count">0</span>)</h3>
+      </div>
+      <div class="stall-list" id="stall-list"></div>
+      <button class="add-stall-btn" onclick="openAddStall()">+ Tambah Stall Baru</button>
+    </div>
+
+    <!-- ── map area ── -->
+    <div class="map-area">
+      <div id="map-hint" class="map-hint">
+        Klik 📍 pada stall untuk memindahkannya, lalu klik sel kosong di peta.
+      </div>
+      <div class="map-container">
+        <div id="planner-map" style="position:relative;display:inline-block"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ STALL FORM MODAL -->
+<div id="modal-stall" class="modal-overlay hidden" onclick="maybeCloseModal(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-card-header">
+      <h3 id="stall-form-title">Tambah Stall</h3>
+      <button class="icon-btn" onclick="closeStallModal()" style="font-size:20px">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nama Stall *</label>
+          <input id="f-name" type="text" placeholder="Warung Nusantara"/>
+        </div>
+        <div class="form-group">
+          <label>Pemilik *</label>
+          <input id="f-owner" type="text" placeholder="Nama pemilik"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Password Peserta</label>
+          <input id="f-password" type="text" placeholder="abc123"/>
+        </div>
+        <div class="form-group">
+          <label>Kode Stamp</label>
+          <input id="f-stamp" type="text" placeholder="WN01" maxlength="6" style="text-transform:uppercase"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kategori</label>
+          <select id="f-cat">
+            <option>Makanan Berat</option>
+            <option>Makanan Ringan</option>
+            <option>Dessert</option>
+            <option>Minuman</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Warna Stall</label>
+          <input id="f-color" type="color" value="#ff6b35"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Lebar (sel)</label>
+          <input id="f-w" type="number" min="1" max="4" value="1"/>
+        </div>
+        <div class="form-group">
+          <label>Tinggi (sel)</label>
+          <input id="f-h" type="number" min="1" max="4" value="1"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kolom awal</label>
+          <input id="f-col" type="number" min="1" value="1"/>
+        </div>
+        <div class="form-group">
+          <label>Baris awal</label>
+          <input id="f-row" type="number" min="1" value="1"/>
+        </div>
+      </div>
+      <div id="stall-form-error" class="error" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button id="stall-delete-btn" class="danger-btn" style="display:none;margin-right:auto"
+        onclick="deleteCurrentStall()">Hapus Stall</button>
+      <button class="ghost-btn" onclick="closeStallModal()">Batal</button>
+      <button class="primary-btn" onclick="saveStallForm()" style="width:auto">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── constants ──────────────────────────────────────────────────────────────────
+const CAT_EMOJI = {'Makanan Berat':'🍽️','Makanan Ringan':'🍿','Dessert':'🍰','Minuman':'🥤'};
+const CATS      = ['Makanan Berat','Makanan Ringan','Dessert','Minuman'];
+
+// ── db helpers ─────────────────────────────────────────────────────────────────
+function getStalls()     { const s = localStorage.getItem('fev_stalls'); return s ? JSON.parse(s) : JSON.parse(JSON.stringify(FOOD_EVENT_DB.stalls)); }
+function getMapCfg()     { const m = localStorage.getItem('fev_map');    return m ? JSON.parse(m) : Object.assign({}, FOOD_EVENT_DB.map); }
+function saveStalls(arr) { localStorage.setItem('fev_stalls', JSON.stringify(arr)); }
+function saveMapCfg(cfg) { localStorage.setItem('fev_map', JSON.stringify(cfg)); }
+function resetToDefault() {
+  localStorage.removeItem('fev_stalls');
+  localStorage.removeItem('fev_map');
+  selectedStallId = null;
+  movingStallId   = null;
+  initPlanner();
+}
+
+// ── state ──────────────────────────────────────────────────────────────────────
+let selectedStallId = null;
+let movingStallId   = null;
+let editStallId     = null;
+
+// ── screen nav ─────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── login ──────────────────────────────────────────────────────────────────────
+function plannerLogin() {
+  const pw    = document.getElementById('planner-pw').value;
+  const errEl = document.getElementById('login-error');
+  if (pw !== FOOD_EVENT_DB.plannerPassword) {
+    errEl.textContent  = 'Password salah!';
+    errEl.style.display = '';
+    return;
+  }
+  showScreen('scr-main');
+  initPlanner();
+}
+
+// ── init ───────────────────────────────────────────────────────────────────────
+function initPlanner() {
+  const map = getMapCfg();
+  document.getElementById('map-cols').value = map.cols;
+  document.getElementById('map-rows').value = map.rows;
+  document.getElementById('map-cell').value = map.cellSize || 100;
+  document.getElementById('event-name-badge').textContent = FOOD_EVENT_DB.event.name;
+  renderAll();
+}
+
+function renderAll() {
+  renderSidebar();
+  renderPlannerMap();
+  const hint = document.getElementById('map-hint');
+  if (movingStallId) {
+    const s = getStalls().find(x => x.id === movingStallId);
+    hint.textContent = '📍 Memindahkan: ' + (s ? s.name : '') + ' — klik sel hijau yang kosong untuk menaruh';
+    hint.className   = 'map-hint moving-active';
+  } else {
+    hint.textContent = 'Klik 📍 pada stall untuk memindahkannya, lalu klik sel kosong di peta.';
+    hint.className   = 'map-hint';
+  }
+}
+
+// ── sidebar ────────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const stalls = getStalls();
+  document.getElementById('stall-count').textContent = stalls.length;
+  const el = document.getElementById('stall-list');
+  if (!stalls.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:12px;text-align:center">Belum ada stall. Klik "+ Tambah" di bawah.</p>';
+    return;
+  }
+  el.innerHTML = stalls.map(s =>
+    `<div class="stall-item ${selectedStallId===s.id?'selected':''}" onclick="selectStall('${s.id}')">
+      <div class="si-color" style="background:${s.color||'#555'}">${CAT_EMOJI[s.category]||'🏪'}</div>
+      <div class="si-info">
+        <div class="si-name">${esc(s.name)}</div>
+        <div class="si-sub">${esc(s.owner)} · ${s.category}</div>
+        <div class="si-sub">Pos:(${s.position?s.position.col+','+s.position.row:'?'}) ${(s.size&&s.size.w>1||s.size&&s.size.h>1)?s.size.w+'×'+s.size.h:''}</div>
+      </div>
+      <div class="si-actions">
+        <button class="icon-btn" title="Edit" onclick="event.stopPropagation();openEditStall('${s.id}')">✏️</button>
+        <button class="icon-btn ${movingStallId===s.id?'moving':''}" title="Pindah"
+          onclick="event.stopPropagation();toggleMoving('${s.id}')">📍</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ── map renderer ───────────────────────────────────────────────────────────────
+function renderPlannerMap() {
+  const stalls = getStalls();
+  const map    = getMapCfg();
+  const el     = document.getElementById('planner-map');
+  const gap    = 4;
+  const cs     = map.cellSize || 100;
+
+  el.style.width  = (map.cols * (cs + gap) - gap) + 'px';
+  el.style.height = (map.rows * (cs + gap) - gap) + 'px';
+  el.innerHTML    = '';
+
+  // Compute occupied cells (excluding moving stall so it can be re-placed)
+  const occ = {};
+  stalls.forEach(function(s) {
+    if (!s.position || s.id === movingStallId) return;
+    const { col, row } = s.position;
+    const w = (s.size && s.size.w) || 1, h = (s.size && s.size.h) || 1;
+    for (let r = row; r < row + h; r++)
+      for (let c = col; c < col + w; c++)
+        occ[c + ',' + r] = s.id;
+  });
+
+  // Moving stall footprint for highlight
+  const movingStall = movingStallId ? stalls.find(x => x.id === movingStallId) : null;
+
+  // Background cells
+  for (let r = 1; r <= map.rows; r++) {
+    for (let c = 1; c <= map.cols; c++) {
+      const div  = document.createElement('div');
+      const key  = c + ',' + r;
+      const drop = movingStallId && !occ[key];
+      const curr = movingStall && movingStall.position &&
+                   c >= movingStall.position.col && c < movingStall.position.col + ((movingStall.size&&movingStall.size.w)||1) &&
+                   r >= movingStall.position.row && r < movingStall.position.row + ((movingStall.size&&movingStall.size.h)||1);
+      div.className = 'plan-cell' + (drop ? ' droppable' : '') + (curr ? ' current-pos' : '');
+      div.style.left   = (c-1)*(cs+gap) + 'px';
+      div.style.top    = (r-1)*(cs+gap) + 'px';
+      div.style.width  = cs + 'px';
+      div.style.height = cs + 'px';
+      div.innerHTML    = `<span class="cell-label">${c},${r}</span>`;
+      if (drop) {
+        (function(col, row){ div.onclick = function() { placeStall(col, row); }; })(c, r);
+      }
+      el.appendChild(div);
+    }
+  }
+
+  // Stalls
+  stalls.forEach(function(s) {
+    if (!s.position) return;
+    const col = s.position.col, row = s.position.row;
+    const w   = (s.size && s.size.w) || 1, h = (s.size && s.size.h) || 1;
+    const div = document.createElement('div');
+    div.className = 'plan-stall'
+      + (selectedStallId === s.id ? ' is-selected' : '')
+      + (movingStallId   === s.id ? ' is-moving'   : '');
+    div.style.left       = (col-1)*(cs+gap) + 'px';
+    div.style.top        = (row-1)*(cs+gap) + 'px';
+    div.style.width      = (w*(cs+gap)-gap) + 'px';
+    div.style.height     = (h*(cs+gap)-gap) + 'px';
+    div.style.background = s.color || '#555';
+    div.innerHTML = `<span style="font-size:${cs<80?16:22}px">${CAT_EMOJI[s.category]||'🏪'}</span>`
+      + `<div class="plan-stall-name">${esc(s.name)}</div>`
+      + `<div class="plan-stall-sub">${w>1||h>1 ? w+'×'+h+' · ' : ''}(${col},${row})</div>`;
+    (function(id){ div.onclick = function(e) { e.stopPropagation(); selectStall(id); }; })(s.id);
+    el.appendChild(div);
+  });
+}
+
+// ── stall interactions ─────────────────────────────────────────────────────────
+function selectStall(id) {
+  selectedStallId = id;
+  renderSidebar();
+  renderPlannerMap();
+}
+
+function toggleMoving(id) {
+  movingStallId = (movingStallId === id) ? null : id;
+  if (movingStallId) selectedStallId = id;
+  renderAll();
+}
+
+function placeStall(col, row) {
+  if (!movingStallId) return;
+  const stalls = getStalls();
+  const idx    = stalls.findIndex(s => s.id === movingStallId);
+  if (idx < 0) return;
+
+  const map = getMapCfg();
+  const w   = (stalls[idx].size && stalls[idx].size.w) || 1;
+  const h   = (stalls[idx].size && stalls[idx].size.h) || 1;
+
+  if (col + w - 1 > map.cols || row + h - 1 > map.rows) {
+    alert('Stall melampaui batas peta! Kurangi ukuran atau pilih posisi lain.');
+    return;
+  }
+
+  // Overlap check
+  const occ = {};
+  stalls.forEach(function(s, i) {
+    if (i === idx || !s.position) return;
+    const sc = s.position.col, sr = s.position.row;
+    const sw = (s.size&&s.size.w)||1, sh = (s.size&&s.size.h)||1;
+    for (let r = sr; r < sr+sh; r++)
+      for (let c = sc; c < sc+sw; c++)
+        occ[c+','+r] = true;
+  });
+  for (let r = row; r < row+h; r++)
+    for (let c = col; c < col+w; c++)
+      if (occ[c+','+r]) { alert('Sel sudah dipakai stall lain!'); return; }
+
+  stalls[idx].position = { col, row };
+  saveStalls(stalls);
+  movingStallId = null;
+  renderAll();
+}
+
+// ── stall form ─────────────────────────────────────────────────────────────────
+function openAddStall() {
+  editStallId = null;
+  document.getElementById('stall-form-title').textContent = 'Tambah Stall Baru';
+  document.getElementById('f-name').value     = '';
+  document.getElementById('f-owner').value    = '';
+  document.getElementById('f-password').value = '';
+  document.getElementById('f-stamp').value    = genCode();
+  document.getElementById('f-cat').value      = CATS[0];
+  document.getElementById('f-color').value    = '#ff6b35';
+  document.getElementById('f-w').value        = 1;
+  document.getElementById('f-h').value        = 1;
+  document.getElementById('f-col').value      = 1;
+  document.getElementById('f-row').value      = 1;
+  document.getElementById('stall-delete-btn').style.display = 'none';
+  document.getElementById('stall-form-error').style.display = 'none';
+  document.getElementById('modal-stall').classList.remove('hidden');
+}
+
+function openEditStall(id) {
+  const s = getStalls().find(x => x.id === id);
+  if (!s) return;
+  editStallId = id;
+  document.getElementById('stall-form-title').textContent = 'Edit Stall';
+  document.getElementById('f-name').value     = s.name;
+  document.getElementById('f-owner').value    = s.owner;
+  document.getElementById('f-password').value = s.password || '';
+  document.getElementById('f-stamp').value    = s.stampCode || '';
+  document.getElementById('f-cat').value      = s.category;
+  document.getElementById('f-color').value    = s.color || '#ff6b35';
+  document.getElementById('f-w').value        = (s.size && s.size.w) || 1;
+  document.getElementById('f-h').value        = (s.size && s.size.h) || 1;
+  document.getElementById('f-col').value      = (s.position && s.position.col) || 1;
+  document.getElementById('f-row').value      = (s.position && s.position.row) || 1;
+  document.getElementById('stall-delete-btn').style.display = '';
+  document.getElementById('stall-form-error').style.display = 'none';
+  document.getElementById('modal-stall').classList.remove('hidden');
+}
+
+function closeStallModal() { document.getElementById('modal-stall').classList.add('hidden'); }
+function maybeCloseModal(e) { if (e.target === document.getElementById('modal-stall')) closeStallModal(); }
+
+function saveStallForm() {
+  const name  = document.getElementById('f-name').value.trim();
+  const owner = document.getElementById('f-owner').value.trim();
+  const errEl = document.getElementById('stall-form-error');
+  if (!name || !owner) {
+    errEl.textContent  = 'Nama stall dan pemilik wajib diisi!';
+    errEl.style.display = '';
+    return;
+  }
+
+  const stalls  = getStalls();
+  const existing = editStallId ? stalls.find(s => s.id === editStallId) : null;
+  const stall = {
+    id:            editStallId || ('s' + Date.now()),
+    name,
+    owner,
+    password:      document.getElementById('f-password').value,
+    stampCode:     (document.getElementById('f-stamp').value.trim().toUpperCase()) || genCode(),
+    category:      document.getElementById('f-cat').value,
+    color:         document.getElementById('f-color').value,
+    size:          { w: Math.max(1, +document.getElementById('f-w').value||1),
+                     h: Math.max(1, +document.getElementById('f-h').value||1) },
+    position:      { col: Math.max(1, +document.getElementById('f-col').value||1),
+                     row: Math.max(1, +document.getElementById('f-row').value||1) },
+    advertisement: existing ? (existing.advertisement || '') : '',
+    menu:          existing ? (existing.menu || []) : [],
+  };
+
+  if (editStallId) {
+    const idx  = stalls.findIndex(s => s.id === editStallId);
+    stalls[idx] = stall;
+  } else {
+    stalls.push(stall);
+  }
+  saveStalls(stalls);
+  closeStallModal();
+  renderAll();
+}
+
+function deleteCurrentStall() {
+  if (!editStallId) return;
+  if (!confirm('Hapus stall ini? Data menu dan iklan akan hilang.')) return;
+  const stalls = getStalls().filter(s => s.id !== editStallId);
+  saveStalls(stalls);
+  if (selectedStallId === editStallId) selectedStallId = null;
+  if (movingStallId   === editStallId) movingStallId   = null;
+  closeStallModal();
+  renderAll();
+}
+
+// ── map settings ───────────────────────────────────────────────────────────────
+function applyMapSettings() {
+  const cols     = Math.max(2, Math.min(12, +document.getElementById('map-cols').value || 6));
+  const rows     = Math.max(2, Math.min(8,  +document.getElementById('map-rows').value || 4));
+  const cellSize = Math.max(60, Math.min(150, +document.getElementById('map-cell').value || 110));
+  saveMapCfg({ cols, rows, cellSize });
+  renderPlannerMap();
+}
+
+// ── utils ──────────────────────────────────────────────────────────────────────
+function genCode() { return Math.random().toString(36).substring(2,6).toUpperCase(); }
+function esc(s)    { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── keyboard shortcuts ─────────────────────────────────────────────────────────
+window.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeStallModal();
+    if (movingStallId) { movingStallId = null; renderAll(); }
+  }
+});
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('planner-pw').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') plannerLogin();
+  });
+});
+</script>
+</body>
+</html>

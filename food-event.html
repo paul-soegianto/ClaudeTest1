@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Food Festival 2026</title>
+  <script src="food-event-db.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a14;--surf:#141422;--surf2:#1e1e30;--border:#2a2a3e;
+      --accent:#ff6b35;--text:#e8e8f0;--muted:#888;--dim:#555;
+      --heavy:#f59e0b;--light:#22c55e;--dessert:#f43f5e;--drink:#3b82f6;
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh;
+      max-width:480px;margin:0 auto;overflow-x:hidden}
+    /* ── screens ── */
+    .screen{display:none;flex-direction:column;min-height:100vh}
+    .screen.active{display:flex}
+    /* ── welcome ── */
+    .welcome-wrap{flex:1;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;padding:32px 20px;gap:32px}
+    .ev-badge{font-size:64px;line-height:1}
+    .ev-title{font-size:26px;font-weight:800;text-align:center;
+      background:linear-gradient(135deg,#ff6b35,#ff9b6b);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .ev-meta{color:var(--muted);font-size:14px;text-align:center;line-height:1.7}
+    .role-cards{display:flex;flex-direction:column;gap:14px;width:100%}
+    .role-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;
+      padding:20px;cursor:pointer;text-align:left;color:var(--text);
+      display:flex;align-items:center;gap:16px;
+      transition:border-color .2s,transform .1s}
+    .role-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+    .role-icon{font-size:36px;width:52px;text-align:center}
+    .role-title{font-size:17px;font-weight:700}
+    .role-desc{font-size:13px;color:var(--muted);margin-top:2px}
+    /* ── top bar ── */
+    .top-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;
+      background:var(--surf);border-bottom:1px solid var(--border);
+      position:sticky;top:0;z-index:20;flex-shrink:0}
+    .back-btn{background:none;border:none;color:var(--muted);font-size:20px;
+      cursor:pointer;padding:0 4px;line-height:1}
+    .top-bar h2{flex:1;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .stamp-badge{background:var(--surf2);border:1px solid var(--border);
+      border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+    /* ── tabs ── */
+    .tab-bar{display:flex;background:var(--surf);border-bottom:1px solid var(--border);flex-shrink:0}
+    .tab{flex:1;padding:12px 4px;background:none;border:none;color:var(--muted);
+      font-size:13px;cursor:pointer;border-bottom:2px solid transparent;transition:color .2s}
+    .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+    .tab-content{display:none;flex:1;overflow-y:auto}
+    .tab-content.active{display:block}
+    /* ── map ── */
+    .map-scroll{overflow:auto;padding:16px}
+    .map-container{position:relative}
+    .map-cell-bg{position:absolute;background:var(--surf2);border-radius:8px;
+      border:1px solid var(--border)}
+    .map-stall{position:absolute;border-radius:10px;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;cursor:pointer;text-align:center;
+      padding:6px 4px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);
+      transition:transform .15s,box-shadow .15s;z-index:2}
+    .map-stall:hover{transform:scale(1.04);box-shadow:0 4px 20px rgba(0,0,0,.5)}
+    .stall-label{font-size:10px;font-weight:700;line-height:1.3;margin-top:2px}
+    /* ── category filter ── */
+    .cat-filter{display:flex;gap:8px;padding:12px 12px 0;overflow-x:auto;flex-shrink:0}
+    .cat-filter::-webkit-scrollbar{height:0}
+    .cat-btn{flex-shrink:0;padding:6px 14px;border-radius:999px;border:1px solid var(--border);
+      background:var(--surf);color:var(--muted);font-size:12px;cursor:pointer;font-weight:600;transition:all .2s}
+    .cat-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    /* ── stall cards ── */
+    .stall-cards{padding:12px;display:flex;flex-direction:column;gap:10px}
+    .stall-card{background:var(--surf);border:1px solid var(--border);border-radius:12px;
+      padding:14px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;
+      transition:border-color .2s}
+    .stall-card:hover{border-color:var(--accent)}
+    .sc-color{width:52px;height:52px;border-radius:10px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:24px}
+    .sc-info h4{font-size:14px;font-weight:700;margin-bottom:4px}
+    .sc-info p{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+    .cat-badge{display:inline-block;padding:2px 10px;border-radius:999px;
+      font-size:11px;font-weight:600;margin-bottom:6px}
+    /* ── stamp tab ── */
+    .stamp-section{padding:16px}
+    .stamp-name-box{background:var(--surf);border-radius:12px;padding:20px;
+      display:flex;flex-direction:column;gap:12px;border:1px solid var(--border)}
+    .stamp-name-box p{color:var(--muted);font-size:14px}
+    .stamp-collection{display:flex;flex-direction:column;gap:16px}
+    .stamp-greeting{font-size:18px;font-weight:700}
+    .stamp-progress{background:var(--surf);border-radius:12px;padding:16px;border:1px solid var(--border)}
+    .progress-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
+    .progress-track{background:var(--surf2);border-radius:999px;height:10px;overflow:hidden}
+    .progress-fill{background:var(--accent);height:100%;border-radius:999px;transition:width .4s}
+    .stamp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .stamp-item{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .stamp-circle{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:22px;border:2px solid var(--border);transition:all .3s}
+    .stamp-item.collected .stamp-circle{border-color:transparent;box-shadow:0 0 0 2px rgba(255,255,255,.3)}
+    .stamp-name{font-size:10px;color:var(--muted);text-align:center;max-width:64px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .stamp-enter{background:var(--surf);border-radius:12px;padding:14px;border:1px solid var(--border)}
+    .stamp-enter p{font-size:13px;color:var(--muted);margin-bottom:10px}
+    .stamp-enter-row{display:flex;gap:8px}
+    .prize-box{background:linear-gradient(135deg,#ff6b35,#ff9b6b);border-radius:12px;
+      padding:20px;text-align:center;color:#fff;font-size:15px;line-height:1.7}
+    .prize-box strong{font-size:18px;display:block;margin-top:4px}
+    /* ── form elements ── */
+    input,select,textarea{background:var(--surf2);border:1px solid var(--border);
+      border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;width:100%;
+      font-family:inherit;transition:border-color .2s}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+    textarea{resize:vertical}
+    .primary-btn{background:var(--accent);border:none;border-radius:10px;color:#fff;
+      padding:13px 24px;font-size:15px;font-weight:700;cursor:pointer;width:100%;
+      transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+    .ghost-btn{background:none;border:1px solid var(--border);border-radius:10px;
+      color:var(--text);padding:10px 20px;font-size:14px;cursor:pointer}
+    .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+    .form-group label{font-size:13px;font-weight:600;color:var(--muted)}
+    .error{color:#ef4444;font-size:13px;padding:8px 12px;background:#1a0000;
+      border-radius:8px;border:1px solid #4a0000}
+    /* ── login form ── */
+    .login-wrap{flex:1;display:flex;flex-direction:column;padding:24px 20px;gap:20px;max-width:400px;margin:0 auto;width:100%}
+    /* ── participant dashboard ── */
+    .dash-body{overflow-y:auto;flex:1;padding:16px;display:flex;flex-direction:column;gap:16px}
+    .dash-section{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px}
+    .dash-section h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--accent)}
+    .menu-table-edit{width:100%;border-collapse:collapse;font-size:13px}
+    .menu-table-edit th{color:var(--muted);font-weight:600;padding:6px 4px;text-align:left;border-bottom:1px solid var(--border)}
+    .menu-table-edit td{padding:6px 4px;border-bottom:1px solid var(--border)}
+    .menu-table-edit input{padding:6px 8px;font-size:12px}
+    .del-btn{background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px 6px}
+    .add-menu-form{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    .add-menu-form input{flex:1;min-width:80px}
+    .add-btn{background:var(--surf2);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);padding:10px 14px;font-size:13px;cursor:pointer;white-space:nowrap}
+    .add-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .stamp-code-badge{background:#2a1a00;color:var(--heavy);border:1px solid #4a3a00;
+      border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+    .save-msg{color:var(--light);font-size:14px;text-align:center;padding:8px;font-weight:600}
+    /* ── stall detail modal ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);
+      display:flex;align-items:flex-end;justify-content:center;z-index:100;
+      animation:fadeIn .2s}
+    .modal-overlay.hidden{display:none}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .modal-sheet{background:var(--surf);border-radius:20px 20px 0 0;
+      width:100%;max-width:480px;max-height:85vh;overflow-y:auto;
+      animation:slideUp .25s}
+    @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal-header-band{padding:24px 20px 16px;text-align:center;border-radius:20px 20px 0 0}
+    .modal-header-band h2{font-size:20px;font-weight:800;margin:8px 0 4px}
+    .modal-header-band p{font-size:13px;opacity:.8}
+    .modal-body{padding:0 16px 16px}
+    .stall-ad{background:var(--surf2);border-radius:10px;padding:14px;
+      font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;
+      border-left:3px solid var(--accent);font-style:italic}
+    .menu-table{width:100%;border-collapse:collapse;font-size:13px}
+    .menu-table .mth{display:grid;grid-template-columns:1fr auto auto;gap:8px;
+      padding:8px 4px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)}
+    .menu-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;
+      padding:10px 4px;border-bottom:1px solid var(--border);align-items:center}
+    .menu-row:last-child{border-bottom:none}
+    .menu-row .price{color:var(--accent);font-weight:600;white-space:nowrap}
+    .menu-row .qty{color:var(--muted);font-size:12px;white-space:nowrap}
+    .modal-stamp{border-top:1px solid var(--border);padding:16px;background:var(--surf2)}
+    .modal-stamp p{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600}
+    .stamp-row{display:flex;gap:8px}
+    .stamp-msg{margin-top:8px;font-size:13px;font-weight:600;min-height:20px}
+    .modal-close-row{padding:12px 16px 20px;display:flex;justify-content:center}
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ WELCOME -->
+<div id="scr-welcome" class="screen active">
+  <div class="welcome-wrap">
+    <div class="ev-badge">🍽️</div>
+    <div>
+      <div class="ev-title" id="ev-title">Food Festival 2026</div>
+      <div class="ev-meta" id="ev-meta">15 Maret 2026 · Gedung Serbaguna, Jakarta</div>
+    </div>
+    <div class="role-cards">
+      <button class="role-card" onclick="goAttendee()">
+        <div class="role-icon">👥</div>
+        <div>
+          <div class="role-title">Saya Pengunjung</div>
+          <div class="role-desc">Jelajahi stall, lihat menu & kumpulkan stamp</div>
+        </div>
+      </button>
+      <button class="role-card" onclick="goParticipantLogin()">
+        <div class="role-icon">🏪</div>
+        <div>
+          <div class="role-title">Saya Peserta</div>
+          <div class="role-desc">Kelola stall, menu & iklan saya</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ ATTENDEE -->
+<div id="scr-attendee" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="showScreen('scr-welcome')">←</button>
+    <h2 id="att-title">Food Festival</h2>
+    <span class="stamp-badge" id="att-stamp-badge">0/5 🏷️</span>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" data-tab="map"    onclick="switchTab('map')">🗺️ Peta</button>
+    <button class="tab"        data-tab="stalls" onclick="switchTab('stalls')">🏪 Stall</button>
+    <button class="tab"        data-tab="stamps" onclick="switchTab('stamps')">🏷️ Stamp</button>
+  </div>
+
+  <div id="tab-map" class="tab-content active">
+    <div class="map-scroll">
+      <div id="att-map" class="map-container"></div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:12px;padding:4px 0 12px">Ketuk stall untuk detail</p>
+  </div>
+
+  <div id="tab-stalls" class="tab-content">
+    <div class="cat-filter">
+      <button class="cat-btn active" data-cat="all" onclick="filterStalls('all')">Semua</button>
+      <button class="cat-btn" data-cat="Makanan Berat"   onclick="filterStalls('Makanan Berat')">🍽️ Berat</button>
+      <button class="cat-btn" data-cat="Makanan Ringan"  onclick="filterStalls('Makanan Ringan')">🍿 Ringan</button>
+      <button class="cat-btn" data-cat="Dessert"         onclick="filterStalls('Dessert')">🍰 Dessert</button>
+      <button class="cat-btn" data-cat="Minuman"         onclick="filterStalls('Minuman')">🥤 Minuman</button>
+    </div>
+    <div id="stall-cards" class="stall-cards"></div>
+  </div>
+
+  <div id="tab-stamps" class="tab-content">
+    <div class="stamp-section">
+      <div id="stamp-name-box" class="stamp-name-box">
+        <p>Masukkan namamu untuk mulai mengumpulkan stamp:</p>
+        <input id="att-name-input" type="text" placeholder="Nama kamu..."/>
+        <button class="primary-btn" onclick="setAttendeeName()">Mulai Kumpulkan Stamp 🏷️</button>
+      </div>
+      <div id="stamp-collection" class="stamp-collection" style="display:none">
+        <div class="stamp-greeting" id="stamp-greeting"></div>
+        <div class="stamp-progress" id="stamp-progress"></div>
+        <div class="stamp-grid"    id="stamp-grid"></div>
+        <div class="stamp-enter">
+          <p>Punya kode stamp dari stall? Masukkan di sini:</p>
+          <div class="stamp-enter-row">
+            <input id="stamp-code-input" type="text" placeholder="Kode stamp..." maxlength="6"
+              style="text-transform:uppercase"/>
+            <button class="ghost-btn" onclick="collectStampByCode()" style="white-space:nowrap">Klaim</button>
+          </div>
+          <div id="stamp-code-msg" style="margin-top:8px;font-size:13px;min-height:18px"></div>
+        </div>
+        <div id="stamp-prize" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ PARTICIPANT LOGIN -->
+<div id="scr-p-login" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="showScreen('scr-welcome')">←</button>
+    <h2>Login Peserta</h2>
+  </div>
+  <div class="login-wrap">
+    <div class="form-group">
+      <label>Pilih Stall Anda</label>
+      <select id="p-stall-select"></select>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input id="p-password" type="password" placeholder="Masukkan password stall"/>
+    </div>
+    <div id="p-login-error" class="error" style="display:none"></div>
+    <button class="primary-btn" onclick="participantLogin()">Masuk 🔑</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ PARTICIPANT DASHBOARD -->
+<div id="scr-p-dash" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="showScreen('scr-welcome')">←</button>
+    <h2 id="p-dash-title">Dashboard Stall</h2>
+    <span class="stamp-code-badge" id="p-stamp-code">KODE: ----</span>
+  </div>
+  <div class="dash-body">
+    <div class="dash-section">
+      <h3>📍 Lokasi Stall Anda di Peta</h3>
+      <div class="map-scroll" style="padding:0">
+        <div id="p-map" class="map-container"></div>
+      </div>
+    </div>
+    <div class="dash-section">
+      <h3>📢 Iklan / Deskripsi Stall</h3>
+      <textarea id="p-ad" rows="3" placeholder="Tulis iklan atau deskripsi menarik stall Anda..."></textarea>
+    </div>
+    <div class="dash-section">
+      <h3>🍴 Menu Hari Ini</h3>
+      <div id="p-menu-list"></div>
+      <div class="add-menu-form">
+        <input id="new-item"  type="text"   placeholder="Nama item" style="flex:2;min-width:120px"/>
+        <input id="new-price" type="number" placeholder="Harga (Rp)" style="flex:1;min-width:90px"/>
+        <input id="new-qty"   type="number" placeholder="Qty" style="flex:0 0 70px"/>
+        <button class="add-btn" onclick="addMenuItem()">+ Tambah</button>
+      </div>
+    </div>
+    <button class="primary-btn" onclick="saveParticipantChanges()">💾 Simpan Perubahan</button>
+    <div id="p-save-msg" class="save-msg" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ STALL DETAIL MODAL -->
+<div id="modal-detail" class="modal-overlay hidden" onclick="maybeCloseDetail(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div id="modal-header-band" class="modal-header-band"></div>
+    <div class="modal-body">
+      <div id="modal-stall-body"></div>
+    </div>
+    <div class="modal-stamp">
+      <p>🏷️ Kumpulkan stamp dari stall ini</p>
+      <div class="stamp-row">
+        <input id="modal-stamp-input" type="text" placeholder="Masukkan kode stamp..."
+          maxlength="6" style="text-transform:uppercase"/>
+        <button class="ghost-btn" onclick="claimStampFromModal()" style="white-space:nowrap">Klaim</button>
+      </div>
+      <div id="modal-stamp-msg" class="stamp-msg"></div>
+    </div>
+    <div class="modal-close-row">
+      <button class="ghost-btn" onclick="closeDetailModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── constants ──────────────────────────────────────────────────────────────────
+const CAT_EMOJI  = {'Makanan Berat':'🍽️','Makanan Ringan':'🍿','Dessert':'🍰','Minuman':'🥤'};
+const CAT_COLOR  = {'Makanan Berat':'#f59e0b','Makanan Ringan':'#22c55e','Dessert':'#f43f5e','Minuman':'#3b82f6'};
+
+// ── db helpers ─────────────────────────────────────────────────────────────────
+function getStalls() {
+  const s = localStorage.getItem('fev_stalls');
+  return s ? JSON.parse(s) : JSON.parse(JSON.stringify(FOOD_EVENT_DB.stalls));
+}
+function getMapCfg() {
+  const m = localStorage.getItem('fev_map');
+  return m ? JSON.parse(m) : Object.assign({}, FOOD_EVENT_DB.map);
+}
+function getStampsData()     { const s = localStorage.getItem('fev_stamps'); return s ? JSON.parse(s) : {}; }
+function saveStampsData(d)   { localStorage.setItem('fev_stamps', JSON.stringify(d)); }
+
+// ── state ──────────────────────────────────────────────────────────────────────
+let activeTab        = 'map';
+let filterCat        = 'all';
+let detailStallId    = null;
+let participantStall = null;
+let participantMenu  = [];
+let attendeeName     = localStorage.getItem('fev_attendee') || '';
+
+// ── screen navigation ──────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+  if (tab === 'map')    renderAttendeeMap();
+  if (tab === 'stalls') renderStallCards();
+  if (tab === 'stamps') renderStampTab();
+}
+
+// ── map renderer ───────────────────────────────────────────────────────────────
+function renderMap(containerId, stalls, map, opts) {
+  opts = opts || {};
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const gap = 4, cs = opts.cellSize || map.cellSize || 100;
+  el.style.width  = (map.cols * (cs + gap) - gap) + 'px';
+  el.style.height = (map.rows * (cs + gap) - gap) + 'px';
+  el.innerHTML = '';
+
+  for (let r = 1; r <= map.rows; r++) {
+    for (let c = 1; c <= map.cols; c++) {
+      const bg = document.createElement('div');
+      bg.className = 'map-cell-bg';
+      bg.style.cssText = `left:${(c-1)*(cs+gap)}px;top:${(r-1)*(cs+gap)}px;width:${cs}px;height:${cs}px`;
+      el.appendChild(bg);
+    }
+  }
+
+  stalls.forEach(function(s) {
+    if (!s.position) return;
+    const col = s.position.col, row = s.position.row;
+    const w = (s.size && s.size.w) || 1, h = (s.size && s.size.h) || 1;
+    const div = document.createElement('div');
+    div.className = 'map-stall';
+    div.style.left       = (col-1)*(cs+gap) + 'px';
+    div.style.top        = (row-1)*(cs+gap) + 'px';
+    div.style.width      = (w*(cs+gap) - gap) + 'px';
+    div.style.height     = (h*(cs+gap) - gap) + 'px';
+    div.style.background = s.color || '#555';
+    if (opts.highlightId === s.id)
+      div.style.boxShadow = '0 0 0 3px #fff, 0 0 0 6px ' + (s.color || '#555');
+    div.innerHTML = `<span style="font-size:${cs<80?16:22}px">${CAT_EMOJI[s.category]||'🏪'}</span>`
+                  + `<span class="stall-label">${s.name}</span>`;
+    if (opts.onStallClick) {
+      div.onclick = function(e) { e.stopPropagation(); opts.onStallClick(s.id); };
+    }
+    el.appendChild(div);
+  });
+}
+
+// ── attendee ───────────────────────────────────────────────────────────────────
+function goAttendee() {
+  const ev = FOOD_EVENT_DB.event;
+  document.getElementById('att-title').textContent = ev.name;
+  updateStampBadge();
+  showScreen('scr-attendee');
+  renderAttendeeMap();
+  renderStallCards();
+  if (attendeeName) renderStampTab();
+}
+
+function updateStampBadge() {
+  const stamps = getStampsData();
+  const mine   = attendeeName ? (stamps[attendeeName] || []) : [];
+  document.getElementById('att-stamp-badge').textContent =
+    mine.length + '/' + FOOD_EVENT_DB.event.stampTarget + ' 🏷️';
+}
+
+function renderAttendeeMap() {
+  renderMap('att-map', getStalls(), getMapCfg(), { onStallClick: openStallDetail });
+}
+
+function filterStalls(cat) {
+  filterCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  renderStallCards();
+}
+
+function renderStallCards() {
+  const stalls   = getStalls();
+  const filtered = filterCat === 'all' ? stalls : stalls.filter(s => s.category === filterCat);
+  const el       = document.getElementById('stall-cards');
+  if (filtered.length === 0) {
+    el.innerHTML = '<p style="text-align:center;color:var(--muted);padding:40px">Tidak ada stall</p>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(s) {
+    const menuPreview = (s.menu || []).slice(0, 2).map(m => m.item).join(' · ');
+    const catColor = CAT_COLOR[s.category] || '#888';
+    return `<div class="stall-card" onclick="openStallDetail('${s.id}')">
+      <div class="sc-color" style="background:${s.color||'#555'}">${CAT_EMOJI[s.category]||'🏪'}</div>
+      <div class="sc-info">
+        <span class="cat-badge" style="background:${catColor}22;color:${catColor}">${s.category}</span>
+        <h4>${esc(s.name)}</h4>
+        <p>${esc(s.owner)}${s.position ? ' · Blok ' + s.position.col + ',' + s.position.row : ''}</p>
+        <p style="color:var(--dim);font-size:11px">${esc(menuPreview)}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openStallDetail(stallId) {
+  detailStallId = stallId;
+  const stalls  = getStalls();
+  const s       = stalls.find(x => x.id === stallId);
+  if (!s) return;
+
+  const hb = document.getElementById('modal-header-band');
+  hb.style.background = s.color || '#333';
+  hb.innerHTML = `<div style="font-size:48px">${CAT_EMOJI[s.category]||'🏪'}</div>
+    <h2>${esc(s.name)}</h2>
+    <span class="cat-badge" style="background:rgba(255,255,255,.2);color:#fff">${s.category}</span>
+    <p>👤 ${esc(s.owner)}</p>`;
+
+  const body = document.getElementById('modal-stall-body');
+  let menuHTML = '';
+  if (s.menu && s.menu.length) {
+    menuHTML = `<div class="menu-table">
+      <div class="mth"><span>Menu</span><span>Harga</span><span>Sisa</span></div>
+      ${s.menu.map(m => `<div class="menu-row">
+        <span>${esc(m.item)}</span>
+        <span class="price">Rp ${Number(m.price).toLocaleString('id')}</span>
+        <span class="qty">${m.qty} pcs</span>
+      </div>`).join('')}
+    </div>`;
+  } else {
+    menuHTML = '<p style="color:var(--muted);padding:8px 0;font-size:13px">Belum ada menu hari ini</p>';
+  }
+  body.innerHTML = (s.advertisement
+    ? `<div class="stall-ad">"${esc(s.advertisement)}"</div>` : '') + menuHTML;
+
+  // stamp section
+  document.getElementById('modal-stamp-input').value = '';
+  const stamps  = getStampsData();
+  const mine    = attendeeName ? (stamps[attendeeName] || []) : [];
+  const msgEl   = document.getElementById('modal-stamp-msg');
+  if (mine.includes(stallId)) {
+    msgEl.textContent = '✅ Stamp sudah dikumpulkan!';
+    msgEl.style.color = '#22c55e';
+  } else {
+    msgEl.textContent = '';
+  }
+
+  document.getElementById('modal-detail').classList.remove('hidden');
+}
+
+function maybeCloseDetail(e) {
+  if (e.target === document.getElementById('modal-detail')) closeDetailModal();
+}
+function closeDetailModal() {
+  document.getElementById('modal-detail').classList.add('hidden');
+}
+
+function claimStampFromModal() {
+  if (!attendeeName) {
+    showScreen('scr-attendee');
+    switchTab('stamps');
+    closeDetailModal();
+    return;
+  }
+  const stalls = getStalls();
+  const s      = stalls.find(x => x.id === detailStallId);
+  if (!s) return;
+  const code   = document.getElementById('modal-stamp-input').value.trim().toUpperCase();
+  const msgEl  = document.getElementById('modal-stamp-msg');
+  if (code !== (s.stampCode || '').toUpperCase()) {
+    msgEl.textContent = '❌ Kode salah, coba lagi!';
+    msgEl.style.color = '#ef4444';
+    return;
+  }
+  const stamps = getStampsData();
+  if (!stamps[attendeeName]) stamps[attendeeName] = [];
+  if (stamps[attendeeName].includes(detailStallId)) {
+    msgEl.textContent = '✅ Stamp sudah dikumpulkan!';
+    msgEl.style.color = '#22c55e';
+    return;
+  }
+  stamps[attendeeName].push(detailStallId);
+  saveStampsData(stamps);
+  msgEl.textContent = '🎉 Stamp berhasil dikumpulkan!';
+  msgEl.style.color = '#22c55e';
+  updateStampBadge();
+}
+
+// ── stamp tab ──────────────────────────────────────────────────────────────────
+function renderStampTab() {
+  const box  = document.getElementById('stamp-name-box');
+  const coll = document.getElementById('stamp-collection');
+  if (!attendeeName) {
+    box.style.display  = '';
+    coll.style.display = 'none';
+    return;
+  }
+  box.style.display  = 'none';
+  coll.style.display = 'flex';
+
+  const stamps = getStampsData();
+  const mine   = stamps[attendeeName] || [];
+  const stalls = getStalls();
+  const target = FOOD_EVENT_DB.event.stampTarget;
+  const pct    = Math.min(100, (mine.length / target) * 100).toFixed(0);
+
+  document.getElementById('stamp-greeting').textContent = 'Halo, ' + attendeeName + '! 👋';
+
+  document.getElementById('stamp-progress').innerHTML =
+    `<div class="progress-labels"><span>${mine.length} stamp terkumpul</span><span>Target: ${target}</span></div>
+     <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+
+  document.getElementById('stamp-grid').innerHTML = stalls.map(function(s) {
+    const got = mine.includes(s.id);
+    return `<div class="stamp-item ${got ? 'collected' : ''}">
+      <div class="stamp-circle" style="${got ? 'background:' + s.color : ''}">${got ? (CAT_EMOJI[s.category]||'🏪') : '?'}</div>
+      <div class="stamp-name">${got ? esc(s.name) : '???'}</div>
+    </div>`;
+  }).join('');
+
+  const prizeEl = document.getElementById('stamp-prize');
+  if (mine.length >= target) {
+    prizeEl.style.display = '';
+    prizeEl.innerHTML = `<div class="prize-box">🎉 Selamat, kamu menang!<strong>${esc(FOOD_EVENT_DB.event.prize)}</strong>Tunjukkan layar ini kepada panitia.</div>`;
+  } else {
+    prizeEl.style.display = 'none';
+  }
+}
+
+function setAttendeeName() {
+  const v = document.getElementById('att-name-input').value.trim();
+  if (!v) return;
+  attendeeName = v;
+  localStorage.setItem('fev_attendee', v);
+  renderStampTab();
+  updateStampBadge();
+}
+
+function collectStampByCode() {
+  if (!attendeeName) return;
+  const code   = document.getElementById('stamp-code-input').value.trim().toUpperCase();
+  const stalls = getStalls();
+  const s      = stalls.find(x => (x.stampCode || '').toUpperCase() === code);
+  const msgEl  = document.getElementById('stamp-code-msg');
+  if (!s) {
+    msgEl.textContent = '❌ Kode tidak ditemukan';
+    msgEl.style.color = '#ef4444';
+    return;
+  }
+  const stamps = getStampsData();
+  if (!stamps[attendeeName]) stamps[attendeeName] = [];
+  if (stamps[attendeeName].includes(s.id)) {
+    msgEl.textContent = '✅ Stamp dari ' + s.name + ' sudah ada!';
+    msgEl.style.color = '#22c55e';
+    return;
+  }
+  stamps[attendeeName].push(s.id);
+  saveStampsData(stamps);
+  document.getElementById('stamp-code-input').value = '';
+  msgEl.textContent = '🎉 Stamp dari ' + s.name + ' berhasil!';
+  msgEl.style.color = '#22c55e';
+  updateStampBadge();
+  renderStampTab();
+}
+
+// ── participant ────────────────────────────────────────────────────────────────
+function goParticipantLogin() {
+  const stalls = getStalls();
+  document.getElementById('p-stall-select').innerHTML =
+    stalls.map(s => `<option value="${s.id}">${esc(s.name)} — ${esc(s.owner)}</option>`).join('');
+  document.getElementById('p-password').value = '';
+  document.getElementById('p-login-error').style.display = 'none';
+  showScreen('scr-p-login');
+}
+
+function participantLogin() {
+  const stalls  = getStalls();
+  const stallId = document.getElementById('p-stall-select').value;
+  const pw      = document.getElementById('p-password').value;
+  const stall   = stalls.find(s => s.id === stallId);
+  const errEl   = document.getElementById('p-login-error');
+  if (!stall || stall.password !== pw) {
+    errEl.textContent  = 'Password salah!';
+    errEl.style.display = '';
+    return;
+  }
+  participantStall = stall;
+  participantMenu  = JSON.parse(JSON.stringify(stall.menu || []));
+  renderParticipantDashboard();
+  showScreen('scr-p-dash');
+}
+
+function renderParticipantDashboard() {
+  const s = participantStall;
+  document.getElementById('p-dash-title').textContent = s.name;
+  document.getElementById('p-stamp-code').textContent = 'Kode: ' + (s.stampCode || 'N/A');
+  document.getElementById('p-ad').value = s.advertisement || '';
+  renderMap('p-map', getStalls(), getMapCfg(), { cellSize: 70, highlightId: s.id });
+  renderParticipantMenu();
+}
+
+function renderParticipantMenu() {
+  const el = document.getElementById('p-menu-list');
+  if (!participantMenu.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada item. Tambahkan di bawah.</p>';
+    return;
+  }
+  el.innerHTML = `<table class="menu-table-edit">
+    <thead><tr><th>Item</th><th>Harga (Rp)</th><th>Qty</th><th></th></tr></thead>
+    <tbody>${participantMenu.map((m, i) => `<tr>
+      <td><input type="text"   value="${esc(m.item)}"  onchange="participantMenu[${i}].item=this.value"/></td>
+      <td><input type="number" value="${m.price}" onchange="participantMenu[${i}].price=+this.value" style="width:90px"/></td>
+      <td><input type="number" value="${m.qty}"   onchange="participantMenu[${i}].qty=+this.value"   style="width:64px"/></td>
+      <td><button class="del-btn" onclick="removeMenuItem(${i})">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function addMenuItem() {
+  const name  = document.getElementById('new-item').value.trim();
+  const price = parseInt(document.getElementById('new-price').value) || 0;
+  const qty   = parseInt(document.getElementById('new-qty').value)   || 0;
+  if (!name) return;
+  participantMenu.push({ item: name, price, qty });
+  document.getElementById('new-item').value  = '';
+  document.getElementById('new-price').value = '';
+  document.getElementById('new-qty').value   = '';
+  renderParticipantMenu();
+}
+
+function removeMenuItem(idx) {
+  participantMenu.splice(idx, 1);
+  renderParticipantMenu();
+}
+
+function saveParticipantChanges() {
+  const stalls = getStalls();
+  const idx    = stalls.findIndex(s => s.id === participantStall.id);
+  if (idx < 0) return;
+  stalls[idx].advertisement = document.getElementById('p-ad').value;
+  stalls[idx].menu          = participantMenu;
+  participantStall          = stalls[idx];
+  localStorage.setItem('fev_stalls', JSON.stringify(stalls));
+  const msg = document.getElementById('p-save-msg');
+  msg.textContent = '✅ Perubahan tersimpan!';
+  msg.style.display = '';
+  setTimeout(() => { msg.style.display = 'none'; }, 2500);
+}
+
+// ── utils ──────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── init ───────────────────────────────────────────────────────────────────────
+(function init() {
+  const ev = FOOD_EVENT_DB.event;
+  document.getElementById('ev-title').textContent = ev.name;
+  document.getElementById('ev-meta').textContent  = ev.date + ' · ' + ev.location;
+  if (attendeeName) {
+    document.getElementById('att-name-input').value = attendeeName;
+    updateStampBadge();
+  }
+  document.getElementById('p-password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') participantLogin();
+  });
+})();
+</script>
+</body>
+</html>
