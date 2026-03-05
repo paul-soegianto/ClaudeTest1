@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <!-- Background rounded rect -->
+  <rect width="200" height="220" rx="32" ry="32" fill="#030306"/>
+
+  <!-- BMW Roundel outer ring -->
+  <circle cx="100" cy="100" r="72" fill="none" stroke="#ffffff" stroke-width="6"/>
+
+  <!-- BMW Roundel quadrants -->
+  <!-- Top-left: white -->
+  <path d="M100,100 L100,30 A70,70 0 0,0 30,100 Z" fill="#ffffff"/>
+  <!-- Top-right: BMW blue -->
+  <path d="M100,100 L170,100 A70,70 0 0,0 100,30 Z" fill="#1c69d4"/>
+  <!-- Bottom-right: white -->
+  <path d="M100,100 L100,170 A70,70 0 0,0 170,100 Z" fill="#ffffff"/>
+  <!-- Bottom-left: BMW blue -->
+  <path d="M100,100 L30,100 A70,70 0 0,0 100,170 Z" fill="#1c69d4"/>
+
+  <!-- Inner ring separator -->
+  <circle cx="100" cy="100" r="70" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+
+  <!-- Horizontal & vertical dividers (cross) -->
+  <line x1="30" y1="100" x2="170" y2="100" stroke="#ffffff" stroke-width="2.5"/>
+  <line x1="100" y1="30" x2="100" y2="170" stroke="#ffffff" stroke-width="2.5"/>
+
+  <!-- "BMW" text in the centre (small, elegant) -->
+  <text x="100" y="107" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="16" font-weight="900" fill="#030306" letter-spacing="3">BMW</text>
+
+  <!-- Gold "ASTRA" label below the roundel -->
+  <text x="100" y="198" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="22" font-weight="700" fill="#c9a84c" letter-spacing="6">ASTRA</text>
+
+  <!-- Thin gold underline -->
+  <line x1="44" y1="205" x2="156" y2="205" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

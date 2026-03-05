@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BMW Astra">
+<meta name="theme-color" content="#1c69d4">
+<meta name="description" content="BMW Astra Indonesia — Dealer BMW Resmi. Temukan mobil, booking servis, dan merchandise BMW.">
+<link rel="manifest" href="bmw-astra-manifest.json">
+<link rel="apple-touch-icon" href="bmw-astra-icon.svg">
+<title>BMW Astra Indonesia</title>
+<script src="bmw-astra-db.js"></script>
+<style>
+/* ── Reset & Custom Properties ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #030306;
+  --surf:    #0a0a12;
+  --surf2:   #111118;
+  --surf3:   #181820;
+  --border:  #1a1a24;
+  --border2: #252530;
+  --blue:    #1c69d4;
+  --blue2:   #2a7de8;
+  --gold:    #c9a84c;
+  --gold2:   #dfc06e;
+  --green:   #22c55e;
+  --red:     #dc2626;
+  --text:    #ffffff;
+  --muted:   #888899;
+  --muted2:  #555566;
+  --radius:  12px;
+  --radius-lg: 20px;
+  --header-h: 56px;
+  --nav-h:    64px;
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+body {
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+#header {
+  height: var(--header-h);
+  min-height: var(--header-h);
+  background: rgba(3,3,6,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+#header .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+#header .logo-roundel {
+  width: 32px;
+  height: 32px;
+}
+
+#header .logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+#header .logo-text .brand { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: 1px; }
+#header .logo-text .sub   { font-size: 9px; font-weight: 600; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
+
+#header .spacer { flex: 1; }
+
+#header .cart-btn {
+  position: relative;
+  background: var(--surf2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text);
+  transition: background .2s;
+}
+#header .cart-btn:active { background: var(--surf3); }
+
+#cart-badge {
+  display: none;
+  position: absolute;
+  top: -4px; right: -4px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  padding: 0 4px;
+  align-items: center;
+  justify-content: center;
+}
+#cart-badge.visible { display: flex; }
+
+/* Desktop inline nav */
+#desktop-nav {
+  display: none;
+}
+
+/* ── Main scrollable area ────────────────────────────────────────────────── */
+#main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* ── Bottom Nav ──────────────────────────────────────────────────────────── */
+#bottom-nav {
+  height: var(--nav-h);
+  min-height: var(--nav-h);
+  background: rgba(10,10,18,0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-shrink: 0;
+}
+
+#bottom-nav .nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color .2s;
+  -webkit-tap-highlight-color: transparent;
+  padding-bottom: 2px;
+}
+
+#bottom-nav .nav-item .nav-icon { font-size: 22px; line-height: 1; }
+#bottom-nav .nav-item .nav-label { font-size: 9px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+#bottom-nav .nav-item.active { color: var(--blue); }
+
+/* ── Page containers ─────────────────────────────────────────────────────── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+#hero {
+  position: relative;
+  padding: 48px 20px 40px;
+  background: linear-gradient(135deg, #030b1a 0%, #03060a 40%, #0a0305 70%, #030306 100%);
+  overflow: hidden;
+  text-align: center;
+}
+
+#hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(28,105,212,.18) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+#hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(201,168,76,.08) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.hero-roundel {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 20px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 24px rgba(28,105,212,.5));
+}
+
+.hero-badge {
+  display: inline-block;
+  background: rgba(28,105,212,.15);
+  border: 1px solid rgba(28,105,212,.4);
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.hero-title {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -.5px;
+  margin-bottom: 8px;
+}
+
+.hero-title .gold { color: var(--gold); }
+
+.hero-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.hero-ctas {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  cursor: pointer;
+  border: none;
+  transition: transform .15s, opacity .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(.96); opacity: .85; }
+
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue2); }
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--border2);
+  color: var(--text);
+}
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+.btn-gold { background: var(--gold); color: #000; }
+.btn-gold:hover { background: var(--gold2); }
+
+/* ── Stats Row ────────────────────────────────────────────────────────────── */
+.stats-row {
+  display: flex;
+  background: var(--surf);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 16px 8px;
+  border-right: 1px solid var(--border);
+}
+.stat-item:last-child { border-right: none; }
+.stat-value { font-size: 18px; font-weight: 800; color: var(--blue); }
+.stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+/* ── Section headings ────────────────────────────────────────────────────── */
+.section { padding: 28px 20px 0; }
+.section-last { padding-bottom: 28px; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+}
+
+.section-link {
+  font-size: 12px;
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ── H-scroll strip ──────────────────────────────────────────────────────── */
+.h-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  margin: 0 -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+.h-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Featured Car Cards (h-scroll) ──────────────────────────────────────── */
+.feat-card {
+  min-width: 220px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color .2s, transform .15s;
+}
+.feat-card:active { transform: scale(.97); }
+.feat-card:hover { border-color: var(--border2); }
+
+.feat-card-emoji {
+  font-size: 42px;
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.feat-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.feat-card-variant {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.feat-card-price {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--blue);
+}
+
+/* ── Promo Cards (h-scroll) ───────────────────────────────────────────────── */
+.promo-card {
+  min-width: 260px;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  transition: transform .15s;
+}
+.promo-card:active { transform: scale(.97); }
+
+.promo-badge {
+  display: inline-block;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.promo-title {
+  font-size: 18px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.promo-desc {
+  font-size: 12px;
+  opacity: .85;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.promo-cta {
+  display: inline-block;
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,.4);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+
+.promo-expires {
+  position: absolute;
+  bottom: 12px; right: 16px;
+  font-size: 10px;
+  opacity: .6;
+}
+
+/* ── Why-Astra Teaser Cards ───────────────────────────────────────────────── */
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.why-teaser {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s;
+}
+.why-teaser:active { transform: scale(.96); }
+.why-teaser:hover  { border-color: var(--blue); }
+
+.why-teaser-icon { font-size: 26px; margin-bottom: 6px; }
+.why-teaser-title { font-size: 11px; font-weight: 700; color: var(--text); line-height: 1.3; }
+
+/* ── Contact bar ──────────────────────────────────────────────────────────── */
+.contact-bar {
+  margin: 28px 20px;
+  background: linear-gradient(135deg, rgba(28,105,212,.15), rgba(201,168,76,.08));
+  border: 1px solid rgba(28,105,212,.25);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+}
+
+.contact-bar h3 {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.contact-bar p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.contact-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* ── Cars Page ────────────────────────────────────────────────────────────── */
+#page-cars { padding-bottom: 24px; }
+
+.filter-bar {
+  padding: 16px 20px 12px;
+  position: sticky;
+  top: 0;
+  background: rgba(3,3,6,0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.filter-chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--border2);
+  background: transparent;
+  color: var(--muted);
+  transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.chip:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+
+.cars-list { padding: 12px 20px 0; }
+
+.car-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s;
+}
+.car-card:active { transform: scale(.99); }
+.car-card:hover { border-color: var(--border2); }
+
+.car-card-emoji {
+  font-size: 48px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surf2);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.car-card-info { flex: 1; min-width: 0; }
+
+.car-card-name {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.car-card-variant {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.car-card-specs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.spec-pill {
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--surf2);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.car-card-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--blue);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* segment badge colour overrides */
+.seg-Elektrik  { color: var(--green) !important; }
+.seg-M_Series  { color: var(--red) !important; }
+.seg-sedan     { color: var(--blue) !important; }
+.seg-SAV       { color: var(--gold) !important; }
+
+/* ── Service Page ─────────────────────────────────────────────────────────── */
+#page-service { padding: 20px 20px 28px; }
+
+.progress-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 28px;
+}
+
+.prog-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--surf3);
+  border: 2px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  transition: all .3s;
+  flex-shrink: 0;
+}
+
+.prog-dot.done   { background: var(--blue); border-color: var(--blue); color: #fff; }
+.prog-dot.active { background: transparent; border-color: var(--blue); color: var(--blue); }
+
+.prog-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border2);
+  max-width: 36px;
+  transition: background .3s;
+}
+.prog-line.done { background: var(--blue); }
+
+.step { display: none; }
+.step.active { display: block; }
+
+.step-title {
+  font-size: 20px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.step-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+/* Service type grid */
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.svc-card {
+  background: var(--surf);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .2s;
+}
+.svc-card:hover { border-color: var(--border2); }
+.svc-card.selected { border-color: var(--blue); background: rgba(28,105,212,.08); }
+.svc-card:active { transform: scale(.97); }
+
+.svc-icon { font-size: 28px; margin-bottom: 6px; }
+.svc-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.svc-desc { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.svc-price { font-size: 12px; font-weight: 700; color: var(--gold); }
+
+/* Workshop select */
+.workshop-list { margin-bottom: 20px; }
+
+.wshop-card {
+  background: var(--surf);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.wshop-card.selected { border-color: var(--blue); background: rgba(28,105,212,.08); }
+.wshop-card:active   { transform: scale(.99); }
+
+.wshop-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.wshop-addr { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.wshop-hours { font-size: 10px; color: var(--muted2); }
+
+/* Date input */
+.field-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+
+.field-input {
+  width: 100%;
+  background: var(--surf);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  padding: 12px 14px;
+  outline: none;
+  margin-bottom: 20px;
+  transition: border-color .2s;
+  font-family: inherit;
+}
+.field-input:focus { border-color: var(--blue); }
+.field-input::placeholder { color: var(--muted2); }
+
+textarea.field-input { resize: vertical; min-height: 80px; }
+
+/* Time slots grid */
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.time-slot {
+  background: var(--surf);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  color: var(--text);
+}
+.time-slot.selected { border-color: var(--blue); background: rgba(28,105,212,.12); color: var(--blue); }
+.time-slot:active { transform: scale(.95); }
+
+/* Step nav buttons */
+.step-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Success step */
+.success-icon {
+  font-size: 72px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.success-title {
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.success-sub {
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.booking-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.booking-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.booking-row:last-child { border-bottom: none; }
+.booking-row .key { color: var(--muted); flex-shrink: 0; margin-right: 12px; }
+.booking-row .val { font-weight: 700; text-align: right; }
+
+/* ── Merch Page ───────────────────────────────────────────────────────────── */
+#page-merch { padding-bottom: 24px; }
+
+.merch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px 20px 0;
+}
+
+.merch-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s;
+}
+.merch-card:active { transform: scale(.97); }
+.merch-card:hover  { border-color: var(--border2); }
+
+.merch-icon {
+  font-size: 40px;
+  text-align: center;
+  background: var(--surf2);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.merch-name {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.merch-desc {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.merch-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.merch-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--blue);
+}
+
+.add-btn {
+  width: 28px; height: 28px;
+  background: var(--blue);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  flex-shrink: 0;
+}
+.add-btn:active { transform: scale(.9); background: var(--blue2); }
+
+/* ── Keunggulan Page ──────────────────────────────────────────────────────── */
+#page-why { padding: 20px 20px 28px; }
+
+.why-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.why-header h1 {
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.why-header p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.why-card {
+  background: var(--surf);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.why-card.open { border-color: var(--blue); }
+
+.why-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.why-card-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  width: 44px;
+  text-align: center;
+}
+
+.why-card-titles { flex: 1; min-width: 0; }
+.why-card-title  { font-size: 15px; font-weight: 800; margin-bottom: 2px; }
+.why-card-sub    { font-size: 11px; color: var(--muted); }
+
+.why-chevron {
+  font-size: 14px;
+  color: var(--muted);
+  transition: transform .3s;
+  flex-shrink: 0;
+}
+.why-card.open .why-chevron { transform: rotate(180deg); color: var(--blue); }
+
+.why-card-body {
+  display: none;
+  padding: 0 18px 18px;
+}
+.why-card.open .why-card-body { display: block; }
+
+.why-card-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.why-benefits { list-style: none; }
+.why-benefits li {
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+.why-benefits li:last-child { border-bottom: none; }
+.why-benefits li::before {
+  content: '✓';
+  color: var(--blue);
+  font-weight: 800;
+  font-size: 12px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+/* ── Modals (bottom sheets) ───────────────────────────────────────────────── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+}
+.overlay.open {
+  display: flex;
+  animation: fadeIn .2s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.sheet {
+  background: var(--surf);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp .25s ease;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: .5; }
+  to   { transform: translateY(0);    opacity: 1;  }
+}
+
+.sheet-drag {
+  width: 40px; height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-title { font-size: 18px; font-weight: 800; }
+
+.sheet-close {
+  width: 32px; height: 32px;
+  background: var(--surf2);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  transition: background .2s;
+}
+.sheet-close:hover { background: var(--surf3); }
+
+.sheet-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Car detail sheet */
+.car-hero {
+  background: linear-gradient(135deg, #030b1a, #03060a);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px;
+  text-align: center;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.car-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 60%, rgba(28,105,212,.2), transparent 65%);
+}
+
+.car-hero-emoji {
+  font-size: 72px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,.5));
+  position: relative;
+}
+
+.car-hero-name { font-size: 22px; font-weight: 900; position: relative; margin-bottom: 4px; }
+.car-hero-var  { font-size: 13px; color: var(--muted); position: relative; }
+
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.spec-item {
+  background: var(--surf2);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.spec-item-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 4px; }
+.spec-item-value { font-size: 13px; font-weight: 700; line-height: 1.3; }
+
+.features-list {
+  background: var(--surf2);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.features-list h4 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+
+.features-list ul { list-style: none; }
+.features-list li {
+  font-size: 13px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  line-height: 1.4;
+}
+.features-list li:last-child { border-bottom: none; }
+.features-list li::before { content: '✦'; color: var(--gold); font-size: 10px; margin-top: 2px; flex-shrink: 0; }
+
+.car-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.price-box {
+  background: linear-gradient(135deg, rgba(28,105,212,.12), rgba(28,105,212,.04));
+  border: 1px solid rgba(28,105,212,.25);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.price-box-label { font-size: 12px; color: var(--muted); }
+.price-box-value { font-size: 24px; font-weight: 900; color: var(--blue); }
+
+.car-ctas { display: flex; gap: 10px; }
+
+/* Cart sheet */
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cart-item:last-child { border-bottom: none; }
+.cart-item-icon { font-size: 32px; width: 48px; text-align: center; flex-shrink: 0; }
+.cart-item-info { flex: 1; min-width: 0; }
+.cart-item-name  { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.cart-item-price { font-size: 12px; color: var(--muted); }
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.qty-btn {
+  width: 28px; height: 28px;
+  background: var(--surf2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s;
+  font-family: inherit;
+  line-height: 1;
+}
+.qty-btn:active { background: var(--surf3); }
+.qty-num { font-size: 14px; font-weight: 700; min-width: 20px; text-align: center; }
+
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.cart-total-label { font-size: 14px; color: var(--muted); }
+.cart-total-val   { font-size: 20px; font-weight: 900; color: var(--blue); }
+
+.cart-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+.cart-empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Checkout sheet */
+.checkout-form { margin-bottom: 20px; }
+
+.checkout-success {
+  text-align: center;
+  padding: 20px 0;
+  display: none;
+}
+
+.checkout-success .success-icon { font-size: 64px; }
+.checkout-success h3 { font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+.checkout-success p  { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 16px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surf3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 24px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .25s, transform .25s;
+  z-index: 400;
+  pointer-events: none;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Desktop responsive ──────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  #bottom-nav { display: none; }
+
+  body { padding-bottom: 0; }
+
+  #header {
+    padding: 0 32px;
+    height: 64px;
+    min-height: 64px;
+  }
+
+  #desktop-nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .desktop-nav-item {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color .2s, background .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .desktop-nav-item.active { color: var(--blue); background: rgba(28,105,212,.1); }
+  .desktop-nav-item:hover:not(.active) { color: var(--text); background: var(--surf2); }
+
+  .max-w {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+  }
+
+  .hero-title { font-size: 42px; }
+  .hero-sub   { font-size: 16px; }
+  .hero-roundel { width: 120px; height: 120px; }
+
+  .feat-card { min-width: 240px; }
+
+  .cars-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .car-card { margin-bottom: 0; }
+
+  .merch-grid { grid-template-columns: repeat(3, 1fr); }
+
+  .service-grid { grid-template-columns: repeat(3, 1fr); }
+  .time-grid    { grid-template-columns: repeat(4, 1fr); }
+
+  #toast {
+    bottom: 24px;
+  }
+
+  .sheet { max-width: 540px; }
+}
+
+@media (min-width: 1024px) {
+  .merch-grid { grid-template-columns: repeat(4, 1fr); }
+  .specs-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header id="header">
+  <div class="logo">
+    <svg class="logo-roundel" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="22" cy="22" r="20" fill="none" stroke="#fff" stroke-width="2"/>
+      <path d="M22,22 L22,2 A20,20 0 0,0 2,22 Z" fill="#fff"/>
+      <path d="M22,22 L42,22 A20,20 0 0,0 22,2 Z" fill="#1c69d4"/>
+      <path d="M22,22 L22,42 A20,20 0 0,0 42,22 Z" fill="#fff"/>
+      <path d="M22,22 L2,22 A20,20 0 0,0 22,42 Z" fill="#1c69d4"/>
+      <circle cx="22" cy="22" r="20" fill="none" stroke="#fff" stroke-width="1.5"/>
+      <line x1="2" y1="22" x2="42" y2="22" stroke="#fff" stroke-width="1.5"/>
+      <line x1="22" y1="2" x2="22" y2="42" stroke="#fff" stroke-width="1.5"/>
+    </svg>
+    <div class="logo-text">
+      <span class="brand">BMW</span>
+      <span class="sub">Astra Indonesia</span>
+    </div>
+  </div>
+
+  <!-- Desktop nav -->
+  <nav id="desktop-nav">
+    <div class="desktop-nav-item active" onclick="navigate('home')">Beranda</div>
+    <div class="desktop-nav-item" onclick="navigate('cars')">Mobil</div>
+    <div class="desktop-nav-item" onclick="navigate('service')">Servis</div>
+    <div class="desktop-nav-item" onclick="navigate('merch')">Merch</div>
+    <div class="desktop-nav-item" onclick="navigate('why')">Keunggulan</div>
+  </nav>
+
+  <div class="spacer"></div>
+
+  <button class="cart-btn" onclick="openCart()" aria-label="Keranjang belanja">
+    🛍️
+    <span id="cart-badge">0</span>
+  </button>
+</header>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<main id="main">
+
+  <!-- ── Page: Beranda ─────────────────────────────────────────────────── -->
+  <section id="page-home" class="page active">
+
+    <!-- Hero -->
+    <div id="hero">
+      <svg class="hero-roundel" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="47" fill="none" stroke="#fff" stroke-width="3.5"/>
+        <path d="M50,50 L50,3 A47,47 0 0,0 3,50 Z" fill="#fff"/>
+        <path d="M50,50 L97,50 A47,47 0 0,0 50,3 Z" fill="#1c69d4"/>
+        <path d="M50,50 L50,97 A47,47 0 0,0 97,50 Z" fill="#fff"/>
+        <path d="M50,50 L3,50 A47,47 0 0,0 50,97 Z" fill="#1c69d4"/>
+        <circle cx="50" cy="50" r="47" fill="none" stroke="#fff" stroke-width="2"/>
+        <line x1="3" y1="50" x2="97" y2="50" stroke="#fff" stroke-width="2"/>
+        <line x1="50" y1="3" x2="50" y2="97" stroke="#fff" stroke-width="2"/>
+      </svg>
+      <div class="hero-badge">Official Authorized Dealer</div>
+      <h1 class="hero-title">The Ultimate<br><span class="gold">Driving Machine</span></h1>
+      <p class="hero-sub">BMW Astra Indonesia — Dealer BMW resmi terpercaya sejak 1975.<br>Temukan mobil impian, servis berkualitas, dan layanan eksklusif.</p>
+      <div class="hero-ctas">
+        <button class="btn btn-primary" onclick="navigate('cars')">🚗 Lihat Mobil</button>
+        <button class="btn btn-outline" onclick="navigate('service')">🔧 Book Servis</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row"></div>
+
+    <!-- Featured Cars -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">Model Pilihan</h2>
+        <span class="section-link" onclick="navigate('cars')">Lihat Semua →</span>
+      </div>
+      <div class="h-scroll" id="featured-cars"></div>
+    </div>
+
+    <!-- Promos -->
+    <div class="section" style="margin-top:24px;">
+      <div class="section-header">
+        <h2 class="section-title">Penawaran Spesial</h2>
+      </div>
+      <div class="h-scroll" id="promos-strip"></div>
+    </div>
+
+    <!-- Why Astra Teaser -->
+    <div class="section" style="margin-top:24px;">
+      <div class="section-header">
+        <h2 class="section-title">Mengapa BMW Astra?</h2>
+        <span class="section-link" onclick="navigate('why')">Selengkapnya →</span>
+      </div>
+      <div class="why-grid" id="why-teaser"></div>
+    </div>
+
+    <!-- Contact -->
+    <div class="contact-bar section-last">
+      <h3>Siap Membantu Anda</h3>
+      <p>Tim customer service kami siap menjawab pertanyaan dan membantu Anda menemukan BMW yang tepat.</p>
+      <div class="contact-btns">
+        <a href="https://wa.me/6221398388888?text=Halo%20BMW%20Astra%2C%20saya%20ingin%20informasi%20lebih%20lanjut" class="btn btn-primary" target="_blank" rel="noopener">💬 WhatsApp</a>
+        <a href="tel:+6221398388888" class="btn btn-outline">📞 Telepon</a>
+      </div>
+    </div>
+
+  </section><!-- /page-home -->
+
+
+  <!-- ── Page: Mobil ───────────────────────────────────────────────────── -->
+  <section id="page-cars" class="page">
+    <div class="filter-bar">
+      <div class="filter-chips" id="car-filter-chips"></div>
+    </div>
+    <div class="cars-list" id="cars-list"></div>
+  </section>
+
+
+  <!-- ── Page: Servis ──────────────────────────────────────────────────── -->
+  <section id="page-service" class="page">
+    <!-- Progress dots -->
+    <div class="progress-dots" id="progress-dots">
+      <div class="prog-dot active" id="dot-1">1</div>
+      <div class="prog-line" id="line-1"></div>
+      <div class="prog-dot" id="dot-2">2</div>
+      <div class="prog-line" id="line-2"></div>
+      <div class="prog-dot" id="dot-3">3</div>
+      <div class="prog-line" id="line-3"></div>
+      <div class="prog-dot" id="dot-4">4</div>
+    </div>
+
+    <!-- Step 1: Service Type -->
+    <div class="step active" id="step-1">
+      <h2 class="step-title">Pilih Layanan</h2>
+      <p class="step-sub">Apa yang ingin Anda serviskan hari ini?</p>
+      <div class="service-grid" id="service-grid"></div>
+      <div class="step-nav">
+        <button class="btn btn-primary" style="flex:1" onclick="nextStep()">Lanjutkan →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Workshop + Date + Time -->
+    <div class="step" id="step-2">
+      <h2 class="step-title">Pilih Lokasi & Waktu</h2>
+      <p class="step-sub">Pilih workshop dan jadwal yang sesuai.</p>
+
+      <div class="field-label" style="margin-bottom:12px;">Workshop</div>
+      <div class="workshop-list" id="workshop-list"></div>
+
+      <div class="field-label">Tanggal</div>
+      <input type="date" class="field-input" id="svc-date" onchange="serviceData.date = this.value">
+
+      <div class="field-label">Jam Servis</div>
+      <div class="time-grid" id="time-grid"></div>
+
+      <div class="step-nav">
+        <button class="btn btn-outline" style="flex:1" onclick="prevStep()">← Kembali</button>
+        <button class="btn btn-primary" style="flex:2" onclick="nextStep()">Lanjutkan →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Vehicle + Contact -->
+    <div class="step" id="step-3">
+      <h2 class="step-title">Data Kendaraan</h2>
+      <p class="step-sub">Lengkapi informasi kendaraan dan kontak Anda.</p>
+
+      <div class="field-label">Model BMW</div>
+      <input type="text" class="field-input" id="svc-model" placeholder="cth. BMW 320i M Sport 2024" oninput="serviceData.model = this.value">
+
+      <div class="field-label">Plat Nomor</div>
+      <input type="text" class="field-input" id="svc-plate" placeholder="cth. B 1234 XYZ" oninput="serviceData.plate = this.value" style="text-transform:uppercase">
+
+      <div class="field-label">Nama Lengkap</div>
+      <input type="text" class="field-input" id="svc-name" placeholder="Nama sesuai STNK" oninput="serviceData.name = this.value">
+
+      <div class="field-label">Nomor HP</div>
+      <input type="tel" class="field-input" id="svc-phone" placeholder="+62 812 3456 7890" oninput="serviceData.phone = this.value">
+
+      <div class="field-label">Catatan (opsional)</div>
+      <textarea class="field-input" id="svc-notes" placeholder="Keluhan atau permintaan khusus..." oninput="serviceData.notes = this.value"></textarea>
+
+      <div class="step-nav">
+        <button class="btn btn-outline" style="flex:1" onclick="prevStep()">← Kembali</button>
+        <button class="btn btn-primary" style="flex:2" onclick="submitService()">Konfirmasi Booking ✓</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div class="step" id="step-4">
+      <div class="success-icon">✅</div>
+      <h2 class="success-title">Booking Berhasil!</h2>
+      <p class="success-sub">Terima kasih. Konfirmasi booking telah dikirim.<br>Tim kami akan menghubungi Anda dalam 30 menit.</p>
+      <div class="booking-card" id="booking-summary"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" style="flex:1" onclick="resetService()">+ Booking Baru</button>
+        <a id="booking-wa" href="#" class="btn btn-outline" style="flex:1;text-decoration:none;justify-content:center;" target="_blank" rel="noopener">💬 WhatsApp</a>
+      </div>
+    </div>
+
+  </section><!-- /page-service -->
+
+
+  <!-- ── Page: Merchandise ─────────────────────────────────────────────── -->
+  <section id="page-merch" class="page">
+    <div class="filter-bar">
+      <div class="filter-chips" id="merch-filter-chips"></div>
+    </div>
+    <div class="merch-grid" id="merch-grid"></div>
+  </section>
+
+
+  <!-- ── Page: Keunggulan ──────────────────────────────────────────────── -->
+  <section id="page-why" class="page">
+    <div class="why-header">
+      <h1>Keunggulan BMW Astra</h1>
+      <p>6 alasan mengapa BMW Astra adalah pilihan terbaik untuk pengalaman BMW Anda di Indonesia.</p>
+    </div>
+    <div id="why-cards"></div>
+  </section>
+
+</main><!-- /main -->
+
+
+<!-- ── Bottom Nav ─────────────────────────────────────────────────────── -->
+<nav id="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="navigate('home')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Beranda</span>
+  </div>
+  <div class="nav-item" id="nav-cars" onclick="navigate('cars')">
+    <span class="nav-icon">🚗</span>
+    <span class="nav-label">Mobil</span>
+  </div>
+  <div class="nav-item" id="nav-service" onclick="navigate('service')">
+    <span class="nav-icon">🔧</span>
+    <span class="nav-label">Servis</span>
+  </div>
+  <div class="nav-item" id="nav-merch" onclick="navigate('merch')">
+    <span class="nav-icon">🛍️</span>
+    <span class="nav-label">Merch</span>
+  </div>
+  <div class="nav-item" id="nav-why" onclick="navigate('why')">
+    <span class="nav-icon">⭐</span>
+    <span class="nav-label">Keunggulan</span>
+  </div>
+</nav>
+
+
+<!-- ── Car Detail Modal ───────────────────────────────────────────────── -->
+<div class="overlay" id="car-overlay" onclick="closeOverlay('car-overlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-drag"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="car-sheet-title">Detail Mobil</span>
+      <button class="sheet-close" onclick="closeOverlay('car-overlay')">✕</button>
+    </div>
+    <div class="sheet-body" id="car-sheet-body"></div>
+  </div>
+</div>
+
+
+<!-- ── Cart Modal ─────────────────────────────────────────────────────── -->
+<div class="overlay" id="cart-overlay" onclick="closeOverlay('cart-overlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-drag"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">🛍️ Keranjang</span>
+      <button class="sheet-close" onclick="closeOverlay('cart-overlay')">✕</button>
+    </div>
+    <div class="sheet-body" id="cart-body"></div>
+  </div>
+</div>
+
+
+<!-- ── Checkout Modal ─────────────────────────────────────────────────── -->
+<div class="overlay" id="checkout-overlay" onclick="closeOverlay('checkout-overlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-drag"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Checkout</span>
+      <button class="sheet-close" onclick="closeOverlay('checkout-overlay')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="checkout-form" id="checkout-form">
+        <div class="field-label">Nama Lengkap</div>
+        <input type="text" class="field-input" id="co-name" placeholder="Nama penerima">
+        <div class="field-label">Nomor HP</div>
+        <input type="tel" class="field-input" id="co-phone" placeholder="+62 812 3456 7890">
+        <div class="field-label">Alamat Pengiriman</div>
+        <textarea class="field-input" id="co-address" placeholder="Jl. Contoh No. 1, Kota..."></textarea>
+        <button class="btn btn-primary" style="width:100%" onclick="submitCheckout()">Konfirmasi Pesanan ✓</button>
+      </div>
+      <div class="checkout-success" id="checkout-success">
+        <div class="success-icon">🎉</div>
+        <h3>Pesanan Dikonfirmasi!</h3>
+        <p>Terima kasih atas pesanan Anda. Tim BMW Astra akan menghubungi Anda dalam 1×24 jam untuk konfirmasi pengiriman.</p>
+        <br>
+        <button class="btn btn-primary" style="width:100%" onclick="closeOverlay('checkout-overlay'); resetCheckout();">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Toast ──────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentPage = 'home';
+let carFilter   = 'Semua';
+let merchFilter = 'Semua';
+let serviceStep = 1;
+let serviceData = { type: '', workshop: '', date: '', time: '', model: '', plate: '', name: '', phone: '', notes: '' };
+let cart = JSON.parse(localStorage.getItem('bmw_cart') || '{}');  // {id: qty}
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function navigate(page) {
+  // Hide current page
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.desktop-nav-item').forEach(n => n.classList.remove('active'));
+
+  // Show new page
+  document.getElementById('page-' + page).classList.add('active');
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+
+  // Desktop nav
+  document.querySelectorAll('.desktop-nav-item').forEach(n => {
+    const onclick = n.getAttribute('onclick') || '';
+    if (onclick.includes("'" + page + "'")) n.classList.add('active');
+  });
+
+  // Scroll to top
+  document.getElementById('main').scrollTop = 0;
+
+  currentPage = page;
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Overlay helpers ──────────────────────────────────────────────────────────
+function openOverlay(id)  { document.getElementById(id).classList.add('open'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Render: Beranda ──────────────────────────────────────────────────────────
+function renderHome() {
+  // Stats
+  const sr = document.getElementById('stats-row');
+  sr.innerHTML = DB.stats.map(s => `
+    <div class="stat-item">
+      <div class="stat-value">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>
+  `).join('');
+
+  // Featured cars (first 6)
+  const fc = document.getElementById('featured-cars');
+  fc.innerHTML = DB.cars.slice(0, 6).map(c => `
+    <div class="feat-card" onclick="openCarDetail('${c.id}')">
+      <div class="feat-card-emoji">${c.emoji}</div>
+      <div class="feat-card-name">${c.name}</div>
+      <div class="feat-card-variant">${c.variant}</div>
+      <div class="feat-card-price">${formatRp(c.price)}</div>
+    </div>
+  `).join('');
+
+  // Promos
+  const ps = document.getElementById('promos-strip');
+  ps.innerHTML = DB.promos.map(p => `
+    <div class="promo-card" style="background:linear-gradient(135deg,${p.color}cc,${p.color}66);color:#fff;" onclick="showToast('${p.title} — hubungi kami untuk info lebih lanjut!')">
+      <div class="promo-badge">${p.badge}</div>
+      <div class="promo-title">${p.title}</div>
+      <div class="promo-desc">${p.desc}</div>
+      <div class="promo-cta">${p.cta}</div>
+      <div class="promo-expires">${p.expires}</div>
+    </div>
+  `).join('');
+
+  // Why Astra teaser (first 3)
+  const wt = document.getElementById('why-teaser');
+  wt.innerHTML = DB.whyAstra.slice(0, 3).map(w => `
+    <div class="why-teaser" onclick="navigate('why')">
+      <div class="why-teaser-icon">${w.icon}</div>
+      <div class="why-teaser-title">${w.title}</div>
+    </div>
+  `).join('');
+}
+
+// ── Render: Cars ─────────────────────────────────────────────────────────────
+const CAR_SEGMENTS = ['Semua', 'Sedan', 'SAV', 'Elektrik', 'M Series'];
+
+function renderCarFilters() {
+  const el = document.getElementById('car-filter-chips');
+  el.innerHTML = CAR_SEGMENTS.map(s => `
+    <div class="chip ${s === carFilter ? 'active' : ''}" onclick="setCarFilter('${s}')">${s}</div>
+  `).join('');
+}
+
+function setCarFilter(seg) {
+  carFilter = seg;
+  renderCarFilters();
+  renderCars();
+}
+
+function renderCars() {
+  const filtered = carFilter === 'Semua' ? DB.cars : DB.cars.filter(c => c.segment === carFilter);
+  const el = document.getElementById('cars-list');
+  el.innerHTML = filtered.map(c => {
+    const segClass = 'seg-' + c.segment.replace(' ', '_');
+    return `
+      <div class="car-card" onclick="openCarDetail('${c.id}')">
+        <div class="car-card-emoji">${c.emoji}</div>
+        <div class="car-card-info">
+          <div class="car-card-name">${c.name}</div>
+          <div class="car-card-variant">${c.variant}</div>
+          <div class="car-card-specs">
+            <span class="spec-pill">${c.acceleration}</span>
+            <span class="spec-pill">${c.topSpeed}</span>
+          </div>
+        </div>
+        <div class="car-card-price ${segClass}">${formatRp(c.price)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Car Detail Modal ──────────────────────────────────────────────────────────
+function openCarDetail(id) {
+  const c = DB.cars.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('car-sheet-title').textContent = c.name + ' ' + c.variant;
+
+  const wa = encodeURIComponent(`Halo BMW Astra, saya tertarik dengan ${c.name} ${c.variant} seharga ${formatRp(c.price)}. Boleh minta info lebih lanjut?`);
+
+  document.getElementById('car-sheet-body').innerHTML = `
+    <div class="car-hero">
+      <div class="car-hero-emoji">${c.emoji}</div>
+      <div class="car-hero-name">${c.name}</div>
+      <div class="car-hero-var">${c.variant} · ${c.year}</div>
+    </div>
+    <div class="specs-grid">
+      <div class="spec-item"><div class="spec-item-label">Mesin</div><div class="spec-item-value">${c.engine}</div></div>
+      <div class="spec-item"><div class="spec-item-label">Tenaga</div><div class="spec-item-value">${c.power}</div></div>
+      <div class="spec-item"><div class="spec-item-label">Torsi</div><div class="spec-item-value">${c.torque}</div></div>
+      <div class="spec-item"><div class="spec-item-label">Akselerasi</div><div class="spec-item-value">${c.acceleration}</div></div>
+      <div class="spec-item"><div class="spec-item-label">Top Speed</div><div class="spec-item-value">${c.topSpeed}</div></div>
+      <div class="spec-item"><div class="spec-item-label">Segmen</div><div class="spec-item-value">${c.segment}</div></div>
+    </div>
+    <div class="features-list">
+      <h4>Fitur Unggulan</h4>
+      <ul>${c.features.map(f => `<li>${f}</li>`).join('')}</ul>
+    </div>
+    <p class="car-desc">${c.description}</p>
+    <div class="price-box">
+      <div><div class="price-box-label">Harga OTR Jakarta</div></div>
+      <div class="price-box-value">${formatRp(c.price)}</div>
+    </div>
+    <div class="car-ctas">
+      <a href="https://wa.me/6221398388888?text=${wa}" class="btn btn-primary" style="flex:1;text-decoration:none;justify-content:center;" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <button class="btn btn-gold" style="flex:1" onclick="navigate('service'); closeOverlay('car-overlay'); showToast('Pilih jadwal test drive Anda!')">🚗 Test Drive</button>
+    </div>
+  `;
+
+  openOverlay('car-overlay');
+}
+
+// ── Render: Service ───────────────────────────────────────────────────────────
+function renderService() {
+  // Service grid
+  const sg = document.getElementById('service-grid');
+  sg.innerHTML = DB.services.map(s => `
+    <div class="svc-card ${serviceData.type === s.id ? 'selected' : ''}" onclick="setServiceType('${s.id}')">
+      <div class="svc-icon">${s.icon}</div>
+      <div class="svc-name">${s.name}</div>
+      <div class="svc-desc">${s.desc}</div>
+      <div class="svc-price">${formatRp(s.price)}</div>
+    </div>
+  `).join('');
+
+  // Workshop list
+  const wl = document.getElementById('workshop-list');
+  wl.innerHTML = DB.workshops.map(w => `
+    <div class="wshop-card ${serviceData.workshop === w.id ? 'selected' : ''}" onclick="setWorkshop('${w.id}')">
+      <div class="wshop-name">${w.name}</div>
+      <div class="wshop-addr">📍 ${w.address}</div>
+      <div class="wshop-hours">⏰ ${w.hours}</div>
+    </div>
+  `).join('');
+
+  // Time grid
+  const tg = document.getElementById('time-grid');
+  tg.innerHTML = DB.timeSlots.map(t => `
+    <div class="time-slot ${serviceData.time === t ? 'selected' : ''}" onclick="setTimeSlot('${t}')">${t}</div>
+  `).join('');
+
+  // Set min date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('svc-date').min = today;
+  if (!serviceData.date) document.getElementById('svc-date').value = '';
+}
+
+function setServiceType(id) {
+  serviceData.type = id;
+  document.querySelectorAll('.svc-card').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+function setWorkshop(id) {
+  serviceData.workshop = id;
+  document.querySelectorAll('.wshop-card').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+function setTimeSlot(t) {
+  serviceData.time = t;
+  document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+function updateProgressDots() {
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.classList.remove('active', 'done');
+    if (i < serviceStep) dot.classList.add('done');
+    else if (i === serviceStep) dot.classList.add('active');
+  }
+  for (let i = 1; i <= 3; i++) {
+    const line = document.getElementById('line-' + i);
+    line.classList.toggle('done', i < serviceStep);
+  }
+}
+
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-' + n).classList.add('active');
+  document.getElementById('main').scrollTop = 0;
+  serviceStep = n;
+  updateProgressDots();
+}
+
+function nextStep() {
+  if (serviceStep === 1) {
+    if (!serviceData.type) { showToast('Silakan pilih layanan terlebih dahulu'); return; }
+  } else if (serviceStep === 2) {
+    if (!serviceData.workshop) { showToast('Silakan pilih workshop'); return; }
+    if (!serviceData.date) { showToast('Silakan pilih tanggal'); return; }
+    if (!serviceData.time)  { showToast('Silakan pilih jam servis'); return; }
+  }
+  if (serviceStep < 3) showStep(serviceStep + 1);
+}
+
+function prevStep() {
+  if (serviceStep > 1) showStep(serviceStep - 1);
+}
+
+function submitService() {
+  if (!serviceData.model.trim()) { showToast('Masukkan model BMW Anda'); return; }
+  if (!serviceData.name.trim())  { showToast('Masukkan nama lengkap'); return; }
+  if (!serviceData.phone.trim()) { showToast('Masukkan nomor HP'); return; }
+
+  // Generate booking ID
+  const bookingId = 'BA-' + Date.now().toString(36).toUpperCase();
+  const bookingData = { ...serviceData, id: bookingId, createdAt: new Date().toISOString() };
+
+  // Save to localStorage
+  const bookings = JSON.parse(localStorage.getItem('bmw_bookings') || '[]');
+  bookings.push(bookingData);
+  localStorage.setItem('bmw_bookings', JSON.stringify(bookings));
+
+  // Find display names
+  const svc     = DB.services.find(s => s.id === serviceData.type);
+  const ws      = DB.workshops.find(w => w.id === serviceData.workshop);
+
+  // Render summary
+  document.getElementById('booking-summary').innerHTML = `
+    <div class="booking-row"><span class="key">Booking ID</span><span class="val" style="color:var(--blue)">${bookingId}</span></div>
+    <div class="booking-row"><span class="key">Layanan</span><span class="val">${svc ? svc.icon + ' ' + svc.name : serviceData.type}</span></div>
+    <div class="booking-row"><span class="key">Workshop</span><span class="val">${ws ? ws.name : serviceData.workshop}</span></div>
+    <div class="booking-row"><span class="key">Tanggal</span><span class="val">${serviceData.date}</span></div>
+    <div class="booking-row"><span class="key">Jam</span><span class="val">${serviceData.time}</span></div>
+    <div class="booking-row"><span class="key">Kendaraan</span><span class="val">${serviceData.model}</span></div>
+    <div class="booking-row"><span class="key">Plat</span><span class="val">${serviceData.plate || '-'}</span></div>
+    <div class="booking-row"><span class="key">Nama</span><span class="val">${serviceData.name}</span></div>
+  `;
+
+  // WhatsApp link
+  const waMsg = encodeURIComponent(`Halo BMW Astra, saya ingin konfirmasi booking servis:\n\nID: ${bookingId}\nLayanan: ${svc ? svc.name : serviceData.type}\nWorkshop: ${ws ? ws.name : serviceData.workshop}\nTanggal: ${serviceData.date} pukul ${serviceData.time}\nKendaraan: ${serviceData.model} (${serviceData.plate})\nNama: ${serviceData.name}\nHP: ${serviceData.phone}`);
+  document.getElementById('booking-wa').href = `https://wa.me/6221398388888?text=${waMsg}`;
+
+  showStep(4);
+}
+
+function resetService() {
+  serviceData = { type: '', workshop: '', date: '', time: '', model: '', plate: '', name: '', phone: '', notes: '' };
+  // Clear inputs
+  ['svc-model', 'svc-plate', 'svc-name', 'svc-phone', 'svc-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  renderService();
+  showStep(1);
+}
+
+// ── Render: Merchandise ───────────────────────────────────────────────────────
+const MERCH_CATS = ['Semua', 'Pakaian', 'Aksesori', 'Koleksi'];
+
+function renderMerchFilters() {
+  const el = document.getElementById('merch-filter-chips');
+  el.innerHTML = MERCH_CATS.map(c => `
+    <div class="chip ${c === merchFilter ? 'active' : ''}" onclick="setMerchFilter('${c}')">${c}</div>
+  `).join('');
+}
+
+function setMerchFilter(cat) {
+  merchFilter = cat;
+  renderMerchFilters();
+  renderMerch();
+}
+
+function renderMerch() {
+  const filtered = merchFilter === 'Semua' ? DB.merchandise : DB.merchandise.filter(m => m.category === merchFilter);
+  const el = document.getElementById('merch-grid');
+  el.innerHTML = filtered.map(m => `
+    <div class="merch-card">
+      <div class="merch-icon">${m.icon}</div>
+      <div class="merch-name">${m.name}</div>
+      <div class="merch-desc">${m.desc}</div>
+      <div class="merch-footer">
+        <div class="merch-price">${formatRp(m.price)}</div>
+        <button class="add-btn" onclick="addToCart('${m.id}'); event.stopPropagation()" aria-label="Tambah ke keranjang">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Cart ──────────────────────────────────────────────────────────────────────
+function addToCart(id) {
+  cart[id] = (cart[id] || 0) + 1;
+  saveCart();
+  updateCartBadge();
+  const item = DB.merchandise.find(m => m.id === id);
+  showToast((item ? item.icon + ' ' + item.name : 'Item') + ' ditambahkan ke keranjang');
+}
+
+function removeFromCart(id) {
+  if (cart[id] > 1) cart[id]--;
+  else delete cart[id];
+  saveCart();
+  updateCartBadge();
+  renderCart();
+}
+
+function saveCart() {
+  localStorage.setItem('bmw_cart', JSON.stringify(cart));
+}
+
+function updateCartBadge() {
+  const total = Object.values(cart).reduce((a, b) => a + b, 0);
+  const badge = document.getElementById('cart-badge');
+  badge.textContent = total;
+  badge.classList.toggle('visible', total > 0);
+}
+
+function openCart() {
+  renderCart();
+  openOverlay('cart-overlay');
+}
+
+function renderCart() {
+  const body = document.getElementById('cart-body');
+  const keys = Object.keys(cart);
+
+  if (keys.length === 0) {
+    body.innerHTML = `
+      <div class="cart-empty">
+        <div class="cart-empty-icon">🛍️</div>
+        <p>Keranjang belanja Anda masih kosong</p>
+      </div>
+    `;
+    return;
+  }
+
+  let total = 0;
+  let html = '';
+
+  keys.forEach(id => {
+    const item = DB.merchandise.find(m => m.id === id);
+    if (!item) return;
+    const subtotal = item.price * cart[id];
+    total += subtotal;
+    html += `
+      <div class="cart-item">
+        <div class="cart-item-icon">${item.icon}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">${formatRp(item.price)} × ${cart[id]} = ${formatRp(subtotal)}</div>
+        </div>
+        <div class="qty-controls">
+          <button class="qty-btn" onclick="removeFromCart('${id}')">−</button>
+          <span class="qty-num">${cart[id]}</span>
+          <button class="qty-btn" onclick="addToCart('${id}'); renderCart()">+</button>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-val">${formatRp(total)}</span>
+    </div>
+    <br>
+    <button class="btn btn-primary" style="width:100%" onclick="closeOverlay('cart-overlay'); openOverlay('checkout-overlay')">Checkout →</button>
+  `;
+
+  body.innerHTML = html;
+}
+
+// ── Checkout ──────────────────────────────────────────────────────────────────
+function submitCheckout() {
+  const name    = document.getElementById('co-name').value.trim();
+  const phone   = document.getElementById('co-phone').value.trim();
+  const address = document.getElementById('co-address').value.trim();
+
+  if (!name)    { showToast('Masukkan nama penerima'); return; }
+  if (!phone)   { showToast('Masukkan nomor HP'); return; }
+  if (!address) { showToast('Masukkan alamat pengiriman'); return; }
+
+  // Save order
+  const order = { name, phone, address, items: { ...cart }, createdAt: new Date().toISOString() };
+  const orders = JSON.parse(localStorage.getItem('bmw_orders') || '[]');
+  orders.push(order);
+  localStorage.setItem('bmw_orders', JSON.stringify(orders));
+
+  // Clear cart
+  cart = {};
+  saveCart();
+  updateCartBadge();
+
+  document.getElementById('checkout-form').style.display = 'none';
+  document.getElementById('checkout-success').style.display = 'block';
+}
+
+function resetCheckout() {
+  document.getElementById('checkout-form').style.display = 'block';
+  document.getElementById('checkout-success').style.display = 'none';
+  ['co-name', 'co-phone', 'co-address'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+// ── Render: Why Astra ─────────────────────────────────────────────────────────
+function renderWhyAstra() {
+  const el = document.getElementById('why-cards');
+  el.innerHTML = DB.whyAstra.map(w => `
+    <div class="why-card" id="why-${w.id}">
+      <div class="why-card-header" onclick="toggleWhyCard('${w.id}')">
+        <div class="why-card-icon">${w.icon}</div>
+        <div class="why-card-titles">
+          <div class="why-card-title">${w.title}</div>
+          <div class="why-card-sub">${w.subtitle}</div>
+        </div>
+        <div class="why-chevron">▼</div>
+      </div>
+      <div class="why-card-body">
+        <p class="why-card-desc">${w.description}</p>
+        <ul class="why-benefits">
+          ${w.benefits.map(b => `<li>${b}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleWhyCard(id) {
+  const card = document.getElementById('why-' + id);
+  card.classList.toggle('open');
+}
+
+// ── PWA Service Worker ────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  // Register a minimal inline SW for offline support
+  const sw = `
+    const CACHE = 'bmw-astra-v1';
+    const ASSETS = [
+      './bmw-astra.html',
+      './bmw-astra-db.js',
+      './bmw-astra-icon.svg',
+    ];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([sw], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(function init() {
+  renderHome();
+  renderCarFilters();
+  renderCars();
+  renderService();
+  renderMerchFilters();
+  renderMerch();
+  renderWhyAstra();
+  updateCartBadge();
+  updateProgressDots();
+})();
+</script>
+</body>
+</html>

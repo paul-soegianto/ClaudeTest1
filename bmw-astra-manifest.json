@@ -1,0 +1,23 @@
+{
+  "name": "BMW Astra Indonesia",
+  "short_name": "BMW Astra",
+  "description": "Dealer BMW resmi terpercaya. Temukan mobil impian, booking servis, dan belanja merchandise BMW.",
+  "start_url": "/ClaudeTest1/bmw-astra.html",
+  "scope": "/ClaudeTest1/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030306",
+  "theme_color": "#1c69d4",
+  "lang": "id",
+  "categories": ["automotive", "shopping"],
+  "icons": [
+    {
+      "src": "bmw-astra-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
