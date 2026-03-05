@@ -372,6 +372,8 @@ const DB = {
         'Priority service lane di semua workshop',
         'Birthday privilege & anniversary bonus poin',
         'Early access produk BMW terbaru',
+        'Undangan VIP eksklusif ke event spesial & peluncuran BMW terbaru',
+        'Layanan VIP ekstra: antar-jemput kendaraan, lounge prioritas, & dedicated advisor',
       ],
     },
     {
