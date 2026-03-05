@@ -363,11 +363,11 @@ const DB = {
     {
       id: 'astraworld',
       icon: '🏆',
-      title: 'AstraWorld Loyalty',
+      title: 'Astra Group Loyalty',
       subtitle: 'Poin reward, event eksklusif, priority service',
       description: 'Program loyalitas eksklusif BMW Astra yang memberikan penghargaan kepada setiap pelanggan setia. Kumpulkan poin dari setiap pembelian dan servis untuk ditukarkan dengan benefit premium.',
       benefits: [
-        'Poin reward untuk setiap transaksi (1 poin = Rp 10.000)',
+        'Poin reward untuk setiap transaksi (Rp 10.000 = 15 poin)',
         'Akses event BMW eksklusif & test drive sirkuit',
         'Priority service lane di semua workshop',
         'Birthday privilege & anniversary bonus poin',
