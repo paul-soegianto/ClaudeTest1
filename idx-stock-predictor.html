@@ -3,446 +3,575 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IDX Stock Predictor — Top 5 Beli & Jual</title>
+  <title>IDX Stock Predictor — Live Analysis</title>
   <script src="idx-stock-db.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #060810;
-      --surf: #0e1220;
-      --surf2: #161c2c;
-      --border: #1e2738;
-      --accent: #0ea5e9;
-      --accent2: #06b6d4;
-      --green: #22c55e;
-      --red: #ef4444;
-      --text: #f1f5f9;
-      --muted: #64748b;
-      --gold: #fbbf24;
+      --bg: #060810; --surf: #0e1220; --surf2: #161c2c; --border: #1e2738;
+      --accent: #0ea5e9; --accent2: #06b6d4; --green: #22c55e; --red: #ef4444;
+      --text: #f1f5f9; --muted: #64748b; --gold: #fbbf24;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-    }
-    h1 {
-      font-size: 24px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .subtitle {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 24px;
-    }
-    .card {
-      background: var(--surf);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    .card h2 {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      margin-bottom: 14px;
-    }
-    .sector-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 10px;
-    }
-    .sector-btn {
-      background: var(--surf2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      color: var(--text);
-      font-size: 13px;
-      text-align: left;
-      cursor: pointer;
-      transition: border-color .2s, background .2s;
-    }
-    .sector-btn:hover {
-      border-color: var(--accent);
-      background: rgba(14, 165, 233, .08);
-    }
-    .sector-btn.selected {
-      border-color: var(--accent);
-      background: rgba(14, 165, 233, .15);
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+    .container { max-width: 740px; margin: 0 auto; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .card { background: var(--surf); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+    .card-desc { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+
+    /* API selector */
+    .api-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+    .api-btn { background: var(--surf2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; color: var(--text); font-size: 13px; text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
+    .api-btn:hover { border-color: var(--accent); background: rgba(14,165,233,.08); }
+    .api-btn.selected { border-color: var(--accent); background: rgba(14,165,233,.15); }
+    .api-btn .api-name { font-weight: 700; margin-bottom: 4px; }
+    .api-btn .api-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .api-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; }
+    .badge-live { background: rgba(34,197,94,.2); color: var(--green); }
+    .badge-plus { background: rgba(251,191,36,.2); color: var(--gold); }
+    .badge-demo { background: rgba(100,116,139,.2); color: var(--muted); }
+
+    /* Portfolio */
+    .portfolio-textarea { width: 100%; background: var(--surf2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: var(--text); font-family: 'Courier New', monospace; font-size: 13px; resize: vertical; min-height: 90px; margin-bottom: 10px; }
+    .portfolio-textarea:focus { outline: none; border-color: var(--accent); }
+    .portfolio-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 10px; }
+    .ptag { background: var(--surf2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+    .ptag-code { font-weight: 700; color: var(--accent); }
+    .ptag-meta { color: var(--muted); }
+
+    /* Sector */
+    .sector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .sector-btn { background: var(--surf2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 13px; text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
+    .sector-btn:hover { border-color: var(--accent); background: rgba(14,165,233,.08); }
+    .sector-btn.selected { border-color: var(--accent); background: rgba(14,165,233,.15); }
     .sector-btn .name { font-weight: 700; }
     .sector-btn .desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .predict-btn {
-      width: 100%;
-      padding: 14px 20px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: none;
-      border-radius: 10px;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 16px;
-      transition: opacity .2s;
-    }
+
+    .predict-btn { width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 16px; transition: opacity .2s; }
     .predict-btn:hover { opacity: .92; }
     .predict-btn:disabled { opacity: .5; cursor: not-allowed; }
-    .result-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .stock-row {
-      display: grid;
-      grid-template-columns: 48px 1fr auto auto;
-      align-items: center;
-      gap: 14px;
-      background: var(--surf2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      transition: border-color .2s;
-    }
+
+    /* Results */
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+    .section-title.buy { color: var(--gold); }
+    .section-title.sell { color: var(--red); }
+    .result-list { display: flex; flex-direction: column; gap: 12px; }
+    .stock-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; background: var(--surf2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; transition: border-color .2s; position: relative; overflow: hidden; }
     .stock-row:hover { border-color: var(--accent); }
-    .stock-row.sell:hover { border-color: var(--red); }
-    .rank {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--gold), #f59e0b);
-      color: #000;
-      font-weight: 800;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .rank.sell {
-      background: linear-gradient(135deg, var(--red), #b91c1c);
-      color: #fff;
-    }
-    .sell-header {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--red);
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      margin-bottom: 14px;
-    }
-    .stock-info .code { font-weight: 800; font-size: 16px; }
-    .stock-info .name { font-size: 12px; color: var(--muted); }
-    .stock-price { font-weight: 700; text-align: right; }
-    .stock-change { font-size: 12px; }
-    .stock-change.up { color: var(--green); }
-    .stock-change.down { color: var(--red); }
-    .stock-change.neutral { color: var(--muted); }
-    .reason {
-      grid-column: 1 / -1;
-      font-size: 12px;
-      color: var(--muted);
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
-      margin-top: 4px;
-    }
-    .reason strong { color: var(--accent); }
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-    .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
-    .legend {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 16px;
-      padding: 10px 12px;
-      background: var(--surf2);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-    .footer {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 24px;
-      text-align: center;
-    }
-    .loading {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 13px;
-      padding: 12px 0;
-    }
-    .spinner {
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      flex-shrink: 0;
-    }
+    .stock-row.sell-row:hover { border-color: var(--red); }
+    .stock-row.owned-buy { border-color: var(--green) !important; background: rgba(34,197,94,.05); }
+    .stock-row.owned-sell { border-color: var(--red) !important; background: rgba(239,68,68,.07); }
+    .owned-badge { position: absolute; top: 0; right: 0; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 0 10px 0 6px; letter-spacing: .04em; }
+    .owned-badge.ob-buy { background: var(--green); color: #000; }
+    .owned-badge.ob-sell { background: var(--red); color: #fff; }
+    .rank { width: 36px; height: 36px; border-radius: 8px; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rank.buy { background: linear-gradient(135deg, var(--gold), #f59e0b); color: #000; }
+    .rank.sell { background: linear-gradient(135deg, var(--red), #b91c1c); color: #fff; }
+    .stock-info .code { font-weight: 800; font-size: 15px; }
+    .stock-info .sname { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .stock-price-col { text-align: right; }
+    .stock-price { font-weight: 700; font-size: 14px; }
+    .stock-chg { font-size: 11px; margin-top: 2px; }
+    .up { color: var(--green); } .down { color: var(--red); } .neutral { color: var(--muted); }
+    .reason { grid-column: 1 / -1; font-size: 11px; color: var(--muted); padding-top: 8px; border-top: 1px solid var(--border); margin-top: 2px; line-height: 1.5; }
+    .reason strong { color: var(--accent2); }
+
+    /* Loading / status */
+    .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; padding: 12px 0; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .fetch-status {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 12px;
-      padding: 8px 12px;
-      background: var(--surf2);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
+    .fetch-status { font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px 12px; background: var(--surf2); border-radius: 8px; border: 1px solid var(--border); }
     .fetch-status .ok { color: var(--green); }
     .fetch-status .err { color: var(--red); }
+    .legend { font-size: 11px; color: var(--muted); margin-top: 14px; padding: 10px 12px; background: var(--surf2); border-radius: 8px; border: 1px solid var(--border); line-height: 1.5; }
+
+    /* Portfolio summary */
+    .psummary-wrap { overflow-x: auto; }
+    .psummary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .psummary-table th { font-size: 11px; color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .psummary-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+    .psummary-table tr:last-child td { border-bottom: none; }
+    .rec-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
+    .rec-buy  { background: rgba(34,197,94,.2); color: var(--green); }
+    .rec-sell { background: rgba(239,68,68,.2); color: var(--red); }
+    .rec-hold { background: rgba(100,116,139,.15); color: var(--muted); }
+    .pnl-pos { color: var(--green); } .pnl-neg { color: var(--red); }
+    .ptotal { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--muted); }
+    .ptotal strong { color: var(--text); }
+
+    .footer { font-size: 11px; color: var(--muted); margin-top: 24px; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>IDX Stock Predictor</h1>
-    <p class="subtitle">Rekomendasi 5 saham terbaik untuk dibeli dan 5 saham untuk dijual berdasarkan riwayat harga & demand order. Pilih sektor lalu klik Prediksi.</p>
+<div class="container">
+  <h1>IDX Stock Predictor</h1>
+  <p class="subtitle">Analisis saham IDX berbasis data live. Pilih sumber data, masukkan portofolio, pilih sektor, lalu klik Analisis.</p>
 
-    <div class="card">
-      <h2>1. Pilih Sektor Industri</h2>
-      <div class="sector-grid" id="sectorGrid"></div>
-      <button class="predict-btn" id="predictBtn" disabled>Prediksi Top 5 Beli &amp; Jual</button>
-    </div>
-
-    <div class="card" id="resultCard" style="display:none">
-      <h2>2. Top 5 Saham — BELI</h2>
-      <div class="result-list" id="resultList"></div>
-      <div class="fetch-status" id="fetchStatus" style="display:none"></div>
-      <div class="legend" style="margin-top:8px">
-        <strong>Algoritma:</strong> Skor berdasarkan (1) trend harga 1/5/30 hari dari Yahoo Finance, (2) tekanan beli/jual dari candlestick, (3) volume transaksi.
-      </div>
-    </div>
-
-    <div class="card" id="sellCard" style="display:none">
-      <div class="sell-header">3. Top 5 Saham — JUAL</div>
-      <div class="result-list" id="sellList"></div>
-      <div class="legend" style="margin-top:16px">
-        <strong>Sinyal jual:</strong> Saham dengan skor terendah — trend negatif, tekanan jual dominan, dan volume lemah. Pertimbangkan untuk cut loss atau ambil profit.
-      </div>
-    </div>
-
-    <p class="footer">Data untuk demonstrasi. Bukan saran investasi. Selalu lakukan riset sendiri.</p>
+  <!-- 1. API Source -->
+  <div class="card">
+    <h2>1. Pilih Sumber Data</h2>
+    <div class="api-grid" id="apiGrid"></div>
   </div>
 
-  <script>
-  (function () {
-    const db = IDX_STOCK_DB;
-    let selectedSector = null;
+  <!-- 2. Portfolio -->
+  <div class="card">
+    <h2>2. Portofolio Saya (Opsional)</h2>
+    <p class="card-desc">Satu saham per baris. Format: <code style="color:var(--accent2)">KODE JUMLAH HARGA_BELI</code> — jumlah dan harga beli opsional.</p>
+    <textarea class="portfolio-textarea" id="portfolioInput"
+      placeholder="Contoh:&#10;BBCA 100 8500&#10;TLKM 500&#10;GOTO 10000 65&#10;ANTM 200 1700"></textarea>
+    <div class="portfolio-tags" id="portfolioTags"></div>
+  </div>
 
-    // ── Sector buttons ─────────────────────────────────────────────────────
-    const grid = document.getElementById('sectorGrid');
-    db.sectors.forEach(function (s) {
-      const btn = document.createElement('button');
-      btn.className = 'sector-btn';
-      btn.dataset.sector = s.id;
-      btn.innerHTML = '<span class="name">' + escapeHtml(s.name) + '</span><br><span class="desc">' + escapeHtml(s.desc) + '</span>';
-      btn.onclick = function () {
-        document.querySelectorAll('.sector-btn').forEach(function (b) { b.classList.remove('selected'); });
-        btn.classList.add('selected');
-        selectedSector = s.id;
-        document.getElementById('predictBtn').disabled = false;
-      };
-      grid.appendChild(btn);
+  <!-- 3. Sector -->
+  <div class="card">
+    <h2>3. Pilih Sektor Industri</h2>
+    <div class="sector-grid" id="sectorGrid"></div>
+    <button class="predict-btn" id="predictBtn" disabled>Analisis Sektor</button>
+  </div>
+
+  <!-- Results BUY -->
+  <div class="card" id="resultCard" style="display:none">
+    <div class="section-title buy">Top 5 — Beli</div>
+    <div class="result-list" id="resultList"></div>
+    <div class="fetch-status" id="fetchStatus" style="display:none"></div>
+    <div class="legend">
+      <strong>Algoritma beli:</strong> Skor gabungan dari trend harga 1/5/30 hari, tekanan beli dari candlestick open→close, volume transaksi, dan (mode Analis) konsensus analis Yahoo Finance.
+    </div>
+  </div>
+
+  <!-- Results SELL -->
+  <div class="card" id="sellCard" style="display:none">
+    <div class="section-title sell">Top 5 — Jual</div>
+    <div class="result-list" id="sellList"></div>
+    <div class="legend">
+      <strong>Sinyal jual:</strong> Skor terendah = trend negatif + tekanan jual dominan + volume lemah + (mode Analis) konsensus analis bearish.
+    </div>
+  </div>
+
+  <!-- Portfolio Summary -->
+  <div class="card" id="portfolioCard" style="display:none">
+    <h2>Ringkasan Portofolio</h2>
+    <div id="portfolioSummary"></div>
+  </div>
+
+  <p class="footer">Data dari Yahoo Finance. Bukan saran investasi. Selalu lakukan riset sendiri.</p>
+</div>
+
+<script>
+(function () {
+  const db = IDX_STOCK_DB;
+  let selectedSector = null;
+  let selectedApi = 'yahoo-chart';
+  let portfolio = []; // [{code, qty, avgBuy}]
+
+  // ── Demo prices (offline fallback, estimated Mar 2026) ──────────────────
+  const DEMO = {
+    'BBRI.JK': { price: 3980, change1d: -0.8, change5d: -3.5, change30d: -11.2, volume: 62e6, buyVolume: 26e6, sellVolume: 36e6 },
+    'BBCA.JK': { price: 7000, change1d: -0.4, change5d: -2.1, change30d: -8.5,  volume: 38e6, buyVolume: 16e6, sellVolume: 22e6 },
+    'BMRI.JK': { price: 4750, change1d: -0.5, change5d: -2.5, change30d: -9.8,  volume: 45e6, buyVolume: 19e6, sellVolume: 26e6 },
+    'BBNI.JK': { price: 3650, change1d: -0.8, change5d: -2.8, change30d: -10.5, volume: 28e6, buyVolume: 11e6, sellVolume: 17e6 },
+    'BNGA.JK': { price: 1380, change1d: -0.4, change5d: -1.8, change30d: -7.2,  volume: 18e6, buyVolume: 8e6,  sellVolume: 10e6 },
+    'BTPN.JK': { price: 1750, change1d: -0.6, change5d: -2.0, change30d: -8.8,  volume: 12e6, buyVolume: 5e6,  sellVolume: 7e6  },
+    'PTBA.JK': { price: 2780, change1d:  0.7, change5d: -1.5, change30d: -12.3, volume: 48e6, buyVolume: 22e6, sellVolume: 26e6 },
+    'ITMG.JK': { price:21500, change1d:  1.1, change5d: -2.0, change30d: -14.5, volume:  6e6, buyVolume: 2.8e6,sellVolume: 3.2e6},
+    'ADRO.JK': { price: 1850, change1d: -0.8, change5d: -3.5, change30d: -15.2, volume: 95e6, buyVolume: 38e6, sellVolume: 57e6 },
+    'ANTM.JK': { price: 1580, change1d:  1.5, change5d:  2.8, change30d:  -5.2, volume:110e6, buyVolume: 62e6, sellVolume: 48e6 },
+    'PGAS.JK': { price: 1250, change1d:  0.4, change5d: -1.2, change30d:  -8.5, volume: 38e6, buyVolume: 17e6, sellVolume: 21e6 },
+    'PGEO.JK': { price: 1385, change1d:  0.8, change5d:  1.5, change30d:  -3.5, volume: 22e6, buyVolume: 12e6, sellVolume: 10e6 },
+    'ASII.JK': { price: 4050, change1d: -0.5, change5d: -2.0, change30d:  -9.5, volume: 55e6, buyVolume: 22e6, sellVolume: 33e6 },
+    'INDF.JK': { price: 6500, change1d:  0.3, change5d:  0.5, change30d:  -3.2, volume: 14e6, buyVolume: 8e6,  sellVolume: 6e6  },
+    'GGRM.JK': { price:12500, change1d: -1.2, change5d: -4.5, change30d: -18.5, volume:  3e6, buyVolume: 1e6,  sellVolume: 2e6  },
+    'UNVR.JK': { price: 1575, change1d: -0.6, change5d: -2.5, change30d: -11.2, volume: 22e6, buyVolume: 8e6,  sellVolume: 14e6 },
+    'INTP.JK': { price: 5850, change1d:  0.2, change5d: -1.0, change30d:  -7.5, volume:  7e6, buyVolume: 3.5e6,sellVolume: 3.5e6},
+    'TPIA.JK': { price: 5200, change1d:  0.5, change5d: -0.8, change30d:  -5.5, volume: 18e6, buyVolume: 9e6,  sellVolume: 9e6  },
+    'ICBP.JK': { price: 8750, change1d:  0.3, change5d:  0.8, change30d:  -2.5, volume: 16e6, buyVolume: 9e6,  sellVolume: 7e6  },
+    'CPIN.JK': { price: 4100, change1d:  0.5, change5d: -1.2, change30d:  -8.5, volume: 22e6, buyVolume: 10e6, sellVolume: 12e6 },
+    'MYOR.JK': { price: 1800, change1d:  0.6, change5d:  1.2, change30d:  -3.5, volume: 28e6, buyVolume: 16e6, sellVolume: 12e6 },
+    'BSDE.JK': { price: 1050, change1d: -0.5, change5d: -2.0, change30d:  -9.5, volume: 48e6, buyVolume: 20e6, sellVolume: 28e6 },
+    'PWON.JK': { price:  355, change1d: -0.6, change5d: -2.5, change30d: -10.5, volume:115e6, buyVolume: 48e6, sellVolume: 67e6 },
+    'CTRA.JK': { price:  820, change1d: -0.4, change5d: -1.8, change30d:  -8.2, volume: 62e6, buyVolume: 27e6, sellVolume: 35e6 },
+    'GOTO.JK': { price:   52, change1d:  1.9, change5d: -3.8, change30d: -15.4, volume:920e6, buyVolume:420e6, sellVolume:500e6 },
+    'TLKM.JK': { price: 2550, change1d: -0.8, change5d: -3.5, change30d: -13.5, volume: 42e6, buyVolume: 16e6, sellVolume: 26e6 },
+    'EMTK.JK': { price:  445, change1d:  0.4, change5d: -1.5, change30d:  -9.8, volume: 18e6, buyVolume: 8e6,  sellVolume: 10e6 },
+    'KLBF.JK': { price: 1185, change1d:  0.2, change5d: -0.8, change30d:  -5.5, volume: 25e6, buyVolume: 12e6, sellVolume: 13e6 },
+    'SIDO.JK': { price:  580, change1d:  0.3, change5d:  0.8, change30d:  -2.2, volume: 18e6, buyVolume: 10e6, sellVolume: 8e6  },
+    'EXCL.JK': { price: 2350, change1d: -0.4, change5d: -1.5, change30d:  -6.8, volume: 15e6, buyVolume: 7e6,  sellVolume: 8e6  },
+    'GIAA.JK': { price:   85, change1d:  1.2, change5d: -2.4, change30d: -18.5, volume:280e6, buyVolume:120e6, sellVolume:160e6 },
+    'SMDR.JK': { price: 1250, change1d:  0.4, change5d:  1.2, change30d:   3.5, volume:  8e6, buyVolume: 5e6,  sellVolume: 3e6  },
+  };
+
+  // ── API mode definitions ─────────────────────────────────────────────────
+  const API_MODES = [
+    { id: 'yahoo-chart', badge: 'LIVE',  badgeClass: 'badge-live', name: 'Yahoo Finance',
+      desc: 'Harga & volume real-time. Analisis teknikal: trend harga + candlestick + volume.' },
+    { id: 'yahoo-full',  badge: 'LIVE+', badgeClass: 'badge-plus', name: 'Yahoo Finance + Analis',
+      desc: 'Harga live + konsensus rekomendasi analis (strongBuy/buy/hold/sell) dari Yahoo.' },
+    { id: 'demo',        badge: 'DEMO',  badgeClass: 'badge-demo', name: 'Demo (Offline)',
+      desc: 'Data estimasi statis Mar 2026. Tidak perlu internet. Hanya untuk demonstrasi.' },
+  ];
+
+  // ── Build API grid ────────────────────────────────────────────────────────
+  const apiGrid = document.getElementById('apiGrid');
+  API_MODES.forEach(function (m) {
+    const btn = document.createElement('button');
+    btn.className = 'api-btn' + (m.id === selectedApi ? ' selected' : '');
+    btn.innerHTML =
+      '<div class="api-badge ' + m.badgeClass + '">' + m.badge + '</div>' +
+      '<div class="api-name">' + esc(m.name) + '</div>' +
+      '<div class="api-desc">' + esc(m.desc) + '</div>';
+    btn.onclick = function () {
+      document.querySelectorAll('.api-btn').forEach(function (b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      selectedApi = m.id;
+    };
+    apiGrid.appendChild(btn);
+  });
+
+  // ── Portfolio input ───────────────────────────────────────────────────────
+  document.getElementById('portfolioInput').addEventListener('input', function () {
+    portfolio = parsePortfolio(this.value);
+    renderTags(portfolio);
+  });
+
+  function parsePortfolio(text) {
+    return text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      const p = l.toUpperCase().split(/\s+/);
+      return { code: p[0], qty: p[1] ? parseInt(p[1]) : null, avgBuy: p[2] ? parseFloat(p[2]) : null };
+    }).filter(function (p) { return /^[A-Z]{2,5}$/.test(p.code); });
+  }
+
+  function renderTags(list) {
+    document.getElementById('portfolioTags').innerHTML = list.map(function (p) {
+      return '<div class="ptag"><span class="ptag-code">' + esc(p.code) + '</span>' +
+        (p.qty ? '<span class="ptag-meta">×' + p.qty.toLocaleString() + '</span>' : '') +
+        (p.avgBuy ? '<span class="ptag-meta">@' + fmtP(p.avgBuy) + '</span>' : '') + '</div>';
+    }).join('');
+  }
+
+  // ── Sector grid ───────────────────────────────────────────────────────────
+  db.sectors.forEach(function (s) {
+    const btn = document.createElement('button');
+    btn.className = 'sector-btn';
+    btn.innerHTML = '<span class="name">' + esc(s.name) + '</span><br><span class="desc">' + esc(s.desc) + '</span>';
+    btn.onclick = function () {
+      document.querySelectorAll('.sector-btn').forEach(function (b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      selectedSector = s.id;
+      document.getElementById('predictBtn').disabled = false;
+    };
+    document.getElementById('sectorGrid').appendChild(btn);
+  });
+
+  // ── Predict ───────────────────────────────────────────────────────────────
+  document.getElementById('predictBtn').onclick = async function () {
+    if (!selectedSector) return;
+    const btn = document.getElementById('predictBtn');
+    btn.disabled = true;
+    btn.textContent = selectedApi === 'demo' ? 'Memuat demo...' : 'Mengambil data live...';
+
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('sellCard').style.display = 'none';
+    document.getElementById('portfolioCard').style.display = 'none';
+    document.getElementById('fetchStatus').style.display = 'none';
+    document.getElementById('resultList').innerHTML =
+      '<div class="loading"><div class="spinner"></div>Mengambil data ' +
+      (selectedApi === 'demo' ? 'demo' : 'dari Yahoo Finance') + '...</div>';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+
+    try {
+      const { scored, fetchedAt, errors } = await fetchAndScore(selectedSector, selectedApi);
+      if (scored.length === 0) throw new Error('Tidak ada data untuk sektor ini');
+
+      const buys = scored.slice(0, 5);
+      const sells = scored.slice(-5).reverse();
+      const buyCodes  = new Set(buys.map(function (p)  { return p.stock.code; }));
+      const sellCodes = new Set(sells.map(function (p) { return p.stock.code; }));
+      const ownedSet  = new Set(portfolio.map(function (p) { return p.code; }));
+
+      renderResults(buys,  'resultList', false, ownedSet);
+      renderResults(sells, 'sellList',   true,  ownedSet);
+      document.getElementById('sellCard').style.display = 'block';
+
+      const statusEl = document.getElementById('fetchStatus');
+      const errNote = errors.length ? ' <span class="err">(' + errors.length + ' gagal: ' + errors.join(', ') + ')</span>' : '';
+      statusEl.innerHTML = (selectedApi === 'demo'
+        ? 'Data estimasi offline'
+        : '<span class="ok">Data live berhasil</span>') + ' — ' + fetchedAt + errNote;
+      statusEl.style.display = 'block';
+
+      if (portfolio.length > 0) {
+        await showPortfolioSummary(portfolio, scored, buyCodes, sellCodes, selectedApi);
+      }
+    } catch (e) {
+      document.getElementById('resultList').innerHTML =
+        '<div class="loading" style="color:var(--red)">Gagal: ' + esc(e.message) +
+        '. Coba mode Demo atau periksa koneksi.</div>';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Analisis Sektor';
+  };
+
+  // ── Fetch: Yahoo Finance chart (1-month daily OHLCV) ─────────────────────
+  async function fetchYahooChart(symbol) {
+    const url = 'https://query2.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1mo';
+    async function get(u) {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let json;
+    try { json = await get(url); }
+    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+
+    const res = json.chart.result && json.chart.result[0];
+    if (!res) throw new Error('No chart result: ' + symbol);
+    const meta  = res.meta;
+    const ohlcv = res.indicators.quote[0];
+    const raw   = ohlcv.close || [];
+    const cls   = raw.filter(function (c) { return c != null; });
+    const n     = cls.length;
+    if (n === 0) throw new Error('No closes: ' + symbol);
+
+    const price    = meta.regularMarketPrice || cls[n - 1];
+    const volume   = meta.regularMarketVolume || 1;
+    const change1d  = n >= 2 ? (cls[n-1] - cls[n-2]) / cls[n-2] * 100 : 0;
+    const change5d  = n >= 6 ? (cls[n-1] - cls[n-6]) / cls[n-6] * 100 : change1d;
+    const change30d = n >= 2 ? (cls[n-1] - cls[0])   / cls[0]   * 100 : 0;
+
+    const lastOpen  = (ohlcv.open || [])[raw.length - 1] || cls[n - 2] || price;
+    const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+    return { price, change1d, change5d, change30d, volume,
+      buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore: null };
+  }
+
+  // ── Fetch: Yahoo Finance + analyst recommendations ────────────────────────
+  async function fetchYahooFull(symbol) {
+    const base = await fetchYahooChart(symbol);
+    const url  = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + symbol +
+                 '?modules=recommendationTrend';
+    async function get(u) {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let analystScore = 0;
+    try {
+      let json;
+      try { json = await get(url); }
+      catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+      const trends = json.quoteSummary.result[0].recommendationTrend.trend;
+      const t = trends && trends[0];
+      if (t) {
+        const bull  = (t.strongBuy || 0) * 2 + (t.buy || 0);
+        const bear  = (t.sell || 0)      + (t.strongSell || 0) * 2;
+        const total = (t.strongBuy||0) + (t.buy||0) + (t.hold||0) + (t.sell||0) + (t.strongSell||0);
+        analystScore = total > 0 ? (bull - bear) / total * 10 : 0;
+      }
+    } catch (_) { /* use 0 */ }
+    return Object.assign({}, base, { analystScore });
+  }
+
+  // ── Fetch: Demo ───────────────────────────────────────────────────────────
+  function fetchDemo(symbol) {
+    const d = DEMO[symbol];
+    if (!d) throw new Error('No demo data: ' + symbol);
+    return Promise.resolve(Object.assign({}, d, { analystScore: null }));
+  }
+
+  // ── Score helper ──────────────────────────────────────────────────────────
+  function scoreStock(data, apiMode) {
+    const buyRatio    = data.buyVolume / ((data.buyVolume + data.sellVolume) || 1);
+    const trendScore  = (data.change1d + data.change5d * 0.5 + data.change30d * 0.2) / 3;
+    const demandScore = (buyRatio - 0.5) * 20;
+    const volScore    = Math.log10((data.volume || 1) + 1) * 2;
+    const score = (apiMode === 'yahoo-full' && data.analystScore != null)
+      ? trendScore * 0.3 + demandScore * 0.2 + volScore * 0.15 + data.analystScore * 0.35
+      : trendScore * 0.4 + demandScore * 0.35 + volScore * 0.25;
+    return { score, buyRatio, trendScore, demandScore };
+  }
+
+  // ── Orchestrate fetch + score ─────────────────────────────────────────────
+  async function fetchAndScore(sectorId, apiMode) {
+    const sector = db.sectors.find(function (s) { return s.id === sectorId; });
+    const codes  = sector ? sector.codes : [];
+    let candidates = db.stocks.filter(function (s) {
+      return sectorId === 'OTHER' || codes.includes(s.sector);
+    });
+    if (candidates.length === 0) candidates = db.stocks;
+
+    const fetchFn = apiMode === 'yahoo-full' ? fetchYahooFull :
+                    apiMode === 'demo'        ? fetchDemo      : fetchYahooChart;
+
+    const results = await Promise.allSettled(candidates.map(function (s) {
+      return fetchFn(s.symbol).then(function (data) { return Object.assign({}, s, data); });
+    }));
+
+    const errors = [], enriched = [];
+    results.forEach(function (r, i) {
+      if (r.status === 'fulfilled') enriched.push(r.value);
+      else { errors.push(candidates[i].code); console.warn(candidates[i].symbol, r.reason); }
     });
 
-    // ── Predict button ────────────────────────────────────────────────────
-    document.getElementById('predictBtn').onclick = async function () {
-      if (!selectedSector) return;
-      const btn = document.getElementById('predictBtn');
-      btn.disabled = true;
-      btn.textContent = 'Memuat data live...';
+    const scored = enriched.map(function (s) {
+      const sc = scoreStock(s, apiMode);
+      return Object.assign({ stock: s }, sc);
+    });
+    scored.sort(function (a, b) { return b.score - a.score; });
 
-      // Show loading state
-      document.getElementById('resultCard').style.display = 'block';
-      document.getElementById('sellCard').style.display = 'none';
-      document.getElementById('resultList').innerHTML =
-        '<div class="loading"><div class="spinner"></div>Mengambil harga live dari Yahoo Finance...</div>';
-      document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+    const now = new Date();
+    const fetchedAt = now.toLocaleTimeString('id-ID') + ', ' + now.toLocaleDateString('id-ID');
+    return { scored, fetchedAt, errors };
+  }
 
-      try {
-        const { scored, fetchedAt, errors } = await fetchAndScore(selectedSector);
-        if (scored.length === 0) throw new Error('Tidak ada data tersedia');
+  // ── Render buy/sell rows ──────────────────────────────────────────────────
+  function renderResults(picks, listId, isSell, ownedSet) {
+    const list = document.getElementById(listId);
+    list.innerHTML = '';
+    picks.forEach(function (p, i) {
+      const s       = p.stock;
+      const isOwned = ownedSet.has(s.code);
+      const ownedClass = isOwned ? (isSell ? ' owned-sell' : ' owned-buy') : '';
+      const row = document.createElement('div');
+      row.className = 'stock-row' + (isSell ? ' sell-row' : '') + ownedClass;
 
-        const buys = scored.slice(0, 5);
-        const sells = scored.slice(-5).reverse();
-        renderResults(buys, 'resultList', false);
-        renderResults(sells, 'sellList', true);
-        document.getElementById('sellCard').style.display = 'block';
+      const chCls  = s.change1d > 0 ? 'up' : s.change1d < 0 ? 'down' : 'neutral';
+      const sg = function (v) { return v >= 0 ? '+' : ''; };
 
-        // Show fetch status
-        const statusEl = document.getElementById('fetchStatus');
-        const errNote = errors.length ? ' <span class="err">(' + errors.length + ' saham gagal dimuat)</span>' : '';
-        statusEl.innerHTML = '<span class="ok">Data live berhasil dimuat</span> — ' +
-          fetchedAt + errNote + '. Sumber: Yahoo Finance.';
-        statusEl.style.display = 'block';
-      } catch (e) {
-        document.getElementById('resultList').innerHTML =
-          '<div class="loading" style="color:var(--red)">Gagal memuat data: ' + escapeHtml(e.message) +
-          '. Periksa koneksi internet.</div>';
+      const analystNote = (p.analystScore != null)
+        ? ' • Analis: ' + (p.analystScore > 3 ? 'Strong Buy' : p.analystScore > 0 ? 'Buy' : p.analystScore < -3 ? 'Strong Sell' : 'Hold/Sell')
+        : '';
+
+      const reasonText = isSell
+        ? 'Trend: ' + sg(s.change1d) + s.change1d.toFixed(1) + '% (1d), ' + sg(s.change5d) + s.change5d.toFixed(1) + '% (5d), ' + sg(s.change30d) + s.change30d.toFixed(1) + '% (30d)' +
+          ' • Tekanan jual: ' + (100 - p.buyRatio * 100).toFixed(0) + '%' + analystNote
+        : 'Trend: ' + sg(s.change1d) + s.change1d.toFixed(1) + '% (1d), ' + sg(s.change5d) + s.change5d.toFixed(1) + '% (5d), ' + sg(s.change30d) + s.change30d.toFixed(1) + '% (30d)' +
+          ' • Demand beli: ' + (p.buyRatio * 100).toFixed(0) + '%' + analystNote;
+
+      row.innerHTML =
+        (isOwned ? '<div class="owned-badge ' + (isSell ? 'ob-sell' : 'ob-buy') + '">' +
+          (isSell ? 'JUAL SEKARANG' : 'TAMBAH POSISI') + '</div>' : '') +
+        '<div class="rank ' + (isSell ? 'sell' : 'buy') + '">' + (i + 1) + '</div>' +
+        '<div class="stock-info"><div class="code">' + esc(s.code) + '</div><div class="sname">' + esc(s.name) + '</div></div>' +
+        '<div class="stock-price-col"><div class="stock-price">Rp ' + fmtP(s.price) + '</div><div class="stock-chg ' + chCls + '">' + sg(s.change1d) + s.change1d.toFixed(2) + '%</div></div>' +
+        '<div class="reason"><strong>' + (isSell ? 'Sinyal jual' : 'Alasan') + ':</strong> ' + esc(reasonText) + '</div>';
+
+      list.appendChild(row);
+    });
+  }
+
+  // ── Portfolio summary ─────────────────────────────────────────────────────
+  async function showPortfolioSummary(portfolio, sectorScored, buyCodes, sellCodes, apiMode) {
+    const card = document.getElementById('portfolioCard');
+    const el   = document.getElementById('portfolioSummary');
+    card.style.display = 'block';
+    el.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat data portofolio...</div>';
+
+    // Map already-fetched stocks
+    const fetchedMap = {};
+    sectorScored.forEach(function (p) { fetchedMap[p.stock.code] = p; });
+
+    // Fetch portfolio stocks not already in sector results
+    const fetchFn = apiMode === 'yahoo-full' ? fetchYahooFull :
+                    apiMode === 'demo'        ? fetchDemo      : fetchYahooChart;
+
+    const missing = portfolio.filter(function (p) { return !fetchedMap[p.code]; });
+    if (missing.length > 0) {
+      const extraResults = await Promise.allSettled(missing.map(function (p) {
+        // Find in db or construct symbol
+        const meta = db.stocks.find(function (s) { return s.code === p.code; });
+        const symbol = meta ? meta.symbol : p.code + '.JK';
+        const name   = meta ? meta.name   : p.code;
+        return fetchFn(symbol).then(function (data) {
+          const sc = scoreStock(data, apiMode);
+          return Object.assign({ stock: Object.assign({ code: p.code, name, symbol }, data) }, sc);
+        });
+      }));
+      extraResults.forEach(function (r, i) {
+        if (r.status === 'fulfilled') fetchedMap[missing[i].code] = r.value;
+      });
+    }
+
+    // Build table
+    let rows = '';
+    let totalValue = 0, totalCost = 0, hasValue = false;
+
+    portfolio.forEach(function (p) {
+      const entry  = fetchedMap[p.code];
+      const stock  = entry ? entry.stock : null;
+      const price  = stock ? stock.price : null;
+      const inBuy  = buyCodes.has(p.code);
+      const inSell = sellCodes.has(p.code);
+
+      let rec, recCls;
+      if (inBuy)  { rec = 'BELI LAGI'; recCls = 'rec-buy'; }
+      else if (inSell) { rec = 'JUAL'; recCls = 'rec-sell'; }
+      else if (entry && entry.score > 1)  { rec = 'TAHAN'; recCls = 'rec-hold'; }
+      else if (entry && entry.score < -1) { rec = 'PERTIMBANGKAN JUAL'; recCls = 'rec-sell'; }
+      else { rec = 'TAHAN'; recCls = 'rec-hold'; }
+
+      let pnlHtml = '<span style="color:var(--muted)">—</span>';
+      if (price && p.qty && p.avgBuy) {
+        const cost  = p.qty * p.avgBuy;
+        const val   = p.qty * price;
+        const pnl   = val - cost;
+        const pct   = (pnl / cost * 100).toFixed(1);
+        totalValue += val; totalCost += cost; hasValue = true;
+        const cls  = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+        const sign = pnl >= 0 ? '+' : '';
+        pnlHtml = '<span class="' + cls + '">' + sign + 'Rp ' + fmtP(Math.abs(pnl)) + ' (' + sign + pct + '%)</span>';
+      } else if (price && p.qty) {
+        totalValue += p.qty * price; hasValue = true;
       }
 
-      btn.disabled = false;
-      btn.textContent = 'Prediksi Top 5 Beli & Jual';
-    };
+      const ch1d  = stock ? stock.change1d : null;
+      const chCls = ch1d > 0 ? 'up' : ch1d < 0 ? 'down' : 'neutral';
+      const sg    = ch1d >= 0 ? '+' : '';
 
-    // ── Live data fetch ───────────────────────────────────────────────────
-    // Fetches 1-month daily chart from Yahoo Finance for each stock in sector.
-    // Uses corsproxy.io as fallback if direct request is blocked by CORS.
-    async function fetchStockData(symbol) {
-      const chartUrl = 'https://query2.finance.yahoo.com/v8/finance/chart/' +
-        symbol + '?interval=1d&range=1mo';
+      rows += '<tr>' +
+        '<td><strong>' + esc(p.code) + '</strong></td>' +
+        '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">' + (stock ? esc(stock.name) : '<span style="color:var(--muted)">—</span>') + '</td>' +
+        '<td>' + (p.qty ? p.qty.toLocaleString() : '—') + '</td>' +
+        '<td>' + (price ? 'Rp ' + fmtP(price) : '—') + '</td>' +
+        '<td>' + (ch1d != null ? '<span class="' + chCls + '">' + sg + ch1d.toFixed(1) + '%</span>' : '—') + '</td>' +
+        '<td>' + pnlHtml + '</td>' +
+        '<td><span class="rec-badge ' + recCls + '">' + rec + '</span></td>' +
+        '</tr>';
+    });
 
-      async function tryFetch(url) {
-        const resp = await fetch(url, { cache: 'no-store' });
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return resp.json();
-      }
-
-      let json;
-      try {
-        json = await tryFetch(chartUrl);
-      } catch (_) {
-        // CORS fallback
-        json = await tryFetch('https://corsproxy.io/?url=' + encodeURIComponent(chartUrl));
-      }
-
-      const result = json.chart.result && json.chart.result[0];
-      if (!result) throw new Error('No chart result for ' + symbol);
-
-      const meta = result.meta;
-      const ohlcv = result.indicators.quote[0];
-      const rawCloses = ohlcv.close || [];
-      const closes = rawCloses.filter(function (c) { return c != null; });
-      const n = closes.length;
-      if (n === 0) throw new Error('No close data for ' + symbol);
-
-      const price = meta.regularMarketPrice || closes[n - 1];
-      const volume = meta.regularMarketVolume || 1;
-
-      const change1d  = n >= 2 ? (closes[n-1] - closes[n-2]) / closes[n-2] * 100 : 0;
-      const change5d  = n >= 6 ? (closes[n-1] - closes[n-6]) / closes[n-6] * 100 : change1d;
-      const change30d = n >= 2 ? (closes[n-1] - closes[0])   / closes[0]   * 100 : 0;
-
-      // Buy pressure proxy: bullish candle (close > open) → more buy pressure
-      const lastOpen = (ohlcv.open || [])[rawCloses.length - 1] || closes[n - 2] || price;
-      const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
-      const buyVolume  = volume * bullRatio;
-      const sellVolume = volume * (1 - bullRatio);
-
-      return { price, change1d, change5d, change30d, volume, buyVolume, sellVolume };
+    let totalHtml = '';
+    if (hasValue) {
+      const totalPnl = totalCost > 0 ? totalValue - totalCost : null;
+      totalHtml = '<div class="ptotal">' +
+        '<span>Total Nilai: <strong>Rp ' + fmtP(totalValue) + '</strong></span>' +
+        (totalPnl != null
+          ? '<span>Total P&amp;L: <strong class="' + (totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg') + '">' +
+            (totalPnl >= 0 ? '+' : '') + 'Rp ' + fmtP(Math.abs(totalPnl)) + ' (' +
+            (totalPnl >= 0 ? '+' : '') + ((totalPnl / totalCost) * 100).toFixed(1) + '%)</strong></span>'
+          : '') +
+        '</div>';
     }
 
-    async function fetchAndScore(sectorId) {
-      const sector = db.sectors.find(function (s) { return s.id === sectorId; });
-      const codes = sector ? sector.codes : [];
-      let candidates = db.stocks.filter(function (s) {
-        if (sectorId === 'OTHER') return true;
-        return codes.includes(s.sector);
-      });
-      if (candidates.length === 0) candidates = db.stocks;
+    el.innerHTML =
+      '<div class="psummary-wrap"><table class="psummary-table">' +
+      '<thead><tr><th>Kode</th><th>Nama</th><th>Lembar</th><th>Harga Kini</th><th>1d</th><th>P&amp;L</th><th>Rekomendasi</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>' + totalHtml;
+  }
 
-      // Fetch all stocks in parallel
-      const results = await Promise.allSettled(
-        candidates.map(function (s) {
-          return fetchStockData(s.symbol).then(function (data) {
-            return Object.assign({}, s, data);
-          });
-        })
-      );
-
-      const errors = [];
-      const enriched = [];
-      results.forEach(function (r, i) {
-        if (r.status === 'fulfilled') {
-          enriched.push(r.value);
-        } else {
-          errors.push(candidates[i].code);
-          console.warn(candidates[i].symbol, r.reason);
-        }
-      });
-
-      const scored = enriched.map(function (s) {
-        const buyRatio   = s.buyVolume / (s.buyVolume + s.sellVolume || 1);
-        const trendScore = (s.change1d + s.change5d * 0.5 + s.change30d * 0.2) / 3;
-        const demandScore = (buyRatio - 0.5) * 20;
-        const volScore   = Math.log10(s.volume + 1) * 2;
-        const score = trendScore * 0.4 + demandScore * 0.35 + volScore * 0.25;
-        return { stock: s, score, buyRatio, trendScore, demandScore };
-      });
-
-      scored.sort(function (a, b) { return b.score - a.score; });
-
-      const now = new Date();
-      const fetchedAt = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
-        ', ' + now.toLocaleDateString('id-ID');
-
-      return { scored, fetchedAt, errors };
-    }
-
-    // ── Render ────────────────────────────────────────────────────────────
-    function renderResults(picks, listId, isSell) {
-      const list = document.getElementById(listId);
-      list.innerHTML = '';
-      picks.forEach(function (p, i) {
-        const s = p.stock;
-        const row = document.createElement('div');
-        row.className = 'stock-row' + (isSell ? ' sell' : '');
-        const chCls  = s.change1d > 0 ? 'up' : s.change1d < 0 ? 'down' : 'neutral';
-        const chSign = s.change1d >= 0 ? '+' : '';
-        const s5sign = s.change5d  >= 0 ? '+' : '';
-        const s30sign= s.change30d >= 0 ? '+' : '';
-        const sellRatio = (100 - p.buyRatio * 100).toFixed(0);
-        const reason = isSell
-          ? 'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1h), ' + s5sign + s.change5d.toFixed(1) + '% (5h), ' + s30sign + s.change30d.toFixed(1) + '% (1b)' +
-            ' • Tekanan jual: ' + sellRatio + '%' +
-            ' • Vol: ' + formatVol(s.volume)
-          : 'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1h), ' + s5sign + s.change5d.toFixed(1) + '% (5h), ' + s30sign + s.change30d.toFixed(1) + '% (1b)' +
-            ' • Demand beli: ' + (p.buyRatio * 100).toFixed(0) + '%' +
-            ' • Vol: ' + formatVol(s.volume);
-        row.innerHTML =
-          '<div class="rank' + (isSell ? ' sell' : '') + '">' + (i + 1) + '</div>' +
-          '<div class="stock-info"><div class="code">' + escapeHtml(s.code) + '</div><div class="name">' + escapeHtml(s.name) + '</div></div>' +
-          '<div><div class="stock-price">Rp ' + formatPrice(s.price) + '</div><div class="stock-change ' + chCls + '">' + chSign + s.change1d.toFixed(2) + '%</div></div>' +
-          '<div class="reason"><strong>' + (isSell ? 'Sinyal jual' : 'Alasan') + ':</strong> ' + escapeHtml(reason) + '</div>';
-        list.appendChild(row);
-      });
-    }
-
-    function formatPrice(n) {
-      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-      return n.toFixed(0);
-    }
-    function formatVol(n) {
-      if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-      return String(n);
-    }
-    function escapeHtml(s) {
-      const d = document.createElement('div');
-      d.textContent = s;
-      return d.innerHTML;
-    }
-  })();
-  </script>
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function fmtP(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'Jt';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return (+n).toFixed(0);
+  }
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+})();
+</script>
 </body>
 </html>
