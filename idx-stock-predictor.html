@@ -196,7 +196,7 @@
 
   <!-- Results BUY -->
   <div class="card" id="resultCard" style="display:none">
-    <div class="section-title buy">Top 5 — Beli</div>
+    <div class="section-title buy" id="buyTitle">Top 5 — Beli</div>
     <div class="result-list" id="resultList"></div>
     <div class="fetch-status" id="fetchStatus" style="display:none"></div>
     <div class="legend">
@@ -206,7 +206,7 @@
 
   <!-- Results SELL -->
   <div class="card" id="sellCard" style="display:none">
-    <div class="section-title sell">Top 5 — Jual</div>
+    <div class="section-title sell" id="sellTitle">Top 5 — Jual</div>
     <div class="result-list" id="sellList"></div>
     <div class="legend">
       <strong>Sinyal jual:</strong> Skor terendah = trend negatif + tekanan jual dominan + volume lemah + (mode Analis) konsensus analis bearish.
@@ -513,26 +513,45 @@
 
     try {
       const { scored, fetchedAt, errors } = await fetchAndScore(selectedSector, selectedApi);
-      if (scored.length === 0) throw new Error('Tidak ada data untuk sektor ini');
 
-      const buys = scored.slice(0, 5);
-      const sells = scored.slice(-5).reverse();
-      const buyCodes  = new Set(buys.map(function (p)  { return p.stock.code; }));
+      // Show whatever data is available — even if partial
+      const n      = scored.length;
+      const buyN   = Math.min(5, n);
+      const buys   = scored.slice(0, buyN);
+      // Sells come from the bottom, excluding stocks already in buys
+      const buyCodes  = new Set(buys.map(function (p) { return p.stock.code; }));
+      const sellPool  = scored.filter(function (p) { return !buyCodes.has(p.stock.code); });
+      const sells     = sellPool.slice(-Math.min(5, sellPool.length)).reverse();
       const sellCodes = new Set(sells.map(function (p) { return p.stock.code; }));
       const ownedSet  = new Set(portfolio.map(function (p) { return p.code; }));
 
-      renderResults(buys,  'resultList', false, ownedSet);
-      renderResults(sells, 'sellList',   true,  ownedSet);
-      document.getElementById('sellCard').style.display = 'block';
+      // Update section titles to reflect actual count
+      document.getElementById('buyTitle').textContent  = 'Top ' + buys.length  + ' — Beli';
+      document.getElementById('sellTitle').textContent = 'Top ' + sells.length + ' — Jual';
+
+      if (n === 0) {
+        document.getElementById('resultList').innerHTML =
+          '<div class="loading" style="color:var(--muted)">Tidak ada data yang berhasil diambil.' +
+          (errors.length ? ' Gagal: ' + errors.join(', ') + '.' : '') + '</div>';
+      } else {
+        renderResults(buys, 'resultList', false, ownedSet);
+      }
+      if (sells.length > 0) {
+        renderResults(sells, 'sellList', true, ownedSet);
+        document.getElementById('sellCard').style.display = 'block';
+      }
 
       const statusEl = document.getElementById('fetchStatus');
-      const errNote = errors.length ? ' <span class="err">(' + errors.length + ' gagal: ' + errors.join(', ') + ')</span>' : '';
-      statusEl.innerHTML = (selectedApi === 'demo'
-        ? 'Data estimasi offline'
-        : '<span class="ok">Data live ' + esc(apiLabel) + ' berhasil</span>') + ' — ' + fetchedAt + errNote;
+      const errNote = errors.length
+        ? ' <span class="err">(' + errors.length + ' gagal: ' + errors.join(', ') + ')</span>'
+        : '';
+      const okNote = n > 0
+        ? (selectedApi === 'demo' ? 'Data estimasi offline' : '<span class="ok">Data live ' + esc(apiLabel) + '</span>') + ' — ' + n + ' saham — ' + fetchedAt
+        : '<span class="err">Tidak ada data</span> — ' + fetchedAt;
+      statusEl.innerHTML = okNote + errNote;
       statusEl.style.display = 'block';
 
-      if (portfolio.length > 0) {
+      if (portfolio.length > 0 && n > 0) {
         await showPortfolioSummary(portfolio, scored, buyCodes, sellCodes, selectedApi);
       }
     } catch (e) {
