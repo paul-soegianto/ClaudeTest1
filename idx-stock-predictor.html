@@ -32,10 +32,35 @@
     .badge-plus { background: rgba(251,191,36,.2); color: var(--gold); }
     .badge-demo { background: rgba(100,116,139,.2); color: var(--muted); }
 
+    /* Portfolio mode toggle */
+    .pmode-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+    .pmode-btn { flex: 1; background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .pmode-btn:hover { color: var(--text); border-color: var(--accent); }
+    .pmode-btn.selected { background: rgba(14,165,233,.15); border-color: var(--accent); color: var(--text); }
+
+    /* Upload panel */
+    .apikey-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .apikey-input { flex: 1; background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 13px; min-width: 0; }
+    .apikey-input:focus { outline: none; border-color: var(--accent); }
+    .apikey-input::placeholder { color: var(--muted); }
+    .apikey-link { font-size: 11px; color: var(--accent); white-space: nowrap; text-decoration: none; }
+    .apikey-link:hover { text-decoration: underline; }
+    .upload-dropzone { background: var(--surf2); border: 2px dashed var(--border); border-radius: 12px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; min-height: 110px; }
+    .upload-dropzone:hover, .upload-dropzone.drag-over { border-color: var(--accent); background: rgba(14,165,233,.05); }
+    .upload-dropzone.has-image { padding: 12px; border-style: solid; border-color: var(--accent); }
+    .upload-ph { color: var(--muted); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .upload-ph .icon { font-size: 30px; opacity: .4; }
+    .analyze-btn { width: 100%; padding: 11px; background: rgba(14,165,233,.12); border: 1px solid var(--accent); border-radius: 8px; color: var(--accent); font-size: 14px; font-weight: 700; cursor: pointer; transition: background .2s; margin-bottom: 0; }
+    .analyze-btn:hover:not(:disabled) { background: rgba(14,165,233,.22); }
+    .analyze-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .analyze-status { font-size: 12px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surf2); display: flex; align-items: center; gap: 8px; }
+    .analyze-status.ok  { color: var(--green); border-color: rgba(34,197,94,.3); }
+    .analyze-status.err { color: var(--red);   border-color: rgba(239,68,68,.3); }
+
     /* Portfolio */
     .portfolio-textarea { width: 100%; background: var(--surf2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: var(--text); font-family: 'Courier New', monospace; font-size: 13px; resize: vertical; min-height: 90px; margin-bottom: 10px; }
     .portfolio-textarea:focus { outline: none; border-color: var(--accent); }
-    .portfolio-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 10px; }
+    .portfolio-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 10px; margin-top: 10px; }
     .ptag { background: var(--surf2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; display: flex; align-items: center; gap: 5px; }
     .ptag-code { font-weight: 700; color: var(--accent); }
     .ptag-meta { color: var(--muted); }
@@ -117,9 +142,40 @@
   <!-- 2. Portfolio -->
   <div class="card">
     <h2>2. Portofolio Saya (Opsional)</h2>
-    <p class="card-desc">Satu saham per baris. Format: <code style="color:var(--accent2)">KODE JUMLAH HARGA_BELI</code> — jumlah dan harga beli opsional.</p>
-    <textarea class="portfolio-textarea" id="portfolioInput"
-      placeholder="Contoh:&#10;BBCA 100 8500&#10;TLKM 500&#10;GOTO 10000 65&#10;ANTM 200 1700"></textarea>
+
+    <!-- Mode toggle -->
+    <div class="pmode-toggle">
+      <button class="pmode-btn selected" id="pmodeUploadBtn">📷 Upload Foto Portofolio</button>
+      <button class="pmode-btn" id="pmodeManualBtn">⌨ Ketik Manual</button>
+    </div>
+
+    <!-- Upload panel -->
+    <div id="uploadPanel">
+      <p class="card-desc">Upload screenshot portofolio Anda. Claude AI Vision akan membaca kode saham dan jumlah lot secara otomatis.</p>
+      <div class="apikey-row">
+        <input type="password" class="apikey-input" id="claudeApiKey" placeholder="Anthropic API Key (sk-ant-...)" autocomplete="off">
+        <a class="apikey-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Dapatkan Key</a>
+      </div>
+      <div class="upload-dropzone" id="uploadDropzone">
+        <input type="file" id="portfolioImageFile" accept="image/*" style="display:none">
+        <div class="upload-ph" id="uploadPlaceholder">
+          <div class="icon">📷</div>
+          <div>Klik atau drag foto portofolio di sini</div>
+          <div style="font-size:11px;margin-top:2px">JPG, PNG, WebP, HEIC</div>
+        </div>
+        <img id="previewImg" style="display:none;max-width:100%;max-height:220px;border-radius:8px;object-fit:contain">
+      </div>
+      <button class="analyze-btn" id="analyzeBtn" disabled>Analisis Foto dengan Claude AI Vision</button>
+      <div class="analyze-status" id="analyzeStatus" style="display:none"></div>
+    </div>
+
+    <!-- Manual panel -->
+    <div id="manualPanel" style="display:none">
+      <p class="card-desc">Satu saham per baris — format: <code style="color:var(--accent2)">KODE LOT HARGA_BELI</code>. 1 lot = 100 saham. Harga beli opsional.</p>
+      <textarea class="portfolio-textarea" id="portfolioInput"
+        placeholder="Contoh:&#10;BBCA 10 8500&#10;TLKM 5&#10;GOTO 100 65&#10;ANTM 2 1700"></textarea>
+    </div>
+
     <div class="portfolio-tags" id="portfolioTags"></div>
   </div>
 
@@ -228,7 +284,141 @@
     apiGrid.appendChild(btn);
   });
 
-  // ── Portfolio input ───────────────────────────────────────────────────────
+  // ── Portfolio mode toggle ─────────────────────────────────────────────────
+  let portfolioMode = 'upload';
+  let portfolioImageBase64 = null;
+  let portfolioImageType = 'image/jpeg';
+
+  document.getElementById('pmodeUploadBtn').onclick = function () {
+    portfolioMode = 'upload';
+    this.classList.add('selected');
+    document.getElementById('pmodeManualBtn').classList.remove('selected');
+    document.getElementById('uploadPanel').style.display = '';
+    document.getElementById('manualPanel').style.display = 'none';
+  };
+  document.getElementById('pmodeManualBtn').onclick = function () {
+    portfolioMode = 'manual';
+    this.classList.add('selected');
+    document.getElementById('pmodeUploadBtn').classList.remove('selected');
+    document.getElementById('manualPanel').style.display = '';
+    document.getElementById('uploadPanel').style.display = 'none';
+  };
+
+  // ── Image upload ──────────────────────────────────────────────────────────
+  var dropzone  = document.getElementById('uploadDropzone');
+  var fileInput = document.getElementById('portfolioImageFile');
+  var previewImg = document.getElementById('previewImg');
+
+  dropzone.onclick = function (e) {
+    if (e.target !== previewImg) fileInput.click();
+  };
+  dropzone.ondragover = function (e) { e.preventDefault(); dropzone.classList.add('drag-over'); };
+  dropzone.ondragleave = function () { dropzone.classList.remove('drag-over'); };
+  dropzone.ondrop = function (e) {
+    e.preventDefault(); dropzone.classList.remove('drag-over');
+    var f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) loadImageFile(f);
+  };
+  fileInput.onchange = function () { if (fileInput.files[0]) loadImageFile(fileInput.files[0]); };
+
+  function loadImageFile(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var parts = e.target.result.split(',');
+      portfolioImageBase64 = parts[1];
+      portfolioImageType = file.type || 'image/jpeg';
+      previewImg.src = e.target.result;
+      previewImg.style.display = '';
+      document.getElementById('uploadPlaceholder').style.display = 'none';
+      dropzone.classList.add('has-image');
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('analyzeStatus').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Claude API: analyze portfolio image ──────────────────────────────────
+  document.getElementById('analyzeBtn').onclick = async function () {
+    var apiKey = document.getElementById('claudeApiKey').value.trim();
+    if (!apiKey) { showAStatus('err', 'Masukkan Anthropic API Key terlebih dahulu.'); return; }
+    if (!portfolioImageBase64) { showAStatus('err', 'Upload foto portofolio terlebih dahulu.'); return; }
+
+    this.disabled = true;
+    showAStatus('load', 'Menganalisis foto dengan Claude AI Vision...');
+
+    try {
+      var result = await analyzePortfolioImage(portfolioImageBase64, portfolioImageType, apiKey);
+      if (result.length === 0) {
+        showAStatus('err', 'Tidak dapat membaca saham. Coba foto yang lebih jelas atau kontras.');
+      } else {
+        portfolio = result;
+        renderTags(portfolio);
+        showAStatus('ok', 'Berhasil membaca ' + result.length + ' saham dari foto.');
+      }
+    } catch (e) {
+      showAStatus('err', 'Gagal: ' + e.message);
+    }
+    this.disabled = false;
+  };
+
+  function showAStatus(type, msg) {
+    var el = document.getElementById('analyzeStatus');
+    el.style.display = 'flex';
+    el.className = 'analyze-status' + (type === 'ok' ? ' ok' : type === 'err' ? ' err' : '');
+    el.innerHTML = (type === 'load' ? '<div class="spinner"></div>' : '') + esc(msg);
+  }
+
+  async function analyzePortfolioImage(b64, mtype, apiKey) {
+    var payload = {
+      model: 'claude-opus-4-6',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mtype, data: b64 } },
+          { type: 'text', text: 'Analyze this Indonesian stock portfolio screenshot. Extract all stock holdings.\n\nReturn ONLY a valid JSON array like this:\n[{"code":"BBCA","lots":10,"avgBuy":8500},...]\n\nRules:\n- code: IDX ticker uppercase, no .JK suffix\n- lots: number of lots. 1 lot = 100 shares/lembar. If image shows lembar/shares, divide by 100\n- avgBuy: average buy price per share in IDR (null if not shown)\n- Only include actual stock rows, skip headers/totals/cash\n\nReturn ONLY the JSON array, no explanation or markdown.' }
+        ]
+      }]
+    };
+    var hdrs = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    };
+
+    async function post(url) {
+      var r = await fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(payload) });
+      if (!r.ok) {
+        var err = await r.json().catch(function () { return {}; });
+        throw new Error((err.error && err.error.message) || 'HTTP ' + r.status);
+      }
+      return r.json();
+    }
+
+    var json;
+    try {
+      json = await post('https://api.anthropic.com/v1/messages');
+    } catch (e) {
+      if (e instanceof TypeError) {
+        // CORS blocked — try via proxy (API key will pass through corsproxy.io)
+        json = await post('https://corsproxy.io/?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages'));
+      } else { throw e; }
+    }
+
+    var text = json.content[0].text.trim();
+    var match = text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Format tidak valid dari Claude.');
+    var parsed = JSON.parse(match[0]);
+    return parsed
+      .filter(function (x) { return x.code && /^[A-Z]{2,5}$/.test(x.code); })
+      .map(function (x) {
+        var lots = x.lots ? Math.round(Math.abs(x.lots)) : null;
+        return { code: x.code.toUpperCase(), lots: lots, qty: lots ? lots * 100 : null, avgBuy: x.avgBuy || null };
+      });
+  }
+
+  // ── Portfolio manual input ─────────────────────────────────────────────────
   document.getElementById('portfolioInput').addEventListener('input', function () {
     portfolio = parsePortfolio(this.value);
     renderTags(portfolio);
@@ -236,15 +426,16 @@
 
   function parsePortfolio(text) {
     return text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
-      const p = l.toUpperCase().split(/\s+/);
-      return { code: p[0], qty: p[1] ? parseInt(p[1]) : null, avgBuy: p[2] ? parseFloat(p[2]) : null };
+      var p = l.toUpperCase().split(/\s+/);
+      var lots = p[1] ? parseInt(p[1]) : null;
+      return { code: p[0], lots: lots, qty: lots ? lots * 100 : null, avgBuy: p[2] ? parseFloat(p[2]) : null };
     }).filter(function (p) { return /^[A-Z]{2,5}$/.test(p.code); });
   }
 
   function renderTags(list) {
     document.getElementById('portfolioTags').innerHTML = list.map(function (p) {
       return '<div class="ptag"><span class="ptag-code">' + esc(p.code) + '</span>' +
-        (p.qty ? '<span class="ptag-meta">×' + p.qty.toLocaleString() + '</span>' : '') +
+        (p.lots ? '<span class="ptag-meta">' + p.lots + ' lot</span>' : '') +
         (p.avgBuy ? '<span class="ptag-meta">@' + fmtP(p.avgBuy) + '</span>' : '') + '</div>';
     }).join('');
   }
@@ -532,7 +723,7 @@
       rows += '<tr>' +
         '<td><strong>' + esc(p.code) + '</strong></td>' +
         '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">' + (stock ? esc(stock.name) : '<span style="color:var(--muted)">—</span>') + '</td>' +
-        '<td>' + (p.qty ? p.qty.toLocaleString() : '—') + '</td>' +
+        '<td>' + (p.lots ? p.lots + ' lot<br><span style="color:var(--muted);font-size:11px">' + (p.qty || 0).toLocaleString() + ' lbr</span>' : '—') + '</td>' +
         '<td>' + (price ? 'Rp ' + fmtP(price) : '—') + '</td>' +
         '<td>' + (ch1d != null ? '<span class="' + chCls + '">' + sg + ch1d.toFixed(1) + '%</span>' : '—') + '</td>' +
         '<td>' + pnlHtml + '</td>' +
@@ -555,7 +746,7 @@
 
     el.innerHTML =
       '<div class="psummary-wrap"><table class="psummary-table">' +
-      '<thead><tr><th>Kode</th><th>Nama</th><th>Lembar</th><th>Harga Kini</th><th>1d</th><th>P&amp;L</th><th>Rekomendasi</th></tr></thead>' +
+      '<thead><tr><th>Kode</th><th>Nama</th><th>Lot (Lembar)</th><th>Harga Kini</th><th>1d</th><th>P&amp;L</th><th>Rekomendasi</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>' + totalHtml;
   }
 
