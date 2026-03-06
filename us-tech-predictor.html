@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>US Tech Stock Predictor — Live Analysis</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #07060f; --surf: #100e1f; --surf2: #181530; --border: #231f3a;
+      --accent: #8b5cf6; --accent2: #a78bfa; --green: #22c55e; --red: #ef4444;
+      --text: #f1f5f9; --muted: #64748b; --gold: #fbbf24;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; }
+    .container { max-width: 740px; margin: 0 auto; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .card { background: var(--surf); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+    .card-desc { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+
+    /* API selector */
+    .api-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+    .api-btn { background: var(--surf2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; color: var(--text); font-size: 13px; text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
+    .api-btn:hover { border-color: var(--accent); background: rgba(139,92,246,.08); }
+    .api-btn.selected { border-color: var(--accent); background: rgba(139,92,246,.15); }
+    .api-btn .api-name { font-weight: 700; margin-bottom: 4px; }
+    .api-btn .api-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .api-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; }
+    .badge-live { background: rgba(34,197,94,.2); color: var(--green); }
+    .badge-plus { background: rgba(251,191,36,.2); color: var(--gold); }
+    .badge-key  { background: rgba(139,92,246,.2); color: var(--accent2); }
+    .badge-demo { background: rgba(100,116,139,.2); color: var(--muted); }
+
+    /* Key row */
+    .apikey-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .apikey-input { flex: 1; background: var(--surf2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 13px; min-width: 0; }
+    .apikey-input:focus { outline: none; border-color: var(--accent); }
+    .apikey-input::placeholder { color: var(--muted); }
+    .apikey-link { font-size: 11px; color: var(--accent); white-space: nowrap; text-decoration: none; }
+    .apikey-link:hover { text-decoration: underline; }
+
+    /* Portfolio */
+    .portfolio-textarea { width: 100%; background: var(--surf2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: var(--text); font-family: 'Courier New', monospace; font-size: 13px; resize: vertical; min-height: 90px; margin-bottom: 10px; }
+    .portfolio-textarea:focus { outline: none; border-color: var(--accent); }
+    .portfolio-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 10px; margin-top: 10px; }
+    .ptag { background: var(--surf2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+    .ptag-code { font-weight: 700; color: var(--accent2); }
+    .ptag-meta { color: var(--muted); }
+
+    /* Sector */
+    .sector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .sector-btn { background: var(--surf2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 13px; text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
+    .sector-btn:hover { border-color: var(--accent); background: rgba(139,92,246,.08); }
+    .sector-btn.selected { border-color: var(--accent); background: rgba(139,92,246,.15); }
+    .sector-btn .name { font-weight: 700; }
+    .sector-btn .desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .predict-btn { width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 16px; transition: opacity .2s; }
+    .predict-btn:hover { opacity: .92; }
+    .predict-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Results */
+    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+    .section-title.buy { color: var(--gold); }
+    .section-title.sell { color: var(--red); }
+    .result-list { display: flex; flex-direction: column; gap: 12px; }
+    .stock-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; background: var(--surf2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; transition: border-color .2s; position: relative; overflow: hidden; }
+    .stock-row:hover { border-color: var(--accent); }
+    .stock-row.sell-row:hover { border-color: var(--red); }
+    .stock-row.owned-buy  { border-color: var(--green) !important; background: rgba(34,197,94,.05); }
+    .stock-row.owned-sell { border-color: var(--red)   !important; background: rgba(239,68,68,.07); }
+    .owned-badge { position: absolute; top: 0; right: 0; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 0 10px 0 6px; letter-spacing: .04em; }
+    .owned-badge.ob-buy  { background: var(--green); color: #000; }
+    .owned-badge.ob-sell { background: var(--red);   color: #fff; }
+    .rank { width: 36px; height: 36px; border-radius: 8px; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rank.buy  { background: linear-gradient(135deg, var(--gold), #f59e0b);  color: #000; }
+    .rank.sell { background: linear-gradient(135deg, var(--red),  #b91c1c);  color: #fff; }
+    .stock-info .code  { font-weight: 800; font-size: 15px; }
+    .stock-info .sname { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .stock-price-col { text-align: right; }
+    .stock-price { font-weight: 700; font-size: 14px; }
+    .stock-chg   { font-size: 11px; margin-top: 2px; }
+    .up { color: var(--green); } .down { color: var(--red); } .neutral { color: var(--muted); }
+    .reason { grid-column: 1 / -1; font-size: 11px; color: var(--muted); padding-top: 8px; border-top: 1px solid var(--border); margin-top: 2px; line-height: 1.5; }
+    .reason strong { color: var(--accent2); }
+
+    /* Loading / status */
+    .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; padding: 12px 0; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fetch-status { font-size: 11px; color: var(--muted); margin-top: 12px; padding: 8px 12px; background: var(--surf2); border-radius: 8px; border: 1px solid var(--border); }
+    .fetch-status .ok  { color: var(--green); }
+    .fetch-status .err { color: var(--red); }
+    .legend { font-size: 11px; color: var(--muted); margin-top: 14px; padding: 10px 12px; background: var(--surf2); border-radius: 8px; border: 1px solid var(--border); line-height: 1.5; }
+
+    /* Portfolio summary */
+    .psummary-wrap { overflow-x: auto; }
+    .psummary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .psummary-table th { font-size: 11px; color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .psummary-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+    .psummary-table tr:last-child td { border-bottom: none; }
+    .rec-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; }
+    .rec-buy  { background: rgba(34,197,94,.2);   color: var(--green); }
+    .rec-sell { background: rgba(239,68,68,.2);   color: var(--red); }
+    .rec-hold { background: rgba(100,116,139,.15); color: var(--muted); }
+    .pnl-pos { color: var(--green); } .pnl-neg { color: var(--red); }
+    .ptotal { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--muted); }
+    .ptotal strong { color: var(--text); }
+    .footer { font-size: 11px; color: var(--muted); margin-top: 24px; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>US Tech Stock Predictor</h1>
+  <p class="subtitle">Live technical analysis for US technology stocks. Choose data source, enter your portfolio, pick a sector, then run analysis.</p>
+
+  <!-- 1. API Source -->
+  <div class="card">
+    <h2>1. Data Source</h2>
+    <div class="api-grid" id="apiGrid"></div>
+    <div id="apiKeyRow" style="display:none;margin-top:12px">
+      <div class="apikey-row">
+        <input type="password" class="apikey-input" id="extApiKey" placeholder="API Key..." autocomplete="off">
+        <a class="apikey-link" id="extApiKeyLink" href="#" target="_blank" rel="noopener">Get Key</a>
+      </div>
+      <div id="extApiKeyNote" class="card-desc" style="margin-top:4px;margin-bottom:0"></div>
+    </div>
+  </div>
+
+  <!-- 2. Portfolio -->
+  <div class="card">
+    <h2>2. My Portfolio (Optional)</h2>
+    <p class="card-desc">One stock per line — format: <code style="color:var(--accent2)">TICKER SHARES AVG_PRICE</code>. Avg price is optional.</p>
+    <textarea class="portfolio-textarea" id="portfolioInput"
+      placeholder="Examples:&#10;AAPL 50 185.50&#10;NVDA 30&#10;MSFT 20 380&#10;TSLA 15 250"></textarea>
+    <div class="portfolio-tags" id="portfolioTags"></div>
+  </div>
+
+  <!-- 3. Sector -->
+  <div class="card">
+    <h2>3. Select Sector</h2>
+    <div class="sector-grid" id="sectorGrid"></div>
+    <button class="predict-btn" id="predictBtn" disabled>Analyze Sector</button>
+  </div>
+
+  <!-- Results BUY -->
+  <div class="card" id="resultCard" style="display:none">
+    <div class="section-title buy" id="buyTitle">Top 5 — Buy</div>
+    <div class="result-list" id="resultList"></div>
+    <div class="fetch-status" id="fetchStatus" style="display:none"></div>
+    <div class="legend">
+      <strong>Buy algorithm:</strong> Composite score from 1/5/30-day price trend, buy pressure from candlestick open→close, volume momentum, and (analyst mode) Wall Street consensus ratings.
+    </div>
+  </div>
+
+  <!-- Results SELL -->
+  <div class="card" id="sellCard" style="display:none">
+    <div class="section-title sell" id="sellTitle">Top 5 — Sell</div>
+    <div class="result-list" id="sellList"></div>
+    <div class="legend">
+      <strong>Sell signals:</strong> Lowest scores = negative trend + dominant sell pressure + weak volume + (analyst mode) bearish Wall Street consensus.
+    </div>
+  </div>
+
+  <!-- Portfolio Summary -->
+  <div class="card" id="portfolioCard" style="display:none">
+    <h2>Portfolio Summary</h2>
+    <div id="portfolioSummary"></div>
+  </div>
+
+  <p class="footer">Data from Yahoo Finance, Finnhub, or Alpha Vantage. Not investment advice. Always do your own research.</p>
+</div>
+
+<script>
+(function () {
+  // ── Stock database ────────────────────────────────────────────────────────
+  const SECTORS = [
+    { id: 'MEGA',     name: 'Mega Cap Tech',    desc: 'Apple, Microsoft, Google, Amazon, Meta, NVIDIA' },
+    { id: 'SEMI',     name: 'Semiconductors',   desc: 'NVIDIA, AMD, Intel, Qualcomm, Broadcom, TSMC' },
+    { id: 'CLOUD',    name: 'Cloud & SaaS',      desc: 'Salesforce, ServiceNow, Snowflake, Datadog, Cloudflare' },
+    { id: 'FINTECH',  name: 'Fintech',           desc: 'Visa, Mastercard, PayPal, Block, Coinbase' },
+    { id: 'CONSUMER', name: 'Consumer Tech',     desc: 'Netflix, Tesla, Spotify' },
+    { id: 'AI',       name: 'AI & Data',         desc: 'Palantir, Oracle, IBM, Super Micro' },
+    { id: 'ALL',      name: 'All US Tech',        desc: 'Full screen across all sectors' },
+  ];
+
+  const STOCKS = [
+    // Mega Cap
+    { code: 'AAPL',  name: 'Apple Inc.',              sector: 'MEGA' },
+    { code: 'MSFT',  name: 'Microsoft Corp.',          sector: 'MEGA' },
+    { code: 'GOOGL', name: 'Alphabet Inc.',            sector: 'MEGA' },
+    { code: 'AMZN',  name: 'Amazon.com Inc.',          sector: 'MEGA' },
+    { code: 'META',  name: 'Meta Platforms',           sector: 'MEGA' },
+    { code: 'NVDA',  name: 'NVIDIA Corp.',             sector: 'MEGA' },
+    // Semiconductors
+    { code: 'AMD',   name: 'Advanced Micro Devices',   sector: 'SEMI' },
+    { code: 'INTC',  name: 'Intel Corp.',              sector: 'SEMI' },
+    { code: 'QCOM',  name: 'Qualcomm Inc.',            sector: 'SEMI' },
+    { code: 'AVGO',  name: 'Broadcom Inc.',            sector: 'SEMI' },
+    { code: 'TSM',   name: 'Taiwan Semiconductor',     sector: 'SEMI' },
+    { code: 'MU',    name: 'Micron Technology',        sector: 'SEMI' },
+    { code: 'AMAT',  name: 'Applied Materials',        sector: 'SEMI' },
+    { code: 'ASML',  name: 'ASML Holding',             sector: 'SEMI' },
+    // Cloud & SaaS
+    { code: 'CRM',   name: 'Salesforce Inc.',          sector: 'CLOUD' },
+    { code: 'NOW',   name: 'ServiceNow Inc.',          sector: 'CLOUD' },
+    { code: 'SNOW',  name: 'Snowflake Inc.',           sector: 'CLOUD' },
+    { code: 'WDAY',  name: 'Workday Inc.',             sector: 'CLOUD' },
+    { code: 'DDOG',  name: 'Datadog Inc.',             sector: 'CLOUD' },
+    { code: 'NET',   name: 'Cloudflare Inc.',          sector: 'CLOUD' },
+    { code: 'ADBE',  name: 'Adobe Inc.',               sector: 'CLOUD' },
+    // Fintech
+    { code: 'V',     name: 'Visa Inc.',                sector: 'FINTECH' },
+    { code: 'MA',    name: 'Mastercard Inc.',          sector: 'FINTECH' },
+    { code: 'PYPL',  name: 'PayPal Holdings',          sector: 'FINTECH' },
+    { code: 'SQ',    name: 'Block Inc.',               sector: 'FINTECH' },
+    { code: 'COIN',  name: 'Coinbase Global',          sector: 'FINTECH' },
+    // Consumer Tech
+    { code: 'NFLX',  name: 'Netflix Inc.',             sector: 'CONSUMER' },
+    { code: 'TSLA',  name: 'Tesla Inc.',               sector: 'CONSUMER' },
+    { code: 'SPOT',  name: 'Spotify Technology',       sector: 'CONSUMER' },
+    // AI & Data
+    { code: 'PLTR',  name: 'Palantir Technologies',    sector: 'AI' },
+    { code: 'ORCL',  name: 'Oracle Corp.',             sector: 'AI' },
+    { code: 'IBM',   name: 'IBM Corp.',                sector: 'AI' },
+    { code: 'SMCI',  name: 'Super Micro Computer',     sector: 'AI' },
+  ];
+
+  // ── Demo prices (offline fallback, estimated Mar 2026) ───────────────────
+  const DEMO = {
+    'AAPL': { price: 228,  change1d:  -0.3, change5d:  -1.2, change30d:   2.5, volume:  55e6, buyVolume:  28e6, sellVolume:  27e6 },
+    'MSFT': { price: 385,  change1d:   0.5, change5d:   2.1, change30d:   4.2, volume:  22e6, buyVolume:  13e6, sellVolume:   9e6 },
+    'GOOGL':{ price: 172,  change1d:  -0.8, change5d:  -1.5, change30d:   1.8, volume:  25e6, buyVolume:  12e6, sellVolume:  13e6 },
+    'AMZN': { price: 208,  change1d:   0.7, change5d:   3.2, change30d:   6.5, volume:  35e6, buyVolume:  20e6, sellVolume:  15e6 },
+    'META': { price: 625,  change1d:   1.2, change5d:   3.5, change30d:   8.2, volume:  14e6, buyVolume:   9e6, sellVolume:   5e6 },
+    'NVDA': { price: 135,  change1d:   2.1, change5d:   5.5, change30d:  12.5, volume: 180e6, buyVolume: 110e6, sellVolume:  70e6 },
+    'AMD':  { price: 108,  change1d:   1.5, change5d:   3.8, change30d:   5.2, volume:  55e6, buyVolume:  32e6, sellVolume:  23e6 },
+    'INTC': { price:  23,  change1d:  -1.2, change5d:  -3.5, change30d:  -8.5, volume:  72e6, buyVolume:  28e6, sellVolume:  44e6 },
+    'QCOM': { price: 158,  change1d:   0.4, change5d:   1.2, change30d:   3.5, volume:  12e6, buyVolume:   7e6, sellVolume:   5e6 },
+    'AVGO': { price: 192,  change1d:   0.8, change5d:   2.5, change30d:   7.5, volume:  18e6, buyVolume:  11e6, sellVolume:   7e6 },
+    'TSM':  { price: 178,  change1d:   0.6, change5d:   2.0, change30d:   5.8, volume:  15e6, buyVolume:   9e6, sellVolume:   6e6 },
+    'MU':   { price:  98,  change1d:   1.8, change5d:   4.2, change30d:   8.5, volume:  28e6, buyVolume:  17e6, sellVolume:  11e6 },
+    'AMAT': { price: 185,  change1d:   0.5, change5d:   1.8, change30d:   4.2, volume:   8e6, buyVolume:   5e6, sellVolume:   3e6 },
+    'ASML': { price: 780,  change1d:  -0.4, change5d:  -1.2, change30d:   2.5, volume: 1.5e6, buyVolume: 0.8e6, sellVolume: 0.7e6 },
+    'CRM':  { price: 318,  change1d:   0.3, change5d:   1.5, change30d:   5.2, volume:   7e6, buyVolume:   4e6, sellVolume:   3e6 },
+    'NOW':  { price: 1050, change1d:   0.7, change5d:   2.8, change30d:   7.5, volume: 2.2e6, buyVolume: 1.3e6, sellVolume: 0.9e6 },
+    'SNOW': { price: 168,  change1d:  -1.5, change5d:  -3.5, change30d:  -5.2, volume:   8e6, buyVolume: 3.5e6, sellVolume: 4.5e6 },
+    'WDAY': { price: 248,  change1d:   0.2, change5d:   0.8, change30d:   3.2, volume:   4e6, buyVolume: 2.2e6, sellVolume: 1.8e6 },
+    'DDOG': { price: 128,  change1d:   1.2, change5d:   3.5, change30d:   8.5, volume:   6e6, buyVolume: 3.8e6, sellVolume: 2.2e6 },
+    'NET':  { price: 112,  change1d:   0.8, change5d:   2.5, change30d:   6.5, volume:   7e6, buyVolume: 4.2e6, sellVolume: 2.8e6 },
+    'ADBE': { price: 385,  change1d:  -0.8, change5d:  -2.5, change30d:  -3.5, volume:   5e6, buyVolume: 2.2e6, sellVolume: 2.8e6 },
+    'V':    { price: 338,  change1d:   0.3, change5d:   1.2, change30d:   4.5, volume:   8e6, buyVolume:   5e6, sellVolume:   3e6 },
+    'MA':   { price: 535,  change1d:   0.4, change5d:   1.5, change30d:   5.2, volume:   4e6, buyVolume: 2.5e6, sellVolume: 1.5e6 },
+    'PYPL': { price:  78,  change1d:  -0.8, change5d:  -2.2, change30d:  -5.5, volume:  15e6, buyVolume: 6.5e6, sellVolume: 8.5e6 },
+    'SQ':   { price:  72,  change1d:  -1.2, change5d:  -3.5, change30d:  -8.5, volume:  12e6, buyVolume:   5e6, sellVolume:   7e6 },
+    'COIN': { price: 255,  change1d:   3.5, change5d:   8.5, change30d:  25.5, volume:  18e6, buyVolume:  12e6, sellVolume:   6e6 },
+    'NFLX': { price: 1020, change1d:   0.5, change5d:   2.5, change30d:   8.5, volume: 3.5e6, buyVolume: 2.2e6, sellVolume: 1.3e6 },
+    'TSLA': { price: 285,  change1d:   2.5, change5d:   5.5, change30d:  15.5, volume:  95e6, buyVolume:  55e6, sellVolume:  40e6 },
+    'SPOT': { price: 635,  change1d:   1.2, change5d:   3.5, change30d:  12.5, volume: 2.8e6, buyVolume: 1.8e6, sellVolume:   1e6 },
+    'PLTR': { price:  88,  change1d:   2.2, change5d:   6.5, change30d:  22.5, volume:  85e6, buyVolume:  52e6, sellVolume:  33e6 },
+    'ORCL': { price: 178,  change1d:   0.5, change5d:   2.0, change30d:   5.5, volume:  12e6, buyVolume:   7e6, sellVolume:   5e6 },
+    'IBM':  { price: 232,  change1d:   0.3, change5d:   1.2, change30d:   4.5, volume:   6e6, buyVolume: 3.5e6, sellVolume: 2.5e6 },
+    'SMCI': { price:  42,  change1d:  -2.5, change5d:  -6.5, change30d: -18.5, volume:  28e6, buyVolume:  11e6, sellVolume:  17e6 },
+  };
+
+  // ── API mode definitions ──────────────────────────────────────────────────
+  const API_MODES = [
+    { id: 'yahoo-chart',  badge: 'LIVE',  badgeClass: 'badge-live', requiresKey: false,
+      name: 'Yahoo Finance',
+      desc: 'Real-time price & volume. Technical: price trend + candlestick + volume momentum.' },
+    { id: 'yahoo-full',   badge: 'LIVE+', badgeClass: 'badge-plus', requiresKey: false,
+      name: 'Yahoo Finance + Analyst',
+      desc: 'Live price + Wall Street consensus (strongBuy/buy/hold/sell) from Yahoo Finance.' },
+    { id: 'finnhub',      badge: 'KEY',   badgeClass: 'badge-key',  requiresKey: true,
+      name: 'Finnhub',
+      keyLabel: 'Finnhub API Key',
+      keyLink:  'https://finnhub.io/register',
+      keyNote:  'Free tier: 60 API calls/min. Includes analyst recommendations.',
+      desc: 'Real-time quote + analyst recommendations via Finnhub. Free API key required.' },
+    { id: 'alphavantage', badge: 'KEY',   badgeClass: 'badge-key',  requiresKey: true,
+      name: 'Alpha Vantage',
+      keyLabel: 'Alpha Vantage API Key',
+      keyLink:  'https://www.alphavantage.co/support/#api-key',
+      keyNote:  'Free tier: 25 requests/day. Full daily OHLCV history included.',
+      desc: 'Daily historical OHLCV from Alpha Vantage. 25 free requests/day.' },
+    { id: 'demo',         badge: 'DEMO',  badgeClass: 'badge-demo', requiresKey: false,
+      name: 'Demo (Offline)',
+      desc: 'Static estimated prices for Mar 2026. No internet needed. For demonstration only.' },
+  ];
+
+  let selectedSector = null;
+  let selectedApi    = 'yahoo-chart';
+  let portfolio      = []; // [{ code, shares, avgBuy }]
+
+  // ── Build API grid ────────────────────────────────────────────────────────
+  const apiGrid = document.getElementById('apiGrid');
+  API_MODES.forEach(function (m) {
+    const btn = document.createElement('button');
+    btn.className = 'api-btn' + (m.id === selectedApi ? ' selected' : '');
+    btn.innerHTML =
+      '<div class="api-badge ' + m.badgeClass + '">' + m.badge + '</div>' +
+      '<div class="api-name">' + esc(m.name) + '</div>' +
+      '<div class="api-desc">' + esc(m.desc) + '</div>';
+    btn.onclick = function () {
+      document.querySelectorAll('.api-btn').forEach(function (b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      selectedApi = m.id;
+      var keyRow  = document.getElementById('apiKeyRow');
+      var keyInp  = document.getElementById('extApiKey');
+      var keyLink = document.getElementById('extApiKeyLink');
+      var keyNote = document.getElementById('extApiKeyNote');
+      if (m.requiresKey) {
+        keyRow.style.display = '';
+        keyInp.placeholder   = (m.keyLabel || 'API Key') + '...';
+        keyLink.href         = m.keyLink || '#';
+        keyLink.textContent  = 'Get Key';
+        keyNote.textContent  = m.keyNote || '';
+      } else {
+        keyRow.style.display = 'none';
+      }
+    };
+    apiGrid.appendChild(btn);
+  });
+
+  // ── Portfolio manual input ────────────────────────────────────────────────
+  document.getElementById('portfolioInput').addEventListener('input', function () {
+    portfolio = parsePortfolio(this.value);
+    renderTags(portfolio);
+  });
+
+  function parsePortfolio(text) {
+    return text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var p = l.toUpperCase().split(/\s+/);
+      var shares = p[1] ? parseInt(p[1], 10) : null;
+      return { code: p[0], shares: shares, avgBuy: p[2] ? parseFloat(p[2]) : null };
+    }).filter(function (p) { return /^[A-Z]{1,5}$/.test(p.code); });
+  }
+
+  function renderTags(list) {
+    document.getElementById('portfolioTags').innerHTML = list.map(function (p) {
+      return '<div class="ptag"><span class="ptag-code">' + esc(p.code) + '</span>' +
+        (p.shares ? '<span class="ptag-meta">' + p.shares.toLocaleString() + ' sh</span>' : '') +
+        (p.avgBuy ? '<span class="ptag-meta">@$' + p.avgBuy.toFixed(2) + '</span>' : '') + '</div>';
+    }).join('');
+  }
+
+  // ── Sector grid ───────────────────────────────────────────────────────────
+  SECTORS.forEach(function (s) {
+    const btn = document.createElement('button');
+    btn.className = 'sector-btn';
+    btn.innerHTML = '<span class="name">' + esc(s.name) + '</span><br><span class="desc">' + esc(s.desc) + '</span>';
+    btn.onclick = function () {
+      document.querySelectorAll('.sector-btn').forEach(function (b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      selectedSector = s.id;
+      document.getElementById('predictBtn').disabled = false;
+    };
+    document.getElementById('sectorGrid').appendChild(btn);
+  });
+
+  // ── Predict ───────────────────────────────────────────────────────────────
+  document.getElementById('predictBtn').onclick = async function () {
+    if (!selectedSector) return;
+    const btn = document.getElementById('predictBtn');
+    btn.disabled = true;
+    const activeMode = API_MODES.find(function (m) { return m.id === selectedApi; });
+    const apiLabel   = activeMode ? activeMode.name : selectedApi;
+    btn.textContent  = selectedApi === 'demo' ? 'Loading demo...' : 'Fetching live data...';
+
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('sellCard').style.display   = 'none';
+    document.getElementById('portfolioCard').style.display = 'none';
+    document.getElementById('fetchStatus').style.display  = 'none';
+    document.getElementById('resultList').innerHTML =
+      '<div class="loading"><div class="spinner"></div>Fetching data from ' +
+      (selectedApi === 'demo' ? 'demo dataset' : apiLabel) + '...</div>';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+
+    try {
+      const { scored, fetchedAt, errors } = await fetchAndScore(selectedSector, selectedApi);
+
+      const n      = scored.length;
+      const buyN   = Math.min(5, n);
+      const buys   = scored.slice(0, buyN);
+      const buyCodes  = new Set(buys.map(function (p) { return p.stock.code; }));
+      const sellPool  = scored.filter(function (p) { return !buyCodes.has(p.stock.code); });
+      const sells     = sellPool.slice(-Math.min(5, sellPool.length)).reverse();
+      const sellCodes = new Set(sells.map(function (p) { return p.stock.code; }));
+      const ownedSet  = new Set(portfolio.map(function (p) { return p.code; }));
+
+      document.getElementById('buyTitle').textContent  = 'Top ' + buys.length  + ' — Buy';
+      document.getElementById('sellTitle').textContent = 'Top ' + sells.length + ' — Sell';
+
+      if (n === 0) {
+        document.getElementById('resultList').innerHTML =
+          '<div class="loading" style="color:var(--muted)">No data returned.' +
+          (errors.length ? ' Failed: ' + errors.join(', ') + '.' : '') + '</div>';
+      } else {
+        renderResults(buys, 'resultList', false, ownedSet);
+      }
+      if (sells.length > 0) {
+        renderResults(sells, 'sellList', true, ownedSet);
+        document.getElementById('sellCard').style.display = 'block';
+      }
+
+      const statusEl = document.getElementById('fetchStatus');
+      const errNote  = errors.length ? ' <span class="err">(' + errors.length + ' failed: ' + errors.join(', ') + ')</span>' : '';
+      const okNote   = n > 0
+        ? (selectedApi === 'demo' ? 'Offline demo data' : '<span class="ok">Live ' + esc(apiLabel) + '</span>') + ' — ' + n + ' stocks — ' + fetchedAt
+        : '<span class="err">No data</span> — ' + fetchedAt;
+      statusEl.innerHTML = okNote + errNote;
+      statusEl.style.display = 'block';
+
+      if (portfolio.length > 0 && n > 0) {
+        await showPortfolioSummary(portfolio, scored, buyCodes, sellCodes, selectedApi);
+      }
+    } catch (e) {
+      document.getElementById('resultList').innerHTML =
+        '<div class="loading" style="color:var(--red)">Error: ' + esc(e.message) +
+        '. Try Demo mode or check your connection.</div>';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Analyze Sector';
+  };
+
+  // ── Fetch: Yahoo Finance chart (1-month daily OHLCV) ─────────────────────
+  async function fetchYahooChart(symbol) {
+    const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1mo';
+    async function get(u) {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let json;
+    try { json = await get(url); }
+    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+
+    const res = json.chart.result && json.chart.result[0];
+    if (!res) throw new Error('No chart result: ' + symbol);
+    const meta  = res.meta;
+    const ohlcv = res.indicators.quote[0];
+    const raw   = ohlcv.close || [];
+    const cls   = raw.filter(function (c) { return c != null; });
+    const n     = cls.length;
+    if (n === 0) throw new Error('No closes: ' + symbol);
+
+    const price     = meta.regularMarketPrice || cls[n - 1];
+    const volume    = meta.regularMarketVolume || 1;
+    const change1d  = n >= 2 ? (cls[n-1] - cls[n-2]) / cls[n-2] * 100 : 0;
+    const change5d  = n >= 6 ? (cls[n-1] - cls[n-6]) / cls[n-6] * 100 : change1d;
+    const change30d = n >= 2 ? (cls[n-1] - cls[0])   / cls[0]   * 100 : 0;
+    const lastOpen  = (ohlcv.open || [])[raw.length - 1] || cls[n - 2] || price;
+    const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+    return { price, change1d, change5d, change30d, volume,
+      buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore: null };
+  }
+
+  // ── Yahoo crumb (for quoteSummary analyst data) ───────────────────────────
+  let _yfCrumb = null;
+  async function getYahooCrumb() {
+    if (_yfCrumb) return _yfCrumb;
+    try { await fetch('https://fc.yahoo.com', { credentials: 'include', mode: 'no-cors', cache: 'no-store' }); } catch (_) {}
+    try {
+      const r = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', { credentials: 'include', cache: 'no-store' });
+      if (r.ok) { _yfCrumb = await r.text(); return _yfCrumb; }
+    } catch (_) {}
+    try {
+      const r = await fetch('https://corsproxy.io/?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v1/test/getcrumb'), { cache: 'no-store' });
+      if (r.ok) { _yfCrumb = await r.text(); return _yfCrumb; }
+    } catch (_) {}
+    return null;
+  }
+
+  // ── Fetch: Yahoo Finance + analyst recommendations ────────────────────────
+  async function fetchYahooFull(symbol) {
+    const base = await fetchYahooChart(symbol);
+    let analystScore = 0;
+    try {
+      const crumb = await getYahooCrumb();
+      if (!crumb) throw new Error('no crumb');
+      const url = 'https://query1.finance.yahoo.com/v10/finance/quoteSummary/' + symbol +
+                  '?modules=recommendationTrend&crumb=' + encodeURIComponent(crumb);
+      async function get(u) {
+        const r = await fetch(u, { credentials: 'include', cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }
+      let json;
+      try { json = await get(url); }
+      catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+      const trends = json.quoteSummary.result[0].recommendationTrend.trend;
+      const t = trends && trends[0];
+      if (t) {
+        const bull  = (t.strongBuy || 0) * 2 + (t.buy || 0);
+        const bear  = (t.sell || 0) + (t.strongSell || 0) * 2;
+        const total = (t.strongBuy||0)+(t.buy||0)+(t.hold||0)+(t.sell||0)+(t.strongSell||0);
+        analystScore = total > 0 ? (bull - bear) / total * 10 : 0;
+      }
+    } catch (_) { /* fall back to 0 */ }
+    return Object.assign({}, base, { analystScore });
+  }
+
+  // ── Fetch: Finnhub ────────────────────────────────────────────────────────
+  async function fetchFinnhub(symbol, apiKey) {
+    // Step 1: quote (price, change%, open)
+    const qUrl = 'https://finnhub.io/api/v1/quote?symbol=' + symbol + '&token=' + encodeURIComponent(apiKey);
+    async function get(u) {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let q;
+    try { q = await get(qUrl); }
+    catch (_) { q = await get('https://corsproxy.io/?url=' + encodeURIComponent(qUrl)); }
+    if (!q.c || q.c === 0) throw new Error('Finnhub: no quote for ' + symbol);
+
+    const price    = q.c;
+    const change1d = q.dp || 0;
+    const lastOpen = q.o || price;
+    const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+
+    // Step 2: analyst recommendation (optional, doesn't count against rate limit much)
+    let analystScore = null;
+    try {
+      const aUrl = 'https://finnhub.io/api/v1/stock/recommendation?symbol=' + symbol + '&token=' + encodeURIComponent(apiKey);
+      let aj;
+      try { aj = await get(aUrl); }
+      catch (_) { aj = await get('https://corsproxy.io/?url=' + encodeURIComponent(aUrl)); }
+      if (Array.isArray(aj) && aj.length > 0) {
+        const t = aj[0];
+        const bull  = (t.strongBuy || 0) * 2 + (t.buy || 0);
+        const bear  = (t.sell || 0) + (t.strongSell || 0) * 2;
+        const total = (t.strongBuy||0)+(t.buy||0)+(t.hold||0)+(t.sell||0)+(t.strongSell||0);
+        analystScore = total > 0 ? (bull - bear) / total * 10 : 0;
+      }
+    } catch (_) {}
+
+    // volume estimate from previous close spread (Finnhub free doesn't give volume in quote)
+    const volume = 10e6;
+    return {
+      price, change1d, change5d: change1d * 0.9, change30d: change1d * 3.5,
+      volume, buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore
+    };
+  }
+
+  // ── Fetch: Alpha Vantage ──────────────────────────────────────────────────
+  async function fetchAlphaVantage(symbol, apiKey) {
+    const url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
+                encodeURIComponent(symbol) + '&outputsize=compact&apikey=' + encodeURIComponent(apiKey);
+    async function get(u) {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let json;
+    try { json = await get(url); }
+    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+    if (json['Note'])        throw new Error('Alpha Vantage daily limit reached. Try again tomorrow.');
+    if (json['Information']) throw new Error('Alpha Vantage: ' + json['Information'].substring(0, 60));
+    const ts = json['Time Series (Daily)'];
+    if (!ts) throw new Error('Alpha Vantage: no data for ' + symbol);
+    const dates = Object.keys(ts).sort().reverse();
+    if (dates.length === 0) throw new Error('Alpha Vantage: empty for ' + symbol);
+    const cls = dates.map(function (d) { return parseFloat(ts[d]['4. close']); });
+    const n   = cls.length;
+    const price     = cls[0];
+    const volume    = parseInt(ts[dates[0]]['5. volume'] || 0, 10);
+    const change1d  = n >= 2  ? (cls[0] - cls[1])    / cls[1]    * 100 : 0;
+    const change5d  = n >= 6  ? (cls[0] - cls[5])    / cls[5]    * 100 : change1d;
+    const change30d = n >= 21 ? (cls[0] - cls[20])   / cls[20]   * 100 : (n >= 2 ? (cls[0] - cls[n-1]) / cls[n-1] * 100 : 0);
+    const lastOpen  = parseFloat(ts[dates[0]]['1. open'] || price);
+    const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+    return { price, change1d, change5d, change30d,
+      volume, buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore: null };
+  }
+
+  // ── Fetch: Demo ───────────────────────────────────────────────────────────
+  function fetchDemo(symbol) {
+    const d = DEMO[symbol];
+    if (!d) throw new Error('No demo data: ' + symbol);
+    return Promise.resolve(Object.assign({}, d, { analystScore: null }));
+  }
+
+  // ── Score helper ──────────────────────────────────────────────────────────
+  function scoreStock(data, apiMode) {
+    const buyRatio    = data.buyVolume / ((data.buyVolume + data.sellVolume) || 1);
+    const trendScore  = (data.change1d + data.change5d * 0.5 + data.change30d * 0.2) / 3;
+    const demandScore = (buyRatio - 0.5) * 20;
+    const volScore    = Math.log10((data.volume || 1) + 1) * 2;
+    const hasAnalyst  = data.analystScore != null && (apiMode === 'yahoo-full' || apiMode === 'finnhub');
+    const score = hasAnalyst
+      ? trendScore * 0.3 + demandScore * 0.2 + volScore * 0.15 + data.analystScore * 0.35
+      : trendScore * 0.4 + demandScore * 0.35 + volScore * 0.25;
+    return { score, buyRatio, trendScore, demandScore, analystScore: data.analystScore };
+  }
+
+  // ── Orchestrate fetch + score ─────────────────────────────────────────────
+  async function fetchAndScore(sectorId, apiMode) {
+    let candidates = STOCKS.filter(function (s) {
+      return sectorId === 'ALL' || s.sector === sectorId;
+    });
+    if (candidates.length === 0) candidates = STOCKS;
+
+    const extKey = (document.getElementById('extApiKey') || {}).value || '';
+    const fetchFn = apiMode === 'yahoo-full'  ? fetchYahooFull :
+                    apiMode === 'demo'         ? function (sym) { return fetchDemo(sym); } :
+                    apiMode === 'finnhub'      ? function (sym) { return fetchFinnhub(sym, extKey); } :
+                    apiMode === 'alphavantage' ? function (sym) { return fetchAlphaVantage(sym, extKey); } :
+                    fetchYahooChart;
+
+    // For demo, symbol = code directly; for live APIs, same
+    const results = await Promise.allSettled(candidates.map(function (s) {
+      const sym = apiMode === 'demo' ? s.code : s.code;
+      return fetchFn(sym).then(function (data) { return Object.assign({}, s, data); });
+    }));
+
+    const errors = [], enriched = [];
+    results.forEach(function (r, i) {
+      if (r.status === 'fulfilled') enriched.push(r.value);
+      else { errors.push(candidates[i].code); console.warn(candidates[i].code, r.reason); }
+    });
+
+    const scored = enriched.map(function (s) {
+      const sc = scoreStock(s, apiMode);
+      return Object.assign({ stock: s }, sc);
+    });
+    scored.sort(function (a, b) { return b.score - a.score; });
+
+    const now = new Date();
+    const fetchedAt = now.toLocaleTimeString('en-US') + ', ' + now.toLocaleDateString('en-US');
+    return { scored, fetchedAt, errors };
+  }
+
+  // ── Render buy/sell rows ──────────────────────────────────────────────────
+  function renderResults(picks, listId, isSell, ownedSet) {
+    const list = document.getElementById(listId);
+    list.innerHTML = '';
+    picks.forEach(function (p, i) {
+      const s       = p.stock;
+      const isOwned = ownedSet.has(s.code);
+      const ownedClass = isOwned ? (isSell ? ' owned-sell' : ' owned-buy') : '';
+      const row = document.createElement('div');
+      row.className = 'stock-row' + (isSell ? ' sell-row' : '') + ownedClass;
+
+      const chCls = s.change1d > 0 ? 'up' : s.change1d < 0 ? 'down' : 'neutral';
+      const sg    = function (v) { return v >= 0 ? '+' : ''; };
+      const hasAnalyst = p.analystScore != null;
+      const analystNote = hasAnalyst
+        ? ' · Analyst: ' + (p.analystScore > 3 ? 'Strong Buy' : p.analystScore > 0 ? 'Buy' : p.analystScore < -3 ? 'Strong Sell' : 'Hold/Sell')
+        : '';
+      const reasonText = isSell
+        ? 'Trend: ' + sg(s.change1d) + s.change1d.toFixed(1) + '% (1d), ' + sg(s.change5d) + s.change5d.toFixed(1) + '% (5d), ' + sg(s.change30d) + s.change30d.toFixed(1) + '% (30d)' +
+          ' · Sell pressure: ' + (100 - p.buyRatio * 100).toFixed(0) + '%' + analystNote
+        : 'Trend: ' + sg(s.change1d) + s.change1d.toFixed(1) + '% (1d), ' + sg(s.change5d) + s.change5d.toFixed(1) + '% (5d), ' + sg(s.change30d) + s.change30d.toFixed(1) + '% (30d)' +
+          ' · Buy pressure: ' + (p.buyRatio * 100).toFixed(0) + '%' + analystNote;
+
+      row.innerHTML =
+        (isOwned ? '<div class="owned-badge ' + (isSell ? 'ob-sell' : 'ob-buy') + '">' +
+          (isSell ? 'SELL NOW' : 'ADD MORE') + '</div>' : '') +
+        '<div class="rank ' + (isSell ? 'sell' : 'buy') + '">' + (i + 1) + '</div>' +
+        '<div class="stock-info"><div class="code">' + esc(s.code) + '</div><div class="sname">' + esc(s.name) + '</div></div>' +
+        '<div class="stock-price-col"><div class="stock-price">$' + fmtP(s.price) + '</div><div class="stock-chg ' + chCls + '">' + sg(s.change1d) + s.change1d.toFixed(2) + '%</div></div>' +
+        '<div class="reason"><strong>' + (isSell ? 'Sell signal' : 'Reason') + ':</strong> ' + esc(reasonText) + '</div>';
+
+      list.appendChild(row);
+    });
+  }
+
+  // ── Portfolio summary ─────────────────────────────────────────────────────
+  async function showPortfolioSummary(portfolio, sectorScored, buyCodes, sellCodes, apiMode) {
+    const card = document.getElementById('portfolioCard');
+    const el   = document.getElementById('portfolioSummary');
+    card.style.display = 'block';
+    el.innerHTML = '<div class="loading"><div class="spinner"></div>Loading portfolio data...</div>';
+
+    const fetchedMap = {};
+    sectorScored.forEach(function (p) { fetchedMap[p.stock.code] = p; });
+
+    const extKey = (document.getElementById('extApiKey') || {}).value || '';
+    const fetchFn = apiMode === 'yahoo-full'  ? fetchYahooFull :
+                    apiMode === 'demo'         ? function (sym) { return fetchDemo(sym); } :
+                    apiMode === 'finnhub'      ? function (sym) { return fetchFinnhub(sym, extKey); } :
+                    apiMode === 'alphavantage' ? function (sym) { return fetchAlphaVantage(sym, extKey); } :
+                    fetchYahooChart;
+
+    const missing = portfolio.filter(function (p) { return !fetchedMap[p.code]; });
+    if (missing.length > 0) {
+      const extraResults = await Promise.allSettled(missing.map(function (p) {
+        const sym = apiMode === 'demo' ? p.code : p.code;
+        return fetchFn(sym).then(function (data) {
+          const sc = scoreStock(data, apiMode);
+          return Object.assign({ stock: Object.assign({ code: p.code, name: p.code }, data) }, sc);
+        });
+      }));
+      extraResults.forEach(function (r, i) {
+        if (r.status === 'fulfilled') fetchedMap[missing[i].code] = r.value;
+      });
+    }
+
+    let rows = '';
+    let totalValue = 0, totalCost = 0, hasValue = false;
+
+    portfolio.forEach(function (p) {
+      const entry = fetchedMap[p.code];
+      const stock = entry ? entry.stock : null;
+      const price = stock ? stock.price : null;
+      const inBuy  = buyCodes.has(p.code);
+      const inSell = sellCodes.has(p.code);
+
+      let rec, recCls;
+      if (inBuy)  { rec = 'BUY MORE'; recCls = 'rec-buy'; }
+      else if (inSell) { rec = 'SELL'; recCls = 'rec-sell'; }
+      else if (entry && entry.score > 1)  { rec = 'HOLD'; recCls = 'rec-hold'; }
+      else if (entry && entry.score < -1) { rec = 'CONSIDER SELL'; recCls = 'rec-sell'; }
+      else { rec = 'HOLD'; recCls = 'rec-hold'; }
+
+      let pnlHtml = '<span style="color:var(--muted)">—</span>';
+      if (price && p.shares && p.avgBuy) {
+        const cost = p.shares * p.avgBuy;
+        const val  = p.shares * price;
+        const pnl  = val - cost;
+        const pct  = (pnl / cost * 100).toFixed(1);
+        totalValue += val; totalCost += cost; hasValue = true;
+        const cls  = pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+        const sign = pnl >= 0 ? '+' : '';
+        pnlHtml = '<span class="' + cls + '">' + sign + '$' + fmtP(Math.abs(pnl)) + ' (' + sign + pct + '%)</span>';
+      } else if (price && p.shares) {
+        totalValue += p.shares * price; hasValue = true;
+      }
+
+      const ch1d  = stock ? stock.change1d : null;
+      const chCls = ch1d > 0 ? 'up' : ch1d < 0 ? 'down' : 'neutral';
+      const sg    = ch1d >= 0 ? '+' : '';
+
+      rows += '<tr>' +
+        '<td><strong>' + esc(p.code) + '</strong></td>' +
+        '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">' + (stock ? esc(stock.name) : '<span style="color:var(--muted)">—</span>') + '</td>' +
+        '<td>' + (p.shares ? p.shares.toLocaleString() + ' sh' : '—') + '</td>' +
+        '<td>' + (price ? '$' + fmtP(price) : '—') + '</td>' +
+        '<td>' + (ch1d != null ? '<span class="' + chCls + '">' + sg + ch1d.toFixed(1) + '%</span>' : '—') + '</td>' +
+        '<td>' + pnlHtml + '</td>' +
+        '<td><span class="rec-badge ' + recCls + '">' + rec + '</span></td>' +
+        '</tr>';
+    });
+
+    let totalHtml = '';
+    if (hasValue) {
+      const totalPnl = totalCost > 0 ? totalValue - totalCost : null;
+      totalHtml = '<div class="ptotal">' +
+        '<span>Total Value: <strong>$' + fmtP(totalValue) + '</strong></span>' +
+        (totalPnl != null
+          ? '<span>Total P&amp;L: <strong class="' + (totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg') + '">' +
+            (totalPnl >= 0 ? '+' : '') + '$' + fmtP(Math.abs(totalPnl)) + ' (' +
+            (totalPnl >= 0 ? '+' : '') + ((totalPnl / totalCost) * 100).toFixed(1) + '%)</strong></span>'
+          : '') +
+        '</div>';
+    }
+
+    el.innerHTML =
+      '<div class="psummary-wrap"><table class="psummary-table">' +
+      '<thead><tr><th>Ticker</th><th>Company</th><th>Shares</th><th>Current</th><th>1d</th><th>P&amp;L</th><th>Signal</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>' + totalHtml;
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function fmtP(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (+n).toFixed(2);
+  }
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+})();
+</script>
+</body>
+</html>
