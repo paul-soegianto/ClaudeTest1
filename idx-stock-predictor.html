@@ -566,7 +566,7 @@
 
   // ── Fetch: Yahoo Finance chart (1-month daily OHLCV) ─────────────────────
   async function fetchYahooChart(symbol) {
-    const url = 'https://query2.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1mo';
+    const url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=1mo';
     async function get(u) {
       const r = await fetch(u, { cache: 'no-store' });
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -597,18 +597,41 @@
       buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore: null };
   }
 
+  // ── Yahoo crumb (required for quoteSummary) ───────────────────────────────
+  let _yfCrumb = null;
+  async function getYahooCrumb() {
+    if (_yfCrumb) return _yfCrumb;
+    // Step 1: visit fc.yahoo.com to set Yahoo session cookies in the browser
+    try { await fetch('https://fc.yahoo.com', { credentials: 'include', mode: 'no-cors', cache: 'no-store' }); } catch (_) {}
+    // Step 2: fetch crumb (browser sends the cookies automatically)
+    try {
+      const r = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+        credentials: 'include', cache: 'no-store'
+      });
+      if (r.ok) { _yfCrumb = await r.text(); return _yfCrumb; }
+    } catch (_) {}
+    // Step 3: fallback — try via corsproxy which may carry its own Yahoo session
+    try {
+      const r = await fetch('https://corsproxy.io/?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v1/test/getcrumb'), { cache: 'no-store' });
+      if (r.ok) { _yfCrumb = await r.text(); return _yfCrumb; }
+    } catch (_) {}
+    return null;
+  }
+
   // ── Fetch: Yahoo Finance + analyst recommendations ────────────────────────
   async function fetchYahooFull(symbol) {
     const base = await fetchYahooChart(symbol);
-    const url  = 'https://query2.finance.yahoo.com/v10/finance/quoteSummary/' + symbol +
-                 '?modules=recommendationTrend';
-    async function get(u) {
-      const r = await fetch(u, { cache: 'no-store' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }
     let analystScore = 0;
     try {
+      const crumb = await getYahooCrumb();
+      if (!crumb) throw new Error('no crumb');
+      const url = 'https://query1.finance.yahoo.com/v10/finance/quoteSummary/' + symbol +
+                  '?modules=recommendationTrend&crumb=' + encodeURIComponent(crumb);
+      async function get(u) {
+        const r = await fetch(u, { credentials: 'include', cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }
       let json;
       try { json = await get(url); }
       catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
