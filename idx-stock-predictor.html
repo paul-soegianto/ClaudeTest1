@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IDX Stock Predictor — Top 5 Rekomendasi Saham</title>
+  <title>IDX Stock Predictor — Top 5 Beli & Jual</title>
   <script src="idx-stock-db.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -118,6 +118,7 @@
       transition: border-color .2s;
     }
     .stock-row:hover { border-color: var(--accent); }
+    .stock-row.sell:hover { border-color: var(--red); }
     .rank {
       width: 36px;
       height: 36px;
@@ -129,6 +130,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+    .rank.sell {
+      background: linear-gradient(135deg, var(--red), #b91c1c);
+      color: #fff;
+    }
+    .sell-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
     }
     .stock-info .code { font-weight: 800; font-size: 16px; }
     .stock-info .name { font-size: 12px; color: var(--muted); }
@@ -173,19 +186,27 @@
 <body>
   <div class="container">
     <h1>IDX Stock Predictor</h1>
-    <p class="subtitle">Rekomendasi 5 saham terbaik berdasarkan riwayat harga & demand order (buy vs sell). Pilih sektor industri lalu klik Prediksi.</p>
+    <p class="subtitle">Rekomendasi 5 saham terbaik untuk dibeli dan 5 saham untuk dijual berdasarkan riwayat harga & demand order. Pilih sektor lalu klik Prediksi.</p>
 
     <div class="card">
       <h2>1. Pilih Sektor Industri</h2>
       <div class="sector-grid" id="sectorGrid"></div>
-      <button class="predict-btn" id="predictBtn" disabled>Prediksi Top 5 Saham</button>
+      <button class="predict-btn" id="predictBtn" disabled>Prediksi Top 5 Beli &amp; Jual</button>
     </div>
 
     <div class="card" id="resultCard" style="display:none">
-      <h2>2. Top 5 Rekomendasi Saham</h2>
+      <h2>2. Top 5 Saham — BELI</h2>
       <div class="result-list" id="resultList"></div>
-      <div class="legend">
+      <div class="legend" style="margin-top:16px">
         <strong>Algoritma prediksi:</strong> Skor berdasarkan (1) trend harga 1/5/30 hari, (2) rasio order beli vs jual (demand), dan (3) volume transaksi. Data demo; untuk data real gunakan API seperti Invezgo atau OHLC.dev.
+      </div>
+    </div>
+
+    <div class="card" id="sellCard" style="display:none">
+      <div class="sell-header">3. Top 5 Saham — JUAL</div>
+      <div class="result-list" id="sellList"></div>
+      <div class="legend" style="margin-top:16px">
+        <strong>Sinyal jual:</strong> Saham dengan skor terendah — trend negatif, tekanan jual dominan, dan volume lemah. Pertimbangkan untuk cut loss atau ambil profit.
       </div>
     </div>
 
@@ -216,9 +237,11 @@
     // ── Predict button ────────────────────────────────────────────────────
     document.getElementById('predictBtn').onclick = function () {
       if (!selectedSector) return;
-      const picks = runPrediction(selectedSector);
-      renderResults(picks);
+      const { buys, sells } = runPrediction(selectedSector);
+      renderResults(buys, 'resultList', false);
+      renderResults(sells, 'sellList', true);
       document.getElementById('resultCard').style.display = 'block';
+      document.getElementById('sellCard').style.display = 'block';
       document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -246,29 +269,36 @@
       });
 
       scored.sort(function (a, b) { return b.score - a.score; });
-      return scored.slice(0, 5);
+      return {
+        buys: scored.slice(0, 5),
+        sells: scored.slice(-5).reverse()
+      };
     }
 
-    function renderResults(picks) {
-      const list = document.getElementById('resultList');
+    function renderResults(picks, listId, isSell) {
+      const list = document.getElementById(listId);
       list.innerHTML = '';
-      const ranks = ['1', '2', '3', '4', '5'];
       picks.forEach(function (p, i) {
         const s = p.stock;
         const row = document.createElement('div');
-        row.className = 'stock-row';
+        row.className = 'stock-row' + (isSell ? ' sell' : '');
         const chCls = s.change1d > 0 ? 'up' : s.change1d < 0 ? 'down' : 'neutral';
         const chSign = s.change1d >= 0 ? '+' : '';
-        const reason = [
+        const sellRatio = (100 - p.buyRatio * 100).toFixed(0);
+        const reason = isSell ? [
+          'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1d), ' + (s.change5d >= 0 ? '+' : '') + s.change5d.toFixed(1) + '% (5d), ' + (s.change30d >= 0 ? '+' : '') + s.change30d.toFixed(1) + '% (30d)',
+          'Tekanan jual: ' + sellRatio + '% order jual',
+          'Volume: ' + formatVol(s.volume)
+        ].join(' • ') : [
           'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1d), ' + chSign + s.change5d.toFixed(1) + '% (5d), ' + chSign + s.change30d.toFixed(1) + '% (30d)',
           'Demand: ' + (p.buyRatio * 100).toFixed(0) + '% order beli',
           'Volume: ' + formatVol(s.volume)
         ].join(' • ');
         row.innerHTML =
-          '<div class="rank">' + ranks[i] + '</div>' +
+          '<div class="rank' + (isSell ? ' sell' : '') + '">' + (i + 1) + '</div>' +
           '<div class="stock-info"><div class="code">' + escapeHtml(s.code) + '</div><div class="name">' + escapeHtml(s.name) + '</div></div>' +
           '<div><div class="stock-price">Rp ' + formatPrice(s.price) + '</div><div class="stock-change ' + chCls + '">' + chSign + s.change1d.toFixed(1) + '%</div></div>' +
-          '<div class="reason"><strong>Alasan:</strong> ' + escapeHtml(reason) + '</div>';
+          '<div class="reason"><strong>' + (isSell ? 'Sinyal jual' : 'Alasan') + ':</strong> ' + escapeHtml(reason) + '</div>';
         list.appendChild(row);
       });
     }
