@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDX Stock Predictor — Top 5 Rekomendasi Saham</title>
+  <script src="idx-stock-db.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060810;
+      --surf: #0e1220;
+      --surf2: #161c2c;
+      --border: #1e2738;
+      --accent: #0ea5e9;
+      --accent2: #06b6d4;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --gold: #fbbf24;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
+    }
+    .sector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .sector-btn {
+      background: var(--surf2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .sector-btn:hover {
+      border-color: var(--accent);
+      background: rgba(14, 165, 233, .08);
+    }
+    .sector-btn.selected {
+      border-color: var(--accent);
+      background: rgba(14, 165, 233, .15);
+    }
+    .sector-btn .name { font-weight: 700; }
+    .sector-btn .desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .predict-btn {
+      width: 100%;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: opacity .2s;
+    }
+    .predict-btn:hover { opacity: .92; }
+    .predict-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .result-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .stock-row {
+      display: grid;
+      grid-template-columns: 48px 1fr auto auto;
+      align-items: center;
+      gap: 14px;
+      background: var(--surf2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: border-color .2s;
+    }
+    .stock-row:hover { border-color: var(--accent); }
+    .rank {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold), #f59e0b);
+      color: #000;
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stock-info .code { font-weight: 800; font-size: 16px; }
+    .stock-info .name { font-size: 12px; color: var(--muted); }
+    .stock-price { font-weight: 700; text-align: right; }
+    .stock-change { font-size: 12px; }
+    .stock-change.up { color: var(--green); }
+    .stock-change.down { color: var(--red); }
+    .stock-change.neutral { color: var(--muted); }
+    .reason {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      color: var(--muted);
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .reason strong { color: var(--accent); }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
+    .legend {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: var(--surf2);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .footer {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 24px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>IDX Stock Predictor</h1>
+    <p class="subtitle">Rekomendasi 5 saham terbaik berdasarkan riwayat harga & demand order (buy vs sell). Pilih sektor industri lalu klik Prediksi.</p>
+
+    <div class="card">
+      <h2>1. Pilih Sektor Industri</h2>
+      <div class="sector-grid" id="sectorGrid"></div>
+      <button class="predict-btn" id="predictBtn" disabled>Prediksi Top 5 Saham</button>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none">
+      <h2>2. Top 5 Rekomendasi Saham</h2>
+      <div class="result-list" id="resultList"></div>
+      <div class="legend">
+        <strong>Algoritma prediksi:</strong> Skor berdasarkan (1) trend harga 1/5/30 hari, (2) rasio order beli vs jual (demand), dan (3) volume transaksi. Data demo; untuk data real gunakan API seperti Invezgo atau OHLC.dev.
+      </div>
+    </div>
+
+    <p class="footer">Data untuk demonstrasi. Bukan saran investasi. Selalu lakukan riset sendiri.</p>
+  </div>
+
+  <script>
+  (function () {
+    const db = IDX_STOCK_DB;
+    let selectedSector = null;
+
+    // ── Sector buttons ─────────────────────────────────────────────────────
+    const grid = document.getElementById('sectorGrid');
+    db.sectors.forEach(function (s) {
+      const btn = document.createElement('button');
+      btn.className = 'sector-btn';
+      btn.dataset.sector = s.id;
+      btn.innerHTML = '<span class="name">' + escapeHtml(s.name) + '</span><br><span class="desc">' + escapeHtml(s.desc) + '</span>';
+      btn.onclick = function () {
+        document.querySelectorAll('.sector-btn').forEach(function (b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        selectedSector = s.id;
+        document.getElementById('predictBtn').disabled = false;
+      };
+      grid.appendChild(btn);
+    });
+
+    // ── Predict button ────────────────────────────────────────────────────
+    document.getElementById('predictBtn').onclick = function () {
+      if (!selectedSector) return;
+      const picks = runPrediction(selectedSector);
+      renderResults(picks);
+      document.getElementById('resultCard').style.display = 'block';
+      document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // ── Prediction algorithm ───────────────────────────────────────────────
+    // Score = f(price trend, buy/sell ratio, volume)
+    function runPrediction(sectorId) {
+      const sector = db.sectors.find(function (s) { return s.id === sectorId; });
+      const codes = sector ? sector.codes : [];
+      let candidates = db.stocks.filter(function (s) {
+        if (sectorId === 'OTHER') return true; // Lainnya = semua saham
+        return codes.includes(s.sector);
+      });
+
+      if (candidates.length === 0) {
+        candidates = db.stocks;
+      }
+
+      const scored = candidates.map(function (s) {
+        const buyRatio = s.buyVolume / (s.buyVolume + s.sellVolume || 1);
+        const trendScore = (s.change1d + s.change5d * 0.5 + s.change30d * 0.2) / 3;
+        const demandScore = (buyRatio - 0.5) * 20;
+        const volScore = Math.log10(s.volume + 1) * 2;
+        const score = trendScore * 0.4 + demandScore * 0.35 + volScore * 0.25;
+        return { stock: s, score, buyRatio, trendScore, demandScore, volScore };
+      });
+
+      scored.sort(function (a, b) { return b.score - a.score; });
+      return scored.slice(0, 5);
+    }
+
+    function renderResults(picks) {
+      const list = document.getElementById('resultList');
+      list.innerHTML = '';
+      const ranks = ['1', '2', '3', '4', '5'];
+      picks.forEach(function (p, i) {
+        const s = p.stock;
+        const row = document.createElement('div');
+        row.className = 'stock-row';
+        const chCls = s.change1d > 0 ? 'up' : s.change1d < 0 ? 'down' : 'neutral';
+        const chSign = s.change1d >= 0 ? '+' : '';
+        const reason = [
+          'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1d), ' + chSign + s.change5d.toFixed(1) + '% (5d), ' + chSign + s.change30d.toFixed(1) + '% (30d)',
+          'Demand: ' + (p.buyRatio * 100).toFixed(0) + '% order beli',
+          'Volume: ' + formatVol(s.volume)
+        ].join(' • ');
+        row.innerHTML =
+          '<div class="rank">' + ranks[i] + '</div>' +
+          '<div class="stock-info"><div class="code">' + escapeHtml(s.code) + '</div><div class="name">' + escapeHtml(s.name) + '</div></div>' +
+          '<div><div class="stock-price">Rp ' + formatPrice(s.price) + '</div><div class="stock-change ' + chCls + '">' + chSign + s.change1d.toFixed(1) + '%</div></div>' +
+          '<div class="reason"><strong>Alasan:</strong> ' + escapeHtml(reason) + '</div>';
+        list.appendChild(row);
+      });
+    }
+
+    function formatPrice(n) {
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return n.toFixed(0);
+    }
+    function formatVol(n) {
+      if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      return String(n);
+    }
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  })();
+  </script>
+</body>
+</html>

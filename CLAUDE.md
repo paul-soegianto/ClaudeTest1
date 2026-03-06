@@ -6,12 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A collection of standalone browser games. Each game is a **single self-contained HTML file** — no build system, no dependencies, no package manager. Open any file directly in a browser to play.
 
-| File | Game |
+| File | Game / App |
 |---|---|
 | `tictactoe.html` | Tic Tac Toe — two-player, persistent score tracking |
 | `snake.html` | Snake — mouse-steered, timed auto-growth |
 | `shooter.html` | Star Blaster — retro 2D top-down shooter |
 | `greenlantern.html` | Green Lantern — side-scrolling cave platformer with 6 enemy types |
+| `idx-stock-predictor.html` | IDX Stock Predictor — predict top 5 stocks by sector (financial, mining, manufacturing, etc.) using history and order demand |
 
 ## Development workflow
 
@@ -22,6 +23,7 @@ open tictactoe.html
 open snake.html
 open shooter.html
 open greenlantern.html
+open idx-stock-predictor.html
 ```
 
 **After every change — no exceptions — commit and push to GitHub:**
