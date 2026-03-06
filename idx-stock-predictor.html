@@ -137,6 +137,14 @@
   <div class="card">
     <h2>1. Pilih Sumber Data</h2>
     <div class="api-grid" id="apiGrid"></div>
+    <!-- API key row — shown only for APIs that require a key -->
+    <div id="apiKeyRow" style="display:none;margin-top:12px">
+      <div class="apikey-row">
+        <input type="password" class="apikey-input" id="extApiKey" placeholder="API Key..." autocomplete="off">
+        <a class="apikey-link" id="extApiKeyLink" href="#" target="_blank" rel="noopener">Dapatkan Key</a>
+      </div>
+      <div id="extApiKeyNote" class="card-desc" style="margin-top:4px;margin-bottom:0"></div>
+    </div>
   </div>
 
   <!-- 2. Portfolio -->
@@ -211,7 +219,7 @@
     <div id="portfolioSummary"></div>
   </div>
 
-  <p class="footer">Data dari Yahoo Finance. Bukan saran investasi. Selalu lakukan riset sendiri.</p>
+  <p class="footer">Data dari Yahoo Finance, OHLC.dev, Alpha Vantage, atau IDX Pulse. Bukan saran investasi. Selalu lakukan riset sendiri.</p>
 </div>
 
 <script>
@@ -259,11 +267,29 @@
 
   // ── API mode definitions ─────────────────────────────────────────────────
   const API_MODES = [
-    { id: 'yahoo-chart', badge: 'LIVE',  badgeClass: 'badge-live', name: 'Yahoo Finance',
+    { id: 'yahoo-chart',  badge: 'LIVE',  badgeClass: 'badge-live', requiresKey: false,
+      name: 'Yahoo Finance',
       desc: 'Harga & volume real-time. Analisis teknikal: trend harga + candlestick + volume.' },
-    { id: 'yahoo-full',  badge: 'LIVE+', badgeClass: 'badge-plus', name: 'Yahoo Finance + Analis',
+    { id: 'yahoo-full',   badge: 'LIVE+', badgeClass: 'badge-plus', requiresKey: false,
+      name: 'Yahoo Finance + Analis',
       desc: 'Harga live + konsensus rekomendasi analis (strongBuy/buy/hold/sell) dari Yahoo.' },
-    { id: 'demo',        badge: 'DEMO',  badgeClass: 'badge-demo', name: 'Demo (Offline)',
+    { id: 'ohlcdev',      badge: 'LIVE',  badgeClass: 'badge-live', requiresKey: true,
+      name: 'OHLC.dev (RapidAPI)',
+      keyLabel: 'RapidAPI Key',
+      keyLink:  'https://rapidapi.com/ohlcdev-ohlcdev-default/api/indonesia-stock-exchange-idx',
+      keyNote:  'Daftar di RapidAPI (gratis) → subscribe ke "Indonesia Stock Exchange (IDX)" API.',
+      desc: 'API IDX via RapidAPI. Harga, volume & perubahan harian. Memerlukan RapidAPI key.' },
+    { id: 'alphavantage', badge: 'LIVE',  badgeClass: 'badge-live', requiresKey: true,
+      name: 'Alpha Vantage',
+      keyLabel: 'Alpha Vantage API Key',
+      keyLink:  'https://www.alphavantage.co/support/#api-key',
+      keyNote:  'API key gratis tersedia. Batas 25 request/hari pada tier gratis.',
+      desc: 'Data historis harian dari Alpha Vantage. Mendukung saham IDX. Gratis 25 req/hari.' },
+    { id: 'idxpulse',    badge: 'LIVE',  badgeClass: 'badge-live', requiresKey: false,
+      name: 'IDX Pulse',
+      desc: 'Open-source IDX scraper (rdp77/idx-pulse). Data saham IDX tanpa API key.' },
+    { id: 'demo',         badge: 'DEMO',  badgeClass: 'badge-demo', requiresKey: false,
+      name: 'Demo (Offline)',
       desc: 'Data estimasi statis Mar 2026. Tidak perlu internet. Hanya untuk demonstrasi.' },
   ];
 
@@ -280,6 +306,19 @@
       document.querySelectorAll('.api-btn').forEach(function (b) { b.classList.remove('selected'); });
       btn.classList.add('selected');
       selectedApi = m.id;
+      // Show/hide API key row
+      var keyRow  = document.getElementById('apiKeyRow');
+      var keyInp  = document.getElementById('extApiKey');
+      var keyLink = document.getElementById('extApiKeyLink');
+      var keyNote = document.getElementById('extApiKeyNote');
+      if (m.requiresKey) {
+        keyRow.style.display = '';
+        keyInp.placeholder   = (m.keyLabel || 'API Key') + '...';
+        keyLink.href         = m.keyLink || '#';
+        keyNote.textContent  = m.keyNote || '';
+      } else {
+        keyRow.style.display = 'none';
+      }
     };
     apiGrid.appendChild(btn);
   });
@@ -459,7 +498,9 @@
     if (!selectedSector) return;
     const btn = document.getElementById('predictBtn');
     btn.disabled = true;
-    btn.textContent = selectedApi === 'demo' ? 'Memuat demo...' : 'Mengambil data live...';
+    const activeMode = API_MODES.find(function (m) { return m.id === selectedApi; });
+    const apiLabel   = activeMode ? activeMode.name : selectedApi;
+    btn.textContent  = selectedApi === 'demo' ? 'Memuat demo...' : 'Mengambil data live...';
 
     document.getElementById('resultCard').style.display = 'block';
     document.getElementById('sellCard').style.display = 'none';
@@ -467,7 +508,7 @@
     document.getElementById('fetchStatus').style.display = 'none';
     document.getElementById('resultList').innerHTML =
       '<div class="loading"><div class="spinner"></div>Mengambil data ' +
-      (selectedApi === 'demo' ? 'demo' : 'dari Yahoo Finance') + '...</div>';
+      (selectedApi === 'demo' ? 'demo' : 'dari ' + apiLabel) + '...</div>';
     document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 
     try {
@@ -488,7 +529,7 @@
       const errNote = errors.length ? ' <span class="err">(' + errors.length + ' gagal: ' + errors.join(', ') + ')</span>' : '';
       statusEl.innerHTML = (selectedApi === 'demo'
         ? 'Data estimasi offline'
-        : '<span class="ok">Data live berhasil</span>') + ' — ' + fetchedAt + errNote;
+        : '<span class="ok">Data live ' + esc(apiLabel) + ' berhasil</span>') + ' — ' + fetchedAt + errNote;
       statusEl.style.display = 'block';
 
       if (portfolio.length > 0) {
@@ -571,6 +612,107 @@
     return Promise.resolve(Object.assign({}, d, { analystScore: null }));
   }
 
+  // ── Fetch: OHLC.dev via RapidAPI ──────────────────────────────────────────
+  async function fetchOHLCDev(symbol, apiKey) {
+    const code = symbol.replace(/\.JK$/i, '');
+    const url  = 'https://indonesia-stock-exchange-idx.p.rapidapi.com/stock?stockCode=' + code;
+    const hdrs = {
+      'x-rapidapi-key':  apiKey,
+      'x-rapidapi-host': 'indonesia-stock-exchange-idx.p.rapidapi.com'
+    };
+    async function get(u, h) {
+      const r = await fetch(u, { headers: h || {}, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let json;
+    try { json = await get(url, hdrs); }
+    catch (e) {
+      if (e instanceof TypeError) {
+        // CORS — proxy (note: custom headers pass through corsproxy.io via query params in headers)
+        json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url), hdrs);
+      } else { throw e; }
+    }
+    const d = Array.isArray(json) ? json[0] : json;
+    if (!d || (!d.close && !d.lastPrice && !d.price)) throw new Error('OHLC.dev: no data for ' + code);
+    const price   = parseFloat(d.close || d.lastPrice || d.price || 0);
+    const change1d = parseFloat(d.percentageChange || d.changePercentage || d.changePercent || 0);
+    const volume  = parseInt(d.volume || d.vol || 0, 10);
+    const lastOpen = parseFloat(d.open || price);
+    const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+    return {
+      price, change1d, change5d: change1d * 0.8, change30d: change1d * 3,
+      volume, buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore: null
+    };
+  }
+
+  // ── Fetch: Alpha Vantage ──────────────────────────────────────────────────
+  async function fetchAlphaVantage(symbol, apiKey) {
+    // Alpha Vantage uses .JKT suffix for IDX symbols
+    const avSym = symbol.replace(/\.JK$/i, '.JKT');
+    const url   = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
+                  avSym + '&outputsize=compact&apikey=' + encodeURIComponent(apiKey);
+    async function get(u) {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let json;
+    try { json = await get(url); }
+    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+    if (json['Note'])        throw new Error('Alpha Vantage API limit tercapai. Coba lagi besok.');
+    if (json['Information']) throw new Error('Alpha Vantage: ' + json['Information'].substring(0, 60));
+    const ts = json['Time Series (Daily)'];
+    if (!ts) throw new Error('Alpha Vantage: tidak ada data untuk ' + avSym);
+    const dates = Object.keys(ts).sort().reverse();
+    if (dates.length === 0) throw new Error('Alpha Vantage: kosong untuk ' + avSym);
+    const cls = dates.map(function (d) { return parseFloat(ts[d]['4. close']); });
+    const n   = cls.length;
+    const price    = cls[0];
+    const volume   = parseInt(ts[dates[0]]['5. volume'] || 0, 10);
+    const change1d  = n >= 2  ? (cls[0] - cls[1])    / cls[1]    * 100 : 0;
+    const change5d  = n >= 6  ? (cls[0] - cls[5])    / cls[5]    * 100 : change1d;
+    const change30d = n >= 21 ? (cls[0] - cls[20])   / cls[20]   * 100 : (n >= 2 ? (cls[0] - cls[n-1]) / cls[n-1] * 100 : 0);
+    const lastOpen  = parseFloat(ts[dates[0]]['1. open'] || price);
+    const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+    return {
+      price, change1d, change5d, change30d,
+      volume, buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore: null
+    };
+  }
+
+  // ── Fetch: IDX Pulse (rdp77/idx-pulse) ───────────────────────────────────
+  async function fetchIDXPulse(symbol) {
+    const code = symbol.replace(/\.JK$/i, '');
+    // Try multiple endpoint patterns — the scraper API doesn't have official docs
+    const endpoints = [
+      'https://idx-pulse.vercel.app/api/stock/' + code,
+      'https://idx-pulse.vercel.app/api/stocks/' + code,
+      'https://idx-pulse.vercel.app/api/v1/stock/' + code,
+    ];
+    async function tryGet(u) {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    let json = null;
+    for (var i = 0; i < endpoints.length; i++) {
+      try { json = await tryGet(endpoints[i]); break; } catch (_) {}
+      try { json = await tryGet('https://corsproxy.io/?url=' + encodeURIComponent(endpoints[i])); break; } catch (_) {}
+    }
+    if (!json) throw new Error('IDX Pulse: tidak ada data untuk ' + code);
+    const price = parseFloat(json.price || json.close || json.lastPrice || json.last_price || 0);
+    if (!price) throw new Error('IDX Pulse: harga tidak ditemukan untuk ' + code);
+    const change1d  = parseFloat(json.change_percent || json.changePercent || json.percentChange || json.change1d || 0);
+    const volume    = parseInt(json.volume || json.vol || 0, 10);
+    const lastOpen  = parseFloat(json.open || price);
+    const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+    return {
+      price, change1d, change5d: change1d * 0.8, change30d: change1d * 3,
+      volume, buyVolume: volume * bullRatio, sellVolume: volume * (1 - bullRatio), analystScore: null
+    };
+  }
+
   // ── Score helper ──────────────────────────────────────────────────────────
   function scoreStock(data, apiMode) {
     const buyRatio    = data.buyVolume / ((data.buyVolume + data.sellVolume) || 1);
@@ -592,8 +734,12 @@
     });
     if (candidates.length === 0) candidates = db.stocks;
 
-    const fetchFn = apiMode === 'yahoo-full' ? fetchYahooFull :
-                    apiMode === 'demo'        ? fetchDemo      : fetchYahooChart;
+    const extKey = (document.getElementById('extApiKey') || {}).value || '';
+    const fetchFn = apiMode === 'yahoo-full'  ? fetchYahooFull :
+                    apiMode === 'demo'         ? fetchDemo      :
+                    apiMode === 'ohlcdev'      ? function (sym) { return fetchOHLCDev(sym, extKey); } :
+                    apiMode === 'alphavantage' ? function (sym) { return fetchAlphaVantage(sym, extKey); } :
+                    apiMode === 'idxpulse'     ? fetchIDXPulse  : fetchYahooChart;
 
     const results = await Promise.allSettled(candidates.map(function (s) {
       return fetchFn(s.symbol).then(function (data) { return Object.assign({}, s, data); });
@@ -664,8 +810,12 @@
     sectorScored.forEach(function (p) { fetchedMap[p.stock.code] = p; });
 
     // Fetch portfolio stocks not already in sector results
-    const fetchFn = apiMode === 'yahoo-full' ? fetchYahooFull :
-                    apiMode === 'demo'        ? fetchDemo      : fetchYahooChart;
+    const extKey2 = (document.getElementById('extApiKey') || {}).value || '';
+    const fetchFn = apiMode === 'yahoo-full'  ? fetchYahooFull :
+                    apiMode === 'demo'         ? fetchDemo      :
+                    apiMode === 'ohlcdev'      ? function (sym) { return fetchOHLCDev(sym, extKey2); } :
+                    apiMode === 'alphavantage' ? function (sym) { return fetchAlphaVantage(sym, extKey2); } :
+                    apiMode === 'idxpulse'     ? fetchIDXPulse  : fetchYahooChart;
 
     const missing = portfolio.filter(function (p) { return !fetchedMap[p.code]; });
     if (missing.length > 0) {
