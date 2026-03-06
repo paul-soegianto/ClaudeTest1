@@ -181,6 +181,35 @@
       margin-top: 24px;
       text-align: center;
     }
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 12px 0;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fetch-status {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: var(--surf2);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .fetch-status .ok { color: var(--green); }
+    .fetch-status .err { color: var(--red); }
   </style>
 </head>
 <body>
@@ -197,8 +226,9 @@
     <div class="card" id="resultCard" style="display:none">
       <h2>2. Top 5 Saham — BELI</h2>
       <div class="result-list" id="resultList"></div>
-      <div class="legend" style="margin-top:16px">
-        <strong>Algoritma prediksi:</strong> Skor berdasarkan (1) trend harga 1/5/30 hari, (2) rasio order beli vs jual (demand), dan (3) volume transaksi. Data demo; untuk data real gunakan API seperti Invezgo atau OHLC.dev.
+      <div class="fetch-status" id="fetchStatus" style="display:none"></div>
+      <div class="legend" style="margin-top:8px">
+        <strong>Algoritma:</strong> Skor berdasarkan (1) trend harga 1/5/30 hari dari Yahoo Finance, (2) tekanan beli/jual dari candlestick, (3) volume transaksi.
       </div>
     </div>
 
@@ -235,46 +265,140 @@
     });
 
     // ── Predict button ────────────────────────────────────────────────────
-    document.getElementById('predictBtn').onclick = function () {
+    document.getElementById('predictBtn').onclick = async function () {
       if (!selectedSector) return;
-      const { buys, sells } = runPrediction(selectedSector);
-      renderResults(buys, 'resultList', false);
-      renderResults(sells, 'sellList', true);
+      const btn = document.getElementById('predictBtn');
+      btn.disabled = true;
+      btn.textContent = 'Memuat data live...';
+
+      // Show loading state
       document.getElementById('resultCard').style.display = 'block';
-      document.getElementById('sellCard').style.display = 'block';
+      document.getElementById('sellCard').style.display = 'none';
+      document.getElementById('resultList').innerHTML =
+        '<div class="loading"><div class="spinner"></div>Mengambil harga live dari Yahoo Finance...</div>';
       document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+
+      try {
+        const { scored, fetchedAt, errors } = await fetchAndScore(selectedSector);
+        if (scored.length === 0) throw new Error('Tidak ada data tersedia');
+
+        const buys = scored.slice(0, 5);
+        const sells = scored.slice(-5).reverse();
+        renderResults(buys, 'resultList', false);
+        renderResults(sells, 'sellList', true);
+        document.getElementById('sellCard').style.display = 'block';
+
+        // Show fetch status
+        const statusEl = document.getElementById('fetchStatus');
+        const errNote = errors.length ? ' <span class="err">(' + errors.length + ' saham gagal dimuat)</span>' : '';
+        statusEl.innerHTML = '<span class="ok">Data live berhasil dimuat</span> — ' +
+          fetchedAt + errNote + '. Sumber: Yahoo Finance.';
+        statusEl.style.display = 'block';
+      } catch (e) {
+        document.getElementById('resultList').innerHTML =
+          '<div class="loading" style="color:var(--red)">Gagal memuat data: ' + escapeHtml(e.message) +
+          '. Periksa koneksi internet.</div>';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Prediksi Top 5 Beli & Jual';
     };
 
-    // ── Prediction algorithm ───────────────────────────────────────────────
-    // Score = f(price trend, buy/sell ratio, volume)
-    function runPrediction(sectorId) {
+    // ── Live data fetch ───────────────────────────────────────────────────
+    // Fetches 1-month daily chart from Yahoo Finance for each stock in sector.
+    // Uses corsproxy.io as fallback if direct request is blocked by CORS.
+    async function fetchStockData(symbol) {
+      const chartUrl = 'https://query2.finance.yahoo.com/v8/finance/chart/' +
+        symbol + '?interval=1d&range=1mo';
+
+      async function tryFetch(url) {
+        const resp = await fetch(url, { cache: 'no-store' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+      }
+
+      let json;
+      try {
+        json = await tryFetch(chartUrl);
+      } catch (_) {
+        // CORS fallback
+        json = await tryFetch('https://corsproxy.io/?url=' + encodeURIComponent(chartUrl));
+      }
+
+      const result = json.chart.result && json.chart.result[0];
+      if (!result) throw new Error('No chart result for ' + symbol);
+
+      const meta = result.meta;
+      const ohlcv = result.indicators.quote[0];
+      const rawCloses = ohlcv.close || [];
+      const closes = rawCloses.filter(function (c) { return c != null; });
+      const n = closes.length;
+      if (n === 0) throw new Error('No close data for ' + symbol);
+
+      const price = meta.regularMarketPrice || closes[n - 1];
+      const volume = meta.regularMarketVolume || 1;
+
+      const change1d  = n >= 2 ? (closes[n-1] - closes[n-2]) / closes[n-2] * 100 : 0;
+      const change5d  = n >= 6 ? (closes[n-1] - closes[n-6]) / closes[n-6] * 100 : change1d;
+      const change30d = n >= 2 ? (closes[n-1] - closes[0])   / closes[0]   * 100 : 0;
+
+      // Buy pressure proxy: bullish candle (close > open) → more buy pressure
+      const lastOpen = (ohlcv.open || [])[rawCloses.length - 1] || closes[n - 2] || price;
+      const bullRatio = Math.max(0.3, Math.min(0.8, 0.5 + (price - lastOpen) / (lastOpen || price) * 5));
+      const buyVolume  = volume * bullRatio;
+      const sellVolume = volume * (1 - bullRatio);
+
+      return { price, change1d, change5d, change30d, volume, buyVolume, sellVolume };
+    }
+
+    async function fetchAndScore(sectorId) {
       const sector = db.sectors.find(function (s) { return s.id === sectorId; });
       const codes = sector ? sector.codes : [];
       let candidates = db.stocks.filter(function (s) {
-        if (sectorId === 'OTHER') return true; // Lainnya = semua saham
+        if (sectorId === 'OTHER') return true;
         return codes.includes(s.sector);
       });
+      if (candidates.length === 0) candidates = db.stocks;
 
-      if (candidates.length === 0) {
-        candidates = db.stocks;
-      }
+      // Fetch all stocks in parallel
+      const results = await Promise.allSettled(
+        candidates.map(function (s) {
+          return fetchStockData(s.symbol).then(function (data) {
+            return Object.assign({}, s, data);
+          });
+        })
+      );
 
-      const scored = candidates.map(function (s) {
-        const buyRatio = s.buyVolume / (s.buyVolume + s.sellVolume || 1);
+      const errors = [];
+      const enriched = [];
+      results.forEach(function (r, i) {
+        if (r.status === 'fulfilled') {
+          enriched.push(r.value);
+        } else {
+          errors.push(candidates[i].code);
+          console.warn(candidates[i].symbol, r.reason);
+        }
+      });
+
+      const scored = enriched.map(function (s) {
+        const buyRatio   = s.buyVolume / (s.buyVolume + s.sellVolume || 1);
         const trendScore = (s.change1d + s.change5d * 0.5 + s.change30d * 0.2) / 3;
         const demandScore = (buyRatio - 0.5) * 20;
-        const volScore = Math.log10(s.volume + 1) * 2;
+        const volScore   = Math.log10(s.volume + 1) * 2;
         const score = trendScore * 0.4 + demandScore * 0.35 + volScore * 0.25;
-        return { stock: s, score, buyRatio, trendScore, demandScore, volScore };
+        return { stock: s, score, buyRatio, trendScore, demandScore };
       });
 
       scored.sort(function (a, b) { return b.score - a.score; });
-      return {
-        buys: scored.slice(0, 5),
-        sells: scored.slice(-5).reverse()
-      };
+
+      const now = new Date();
+      const fetchedAt = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
+        ', ' + now.toLocaleDateString('id-ID');
+
+      return { scored, fetchedAt, errors };
     }
 
+    // ── Render ────────────────────────────────────────────────────────────
     function renderResults(picks, listId, isSell) {
       const list = document.getElementById(listId);
       list.innerHTML = '';
@@ -282,22 +406,22 @@
         const s = p.stock;
         const row = document.createElement('div');
         row.className = 'stock-row' + (isSell ? ' sell' : '');
-        const chCls = s.change1d > 0 ? 'up' : s.change1d < 0 ? 'down' : 'neutral';
+        const chCls  = s.change1d > 0 ? 'up' : s.change1d < 0 ? 'down' : 'neutral';
         const chSign = s.change1d >= 0 ? '+' : '';
+        const s5sign = s.change5d  >= 0 ? '+' : '';
+        const s30sign= s.change30d >= 0 ? '+' : '';
         const sellRatio = (100 - p.buyRatio * 100).toFixed(0);
-        const reason = isSell ? [
-          'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1d), ' + (s.change5d >= 0 ? '+' : '') + s.change5d.toFixed(1) + '% (5d), ' + (s.change30d >= 0 ? '+' : '') + s.change30d.toFixed(1) + '% (30d)',
-          'Tekanan jual: ' + sellRatio + '% order jual',
-          'Volume: ' + formatVol(s.volume)
-        ].join(' • ') : [
-          'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1d), ' + chSign + s.change5d.toFixed(1) + '% (5d), ' + chSign + s.change30d.toFixed(1) + '% (30d)',
-          'Demand: ' + (p.buyRatio * 100).toFixed(0) + '% order beli',
-          'Volume: ' + formatVol(s.volume)
-        ].join(' • ');
+        const reason = isSell
+          ? 'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1h), ' + s5sign + s.change5d.toFixed(1) + '% (5h), ' + s30sign + s.change30d.toFixed(1) + '% (1b)' +
+            ' • Tekanan jual: ' + sellRatio + '%' +
+            ' • Vol: ' + formatVol(s.volume)
+          : 'Trend: ' + chSign + s.change1d.toFixed(1) + '% (1h), ' + s5sign + s.change5d.toFixed(1) + '% (5h), ' + s30sign + s.change30d.toFixed(1) + '% (1b)' +
+            ' • Demand beli: ' + (p.buyRatio * 100).toFixed(0) + '%' +
+            ' • Vol: ' + formatVol(s.volume);
         row.innerHTML =
           '<div class="rank' + (isSell ? ' sell' : '') + '">' + (i + 1) + '</div>' +
           '<div class="stock-info"><div class="code">' + escapeHtml(s.code) + '</div><div class="name">' + escapeHtml(s.name) + '</div></div>' +
-          '<div><div class="stock-price">Rp ' + formatPrice(s.price) + '</div><div class="stock-change ' + chCls + '">' + chSign + s.change1d.toFixed(1) + '%</div></div>' +
+          '<div><div class="stock-price">Rp ' + formatPrice(s.price) + '</div><div class="stock-change ' + chCls + '">' + chSign + s.change1d.toFixed(2) + '%</div></div>' +
           '<div class="reason"><strong>' + (isSell ? 'Sinyal jual' : 'Alasan') + ':</strong> ' + escapeHtml(reason) + '</div>';
         list.appendChild(row);
       });
