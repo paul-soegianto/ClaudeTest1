@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lexus — Astra Indonesia</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lexus">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="description" content="Experience the pursuit of perfection. Lexus Indonesia by Astra.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#C4A862;
+  --gold-light:#D4BC82;
+  --bg:#0A0A0A;
+  --surface:#111111;
+  --surface2:#1A1A1A;
+  --border:#2A2A2A;
+  --text:#F0F0F0;
+  --muted:#888;
+  --nav-h:64px;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  background:var(--bg);color:var(--text);
+  overflow-x:hidden;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--nav-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;
+  background:rgba(10,10,10,0.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding-top:env(safe-area-inset-top);
+}
+.nav-logo{
+  font-size:22px;font-weight:700;letter-spacing:6px;
+  color:var(--text);text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;
+}
+.nav-logo span{color:var(--gold)}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{
+  color:var(--muted);text-decoration:none;font-size:12px;
+  letter-spacing:2px;text-transform:uppercase;
+  transition:color .2s;
+}
+.nav-links a:hover{color:var(--gold)}
+.nav-cta{
+  background:var(--gold);color:#000;border:none;
+  padding:10px 20px;font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;font-weight:600;cursor:pointer;
+  transition:background .2s;
+}
+.nav-cta:hover{background:var(--gold-light)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{width:24px;height:1.5px;background:var(--text);transition:.3s}
+
+/* HERO */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+  padding-top:var(--nav-h);
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 80%, rgba(196,168,98,0.08) 0%, transparent 70%),
+    linear-gradient(180deg,#0A0A0A 0%,#111 50%,#0A0A0A 100%);
+}
+.hero-lines{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(196,168,98,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196,168,98,0.04) 1px, transparent 1px);
+  background-size:60px 60px;
+}
+.hero-content{
+  position:relative;text-align:center;padding:0 24px;
+  max-width:900px;
+}
+.hero-eyebrow{
+  font-size:11px;letter-spacing:5px;color:var(--gold);
+  text-transform:uppercase;margin-bottom:24px;
+  display:flex;align-items:center;justify-content:center;gap:16px;
+}
+.hero-eyebrow::before,.hero-eyebrow::after{
+  content:'';width:40px;height:1px;background:var(--gold);opacity:.5;
+}
+.hero-title{
+  font-size:clamp(48px,8vw,96px);font-weight:300;
+  letter-spacing:-1px;line-height:1.0;
+  margin-bottom:12px;
+}
+.hero-title em{
+  font-style:normal;color:var(--gold);font-weight:400;
+}
+.hero-subtitle{
+  font-size:clamp(14px,2vw,18px);color:var(--muted);
+  letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:48px;font-weight:300;
+}
+.hero-actions{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-primary{
+  background:var(--gold);color:#000;border:none;
+  padding:16px 36px;font-size:11px;letter-spacing:3px;
+  text-transform:uppercase;font-weight:700;cursor:pointer;
+  transition:all .3s;
+}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-1px)}
+.btn-outline{
+  background:transparent;color:var(--text);
+  border:1px solid var(--border);
+  padding:16px 36px;font-size:11px;letter-spacing:3px;
+  text-transform:uppercase;font-weight:600;cursor:pointer;
+  transition:all .3s;
+}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.hero-scroll{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:var(--muted);font-size:10px;letter-spacing:3px;text-transform:uppercase;
+}
+.scroll-line{
+  width:1px;height:40px;background:linear-gradient(var(--gold),transparent);
+  animation:scrollPulse 2s infinite;
+}
+@keyframes scrollPulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* CAR SILHOUETTE SVG */
+.hero-car{
+  width:min(700px,90vw);margin:48px auto 0;
+  filter:drop-shadow(0 0 60px rgba(196,168,98,0.15));
+}
+
+/* SECTION COMMON */
+section{padding:100px 24px}
+.section-header{text-align:center;margin-bottom:64px}
+.section-eyebrow{
+  font-size:10px;letter-spacing:5px;color:var(--gold);
+  text-transform:uppercase;margin-bottom:16px;
+}
+.section-title{
+  font-size:clamp(32px,5vw,56px);font-weight:300;
+  letter-spacing:-0.5px;
+}
+.section-title strong{font-weight:600;color:var(--gold)}
+.section-sub{
+  color:var(--muted);font-size:14px;letter-spacing:1px;
+  margin-top:12px;max-width:480px;margin-left:auto;margin-right:auto;
+}
+
+/* MODELS */
+#models{background:var(--surface)}
+.models-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:2px;
+  max-width:1200px;margin:0 auto;
+}
+.model-card{
+  background:var(--bg);
+  padding:40px 32px 32px;
+  cursor:pointer;
+  transition:background .3s;
+  position:relative;overflow:hidden;
+}
+.model-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  transform:scaleX(0);transition:transform .4s;
+}
+.model-card:hover{background:var(--surface2)}
+.model-card:hover::before{transform:scaleX(1)}
+.model-badge{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);border:1px solid rgba(196,168,98,0.3);
+  padding:4px 10px;display:inline-block;margin-bottom:20px;
+}
+.model-car-svg{
+  width:100%;height:120px;margin-bottom:20px;
+  filter:drop-shadow(0 4px 20px rgba(196,168,98,0.1));
+}
+.model-name{
+  font-size:28px;font-weight:300;letter-spacing:1px;margin-bottom:4px;
+}
+.model-variant{font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:16px}
+.model-price{
+  font-size:13px;color:var(--gold);letter-spacing:1px;margin-bottom:20px;font-weight:500;
+}
+.model-specs{display:flex;gap:24px;margin-bottom:24px}
+.spec{text-align:center}
+.spec-val{font-size:18px;font-weight:500;color:var(--text)}
+.spec-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.model-cta{
+  background:transparent;border:1px solid var(--border);
+  color:var(--muted);padding:10px 20px;
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;transition:all .3s;width:100%;
+}
+.model-cta:hover{border-color:var(--gold);color:var(--gold)}
+
+/* EXPERIENCE */
+#experience{background:var(--bg)}
+.exp-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:2px;max-width:1200px;margin:0 auto;
+}
+.exp-item{
+  background:var(--surface);padding:48px 40px;
+  position:relative;overflow:hidden;
+}
+.exp-item.large{grid-column:span 2}
+.exp-icon{font-size:32px;margin-bottom:20px;opacity:.7}
+.exp-name{
+  font-size:20px;font-weight:300;letter-spacing:1px;margin-bottom:12px;
+}
+.exp-desc{font-size:13px;color:var(--muted);line-height:1.8;max-width:400px}
+.exp-num{
+  position:absolute;right:32px;top:32px;
+  font-size:64px;font-weight:700;color:rgba(196,168,98,0.05);
+  line-height:1;
+}
+
+/* TEST DRIVE */
+#testdrive{background:var(--surface)}
+.td-container{max-width:640px;margin:0 auto}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.form-group{margin-bottom:16px}
+.form-group label{
+  display:block;font-size:10px;letter-spacing:2px;
+  color:var(--muted);text-transform:uppercase;margin-bottom:8px;
+}
+.form-group input,.form-group select{
+  width:100%;background:var(--bg);
+  border:1px solid var(--border);color:var(--text);
+  padding:14px 16px;font-size:14px;
+  outline:none;transition:border-color .2s;
+  -webkit-appearance:none;appearance:none;
+  font-family:inherit;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--gold)}
+.form-group select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 16px center;
+  padding-right:40px;
+}
+.form-submit{
+  width:100%;background:var(--gold);color:#000;border:none;
+  padding:18px;font-size:11px;letter-spacing:3px;
+  text-transform:uppercase;font-weight:700;cursor:pointer;
+  transition:background .2s;margin-top:8px;
+}
+.form-submit:hover{background:var(--gold-light)}
+.form-success{
+  display:none;text-align:center;padding:48px 24px;
+}
+.form-success.show{display:block}
+.success-icon{font-size:48px;margin-bottom:16px}
+.success-msg{font-size:18px;font-weight:300;letter-spacing:1px;margin-bottom:8px}
+.success-sub{font-size:13px;color:var(--muted)}
+
+/* DEALERS */
+#dealers{background:var(--bg)}
+.dealers-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:2px;max-width:1200px;margin:0 auto;
+}
+.dealer-card{
+  background:var(--surface);padding:32px;
+}
+.dealer-city{
+  font-size:10px;letter-spacing:3px;color:var(--gold);
+  text-transform:uppercase;margin-bottom:12px;
+}
+.dealer-name{font-size:18px;font-weight:300;margin-bottom:8px}
+.dealer-addr{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px}
+.dealer-tel{
+  font-size:13px;color:var(--text);text-decoration:none;
+  display:flex;align-items:center;gap:8px;
+}
+.dealer-tel:hover{color:var(--gold)}
+
+/* FOOTER */
+footer{
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:64px 24px 40px;
+}
+.footer-grid{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:48px;max-width:1200px;margin:0 auto 48px;
+}
+.footer-brand{font-size:20px;font-weight:700;letter-spacing:5px;margin-bottom:16px}
+.footer-brand span{color:var(--gold)}
+.footer-tagline{font-size:12px;color:var(--muted);line-height:1.8;max-width:280px}
+.footer-col h4{
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:20px;
+}
+.footer-col ul{list-style:none}
+.footer-col ul li{margin-bottom:10px}
+.footer-col ul li a{
+  color:var(--muted);text-decoration:none;font-size:13px;
+  transition:color .2s;
+}
+.footer-col ul li a:hover{color:var(--text)}
+.footer-bottom{
+  border-top:1px solid var(--border);
+  padding-top:24px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:12px;
+  max-width:1200px;margin:0 auto;
+}
+.footer-legal{font-size:11px;color:var(--muted)}
+
+/* MOBILE MENU */
+.mobile-menu{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:var(--bg);padding:24px;
+  flex-direction:column;gap:8px;
+  padding-top:calc(var(--nav-h) + env(safe-area-inset-top) + 24px);
+}
+.mobile-menu.open{display:flex}
+.mobile-menu a{
+  color:var(--text);text-decoration:none;font-size:28px;
+  font-weight:300;letter-spacing:2px;padding:16px 0;
+  border-bottom:1px solid var(--border);
+  transition:color .2s;
+}
+.mobile-menu a:hover{color:var(--gold)}
+.mobile-close{
+  position:absolute;top:24px;right:24px;
+  background:none;border:none;color:var(--text);
+  font-size:28px;cursor:pointer;
+  top:calc(24px + env(safe-area-inset-top));
+}
+
+/* TOAST */
+#install-toast{
+  position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));
+  left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--surface2);border:1px solid var(--gold);
+  padding:14px 20px;display:flex;align-items:center;gap:12px;
+  z-index:500;transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;
+}
+#install-toast.show{transform:translateX(-50%) translateY(0)}
+#install-toast p{font-size:12px;letter-spacing:1px}
+#install-toast button{
+  background:var(--gold);color:#000;border:none;
+  padding:6px 14px;font-size:11px;letter-spacing:1px;
+  cursor:pointer;font-weight:600;
+}
+
+/* ANIMATIONS */
+.fade-in{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}
+.fade-in.visible{opacity:1;transform:none}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .nav-links,.nav-cta{display:none}
+  .hamburger{display:flex}
+  .exp-grid{grid-template-columns:1fr}
+  .exp-item.large{grid-column:span 1}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  section{padding:64px 16px}
+  .footer-grid{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">LEXUS <span>|</span> INDONESIA</div>
+  <ul class="nav-links">
+    <li><a href="#models">Models</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#testdrive">Test Drive</a></li>
+    <li><a href="#dealers">Dealers</a></li>
+  </ul>
+  <button class="nav-cta" onclick="scrollTo('#testdrive')">Book a Test Drive</button>
+  <div class="hamburger" onclick="toggleMenu()" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" onclick="toggleMenu()">&#x2715;</button>
+  <a href="#models" onclick="toggleMenu()">Models</a>
+  <a href="#experience" onclick="toggleMenu()">Experience</a>
+  <a href="#testdrive" onclick="toggleMenu()">Test Drive</a>
+  <a href="#dealers" onclick="toggleMenu()">Dealers</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-lines"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Astra International &bull; Official Distributor</div>
+    <h1 class="hero-title">The Pursuit of<br><em>Perfection</em></h1>
+    <p class="hero-subtitle">Experience Lexus Indonesia</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="scrollTo('#models')">Explore Models</button>
+      <button class="btn-outline" onclick="scrollTo('#testdrive')">Book Test Drive</button>
+    </div>
+    <!-- Lexus RX silhouette SVG -->
+    <svg class="hero-car" viewBox="0 0 700 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body -->
+      <path d="M80 140 L100 140 L115 120 L140 95 L220 78 L320 68 L420 68 L500 80 L570 100 L610 120 L620 140 L80 140Z"
+            fill="#1A1A1A" stroke="#C4A862" stroke-width="1.5"/>
+      <!-- Roof -->
+      <path d="M180 100 L210 75 L320 60 L420 60 L490 75 L530 100Z"
+            fill="#222" stroke="#C4A862" stroke-width="1"/>
+      <!-- Windows -->
+      <path d="M215 98 L235 73 L310 63 L310 98Z" fill="rgba(196,168,98,0.08)" stroke="#C4A862" stroke-width="0.5"/>
+      <path d="M318 98 L318 63 L400 63 L415 98Z" fill="rgba(196,168,98,0.08)" stroke="#C4A862" stroke-width="0.5"/>
+      <path d="M423 98 L423 65 L480 78 L500 98Z" fill="rgba(196,168,98,0.08)" stroke="#C4A862" stroke-width="0.5"/>
+      <!-- Front grille -->
+      <path d="M570 104 L610 122 L620 140 L570 140Z" fill="#222" stroke="#C4A862" stroke-width="0.5"/>
+      <line x1="575" y1="108" x2="615" y2="125" stroke="#C4A862" stroke-width="0.5" opacity="0.5"/>
+      <line x1="577" y1="113" x2="617" y2="130" stroke="#C4A862" stroke-width="0.5" opacity="0.5"/>
+      <!-- Headlights -->
+      <path d="M598 110 L620 118 L618 125 L595 118Z" fill="#C4A862" opacity="0.7"/>
+      <!-- Tail lights -->
+      <rect x="100" y="118" width="18" height="10" rx="1" fill="#C4A862" opacity="0.5"/>
+      <!-- Wheels -->
+      <circle cx="185" cy="140" r="32" fill="#111" stroke="#C4A862" stroke-width="2"/>
+      <circle cx="185" cy="140" r="20" fill="#0A0A0A" stroke="#888" stroke-width="1"/>
+      <circle cx="185" cy="140" r="8" fill="#C4A862" opacity="0.4"/>
+      <circle cx="510" cy="140" r="32" fill="#111" stroke="#C4A862" stroke-width="2"/>
+      <circle cx="510" cy="140" r="20" fill="#0A0A0A" stroke="#888" stroke-width="1"/>
+      <circle cx="510" cy="140" r="8" fill="#C4A862" opacity="0.4"/>
+      <!-- Ground shadow -->
+      <ellipse cx="350" cy="174" rx="290" ry="6" fill="rgba(196,168,98,0.06)"/>
+      <!-- Spindle grille detail -->
+      <path d="M572 106 L605 120" stroke="#C4A862" stroke-width="2" opacity="0.8"/>
+      <path d="M575 110 L608 123" stroke="#C4A862" stroke-width="1.5" opacity="0.5"/>
+      <!-- L logo on grille -->
+      <text x="588" y="133" font-family="Arial" font-size="10" fill="#C4A862" font-weight="bold" opacity="0.8">L</text>
+    </svg>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    Scroll
+  </div>
+</section>
+
+<!-- MODELS -->
+<section id="models">
+  <div class="section-header fade-in">
+    <div class="section-eyebrow">Lineup 2025</div>
+    <h2 class="section-title">Our <strong>Models</strong></h2>
+    <p class="section-sub">Each Lexus is an expression of luxury, performance, and craftsmanship refined over decades.</p>
+  </div>
+  <div class="models-grid" id="modelsGrid"></div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="section-header fade-in">
+    <div class="section-eyebrow">The Lexus Way</div>
+    <h2 class="section-title">Beyond <strong>Driving</strong></h2>
+  </div>
+  <div class="exp-grid">
+    <div class="exp-item large fade-in">
+      <div class="exp-num">01</div>
+      <div class="exp-icon">&#10022;</div>
+      <div class="exp-name">Omotenashi — The Art of Anticipation</div>
+      <div class="exp-desc">Rooted in Japanese hospitality, every Lexus touchpoint is designed to anticipate your needs before you voice them. From the moment you step into a showroom to the quiet hum of the engine, every detail is considered with heartfelt care.</div>
+    </div>
+    <div class="exp-item fade-in">
+      <div class="exp-num">02</div>
+      <div class="exp-icon">&#9651;</div>
+      <div class="exp-name">Electrified Performance</div>
+      <div class="exp-desc">Lexus pioneered luxury hybrid vehicles. Today, our electrified lineup — from self-charging hybrids to plug-in hybrids and full BEVs — delivers exhilarating performance with a reduced footprint.</div>
+    </div>
+    <div class="exp-item fade-in">
+      <div class="exp-num">03</div>
+      <div class="exp-icon">&#9670;</div>
+      <div class="exp-name">Takumi Craftsmanship</div>
+      <div class="exp-desc">A Takumi master craftsperson trains for over 60,000 hours. Their hands shape every interior — the stitching, the wood trim, the instrument panel — into something that transcends mere manufacturing.</div>
+    </div>
+    <div class="exp-item fade-in">
+      <div class="exp-num">04</div>
+      <div class="exp-icon">&#9733;</div>
+      <div class="exp-name">Lexus Ownership Privilege</div>
+      <div class="exp-desc">As a Lexus owner in Indonesia, enjoy exclusive benefits: complimentary scheduled service, 24/7 roadside assistance, dedicated concierge, and access to Lexus owner events across the archipelago.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TEST DRIVE -->
+<section id="testdrive">
+  <div class="section-header fade-in">
+    <div class="section-eyebrow">Experience It</div>
+    <h2 class="section-title">Book a <strong>Test Drive</strong></h2>
+    <p class="section-sub">A Lexus must be felt to be understood. Reserve your complimentary test drive today.</p>
+  </div>
+  <div class="td-container fade-in">
+    <form id="tdForm" onsubmit="submitForm(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" placeholder="Budi" required>
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" placeholder="Santoso" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" placeholder="budi@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Phone (WhatsApp)</label>
+          <input type="tel" placeholder="+62 812 3456 7890" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Model of Interest</label>
+          <select required id="tdModel">
+            <option value="">Select a model</option>
+            <option>Lexus UX 300e</option>
+            <option>Lexus NX 350</option>
+            <option>Lexus NX 450h+</option>
+            <option>Lexus RX 350</option>
+            <option>Lexus RX 450h+</option>
+            <option>Lexus ES 300h</option>
+            <option>Lexus LX 600</option>
+            <option>Lexus LC 500</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Preferred Dealer</label>
+          <select required>
+            <option value="">Select a dealer</option>
+            <option>Lexus Jakarta Selatan</option>
+            <option>Lexus Jakarta Barat</option>
+            <option>Lexus Surabaya</option>
+            <option>Lexus Bandung</option>
+            <option>Lexus Bali</option>
+            <option>Lexus Medan</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Preferred Date</label>
+          <input type="date" required id="tdDate">
+        </div>
+        <div class="form-group">
+          <label>Preferred Time</label>
+          <select required>
+            <option value="">Select time</option>
+            <option>09:00 – 10:00</option>
+            <option>10:00 – 11:00</option>
+            <option>11:00 – 12:00</option>
+            <option>13:00 – 14:00</option>
+            <option>14:00 – 15:00</option>
+            <option>15:00 – 16:00</option>
+            <option>16:00 – 17:00</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="form-submit">Reserve My Test Drive</button>
+    </form>
+    <div class="form-success" id="tdSuccess">
+      <div class="success-icon">&#10003;</div>
+      <div class="success-msg">Your test drive is confirmed.</div>
+      <div class="success-sub">Our Lexus concierge will contact you within 24 hours to finalize the details. We look forward to welcoming you.</div>
+    </div>
+  </div>
+</section>
+
+<!-- DEALERS -->
+<section id="dealers">
+  <div class="section-header fade-in">
+    <div class="section-eyebrow">Find Us</div>
+    <h2 class="section-title">Lexus <strong>Dealers</strong></h2>
+    <p class="section-sub">Authorized Lexus showrooms across Indonesia, operated by Astra International.</p>
+  </div>
+  <div class="dealers-grid" id="dealersGrid"></div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">LEXUS <span>|</span> ID</div>
+      <p class="footer-tagline">Lexus Indonesia is an authorized brand of PT Astra International Tbk, committed to delivering the ultimate in luxury, technology, and craftsmanship.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Models</h4>
+      <ul>
+        <li><a href="#">Lexus UX</a></li>
+        <li><a href="#">Lexus NX</a></li>
+        <li><a href="#">Lexus RX</a></li>
+        <li><a href="#">Lexus ES</a></li>
+        <li><a href="#">Lexus LX</a></li>
+        <li><a href="#">Lexus LC</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Ownership</h4>
+      <ul>
+        <li><a href="#">Service & Maintenance</a></li>
+        <li><a href="#">Roadside Assistance</a></li>
+        <li><a href="#">Financing</a></li>
+        <li><a href="#">Accessories</a></li>
+        <li><a href="#">Owner Events</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About Lexus</a></li>
+        <li><a href="#">About Astra</a></li>
+        <li><a href="#">Contact Us</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-legal">&copy; 2025 PT Astra International Tbk. All rights reserved. Lexus is a registered trademark of Toyota Motor Corporation.</span>
+    <span class="footer-legal">lexus.co.id</span>
+  </div>
+</footer>
+
+<!-- INSTALL TOAST -->
+<div id="install-toast">
+  <p>Add Lexus to your Home Screen</p>
+  <button onclick="installPWA()">Install</button>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const MODELS = [
+  {
+    name:'Lexus UX 300e',variant:'Pure Electric',badge:'Electric',
+    price:'Rp 1,15 Miliar',
+    specs:[{val:'204',label:'HP'},{val:'0',label:'Emissions'},{val:'400',label:'km Range'}],
+    color:'#4A9'
+  },
+  {
+    name:'Lexus NX 350',variant:'F SPORT Design',badge:'SUV',
+    price:'Rp 1,19 Miliar',
+    specs:[{val:'275',label:'HP'},{val:'8.2s',label:'0–100'},{val:'2.5T',label:'Engine'}],
+    color:'#C4A862'
+  },
+  {
+    name:'Lexus NX 450h+',variant:'Plug-in Hybrid',badge:'PHEV',
+    price:'Rp 1,45 Miliar',
+    specs:[{val:'309',label:'HP'},{val:'6.0s',label:'0–100'},{val:'87',label:'km EV'}],
+    color:'#4A9'
+  },
+  {
+    name:'Lexus RX 350',variant:'Executive',badge:'SUV',
+    price:'Rp 1,65 Miliar',
+    specs:[{val:'275',label:'HP'},{val:'7.6s',label:'0–100'},{val:'2.4T',label:'Engine'}],
+    color:'#C4A862'
+  },
+  {
+    name:'Lexus RX 450h+',variant:'Plug-in Hybrid',badge:'PHEV',
+    price:'Rp 1,95 Miliar',
+    specs:[{val:'306',label:'HP'},{val:'6.2s',label:'0–100'},{val:'63',label:'km EV'}],
+    color:'#4A9'
+  },
+  {
+    name:'Lexus ES 300h',variant:'Self-Charging Hybrid',badge:'Sedan',
+    price:'Rp 1,35 Miliar',
+    specs:[{val:'218',label:'HP'},{val:'8.9s',label:'0–100'},{val:'2.5L',label:'Engine'}],
+    color:'#C4A862'
+  },
+  {
+    name:'Lexus LX 600',variant:'Ultra Luxury',badge:'Flagship SUV',
+    price:'Rp 4,85 Miliar',
+    specs:[{val:'409',label:'HP'},{val:'6.7s',label:'0–100'},{val:'3.5TT',label:'Engine'}],
+    color:'#C4A862'
+  },
+  {
+    name:'Lexus LC 500',variant:'Luxury Coupe',badge:'Sports',
+    price:'Rp 4,20 Miliar',
+    specs:[{val:'471',label:'HP'},{val:'4.4s',label:'0–100'},{val:'5.0L',label:'V8'}],
+    color:'#C4A862'
+  }
+];
+
+const DEALERS = [
+  {city:'Jakarta Selatan',name:'Lexus Fatmawati',addr:'Jl. RS Fatmawati No.20A\nJakarta Selatan 12430',tel:'+62 21 7278 3388'},
+  {city:'Jakarta Barat',name:'Lexus Puri Indah',addr:'Jl. Puri Agung Raya No.1\nJakarta Barat 11610',tel:'+62 21 5890 1122'},
+  {city:'Surabaya',name:'Lexus Surabaya',addr:'Jl. Mayjend Sungkono No.89\nSurabaya 60225',tel:'+62 31 5678 9900'},
+  {city:'Bandung',name:'Lexus Bandung',addr:'Jl. Soekarno-Hatta No.441\nBandung 40266',tel:'+62 22 7311 2200'},
+  {city:'Bali',name:'Lexus Bali',addr:'Jl. By Pass Ngurah Rai No.77\nDenpasar, Bali 80361',tel:'+62 361 771 5500'},
+  {city:'Medan',name:'Lexus Medan',addr:'Jl. Imam Bonjol No.6\nMedan 20112',tel:'+62 61 4155 7700'},
+];
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function carSVG(color){
+  return `<svg class="model-car-svg" viewBox="0 0 300 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M30 65 L40 65 L48 55 L60 44 L100 36 L155 32 L210 32 L245 40 L268 52 L278 65 L30 65Z" fill="#1A1A1A" stroke="${color}" stroke-width="1"/>
+    <path d="M82 48 L92 35 L155 28 L210 28 L238 36 L255 48Z" fill="#222" stroke="${color}" stroke-width="0.7"/>
+    <path d="M88 47 L96 35 L148 29 L148 47Z" fill="rgba(196,168,98,0.07)" stroke="${color}" stroke-width="0.4"/>
+    <path d="M154 47 L154 29 L200 29 L207 47Z" fill="rgba(196,168,98,0.07)" stroke="${color}" stroke-width="0.4"/>
+    <path d="M213 47 L210 30 L235 37 L243 47Z" fill="rgba(196,168,98,0.07)" stroke="${color}" stroke-width="0.4"/>
+    <path d="M258 55 L273 56 L277 65 L258 65Z" fill="#222" stroke="${color}" stroke-width="0.5"/>
+    <rect x="262" y="53" width="13" height="5" rx="1" fill="${color}" opacity="0.7"/>
+    <rect x="30" y="56" width="9" height="5" rx="1" fill="${color}" opacity="0.5"/>
+    <circle cx="78" cy="65" r="16" fill="#111" stroke="${color}" stroke-width="1.5"/>
+    <circle cx="78" cy="65" r="9" fill="#0A0A0A" stroke="#666" stroke-width="0.8"/>
+    <circle cx="78" cy="65" r="3.5" fill="${color}" opacity="0.4"/>
+    <circle cx="220" cy="65" r="16" fill="#111" stroke="${color}" stroke-width="1.5"/>
+    <circle cx="220" cy="65" r="9" fill="#0A0A0A" stroke="#666" stroke-width="0.8"/>
+    <circle cx="220" cy="65" r="3.5" fill="${color}" opacity="0.4"/>
+    <ellipse cx="150" cy="83" rx="130" ry="4" fill="rgba(196,168,98,0.05)"/>
+  </svg>`;
+}
+
+function renderModels(){
+  const grid = document.getElementById('modelsGrid');
+  grid.innerHTML = MODELS.map(m => `
+    <div class="model-card fade-in">
+      <span class="model-badge">${m.badge}</span>
+      ${carSVG(m.color)}
+      <div class="model-name">${m.name}</div>
+      <div class="model-variant">${m.variant}</div>
+      <div class="model-price">Mulai dari ${m.price}</div>
+      <div class="model-specs">
+        ${m.specs.map(s=>`<div class="spec"><div class="spec-val">${s.val}</div><div class="spec-label">${s.label}</div></div>`).join('')}
+      </div>
+      <button class="model-cta" onclick="bookModel('${m.name}')">Book Test Drive</button>
+    </div>
+  `).join('');
+}
+
+function renderDealers(){
+  document.getElementById('dealersGrid').innerHTML = DEALERS.map(d=>`
+    <div class="dealer-card fade-in">
+      <div class="dealer-city">${d.city}</div>
+      <div class="dealer-name">${d.name}</div>
+      <div class="dealer-addr">${d.addr.replace('\n','<br>')}</div>
+      <a class="dealer-tel" href="tel:${d.tel}">&#9742; ${d.tel}</a>
+    </div>
+  `).join('');
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────────────────────
+function scrollTo(sel){
+  document.querySelector(sel).scrollIntoView({behavior:'smooth'});
+}
+
+function bookModel(name){
+  document.getElementById('tdModel').value = name;
+  document.querySelector('#testdrive').scrollIntoView({behavior:'smooth'});
+}
+
+function submitForm(e){
+  e.preventDefault();
+  document.getElementById('tdForm').style.display = 'none';
+  const s = document.getElementById('tdSuccess');
+  s.classList.add('show');
+}
+
+function toggleMenu(){
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+// ─── DATE MIN ─────────────────────────────────────────────────────────────────
+function setDateMin(){
+  const d = document.getElementById('tdDate');
+  if(d){
+    const today = new Date();
+    today.setDate(today.getDate()+1);
+    d.min = today.toISOString().split('T')[0];
+  }
+}
+
+// ─── FADE-IN OBSERVER ─────────────────────────────────────────────────────────
+function initObserver(){
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}
+    });
+  },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.fade-in').forEach(el=>io.observe(el));
+}
+
+// ─── PWA INSTALL ─────────────────────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(()=>document.getElementById('install-toast').classList.add('show'),3000);
+});
+function installPWA(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{
+      deferredPrompt=null;
+      document.getElementById('install-toast').classList.remove('show');
+    });
+  }
+}
+// iOS Safari tip
+if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone){
+  setTimeout(()=>{
+    const t=document.getElementById('install-toast');
+    t.querySelector('p').textContent='Tap Share then "Add to Home Screen"';
+    t.querySelector('button').textContent='Got it';
+    t.querySelector('button').onclick=()=>t.classList.remove('show');
+    t.classList.add('show');
+  },4000);
+}
+
+// ─── SERVICE WORKER ────────────────────────────────────────────────────────────
+if('serviceWorker' in navigator){
+  const sw = `
+    const CACHE='lexus-v1';
+    const ASSETS=[self.location.href];
+    self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
+    self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+  `;
+  const blob = new Blob([sw],{type:'application/javascript'});
+  const url = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).catch(()=>{});
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderModels();
+renderDealers();
+setDateMin();
+// Observer after DOM painted
+requestAnimationFrame(()=>requestAnimationFrame(initObserver));
+</script>
+</body>
+</html>
