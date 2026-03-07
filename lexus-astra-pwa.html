@@ -366,6 +366,321 @@ footer{
 .fade-in{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}
 .fade-in.visible{opacity:1;transform:none}
 
+/* LIFESTYLE */
+#lifestyle{background:var(--bg)}
+.lifestyle-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:2px;max-width:1200px;margin:0 auto 48px;
+}
+.merch-card{
+  background:var(--surface);padding:32px 28px;
+  display:flex;flex-direction:column;
+  transition:background .3s;
+}
+.merch-card:hover{background:var(--surface2)}
+.merch-svg{width:100%;height:120px;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
+.merch-name{font-size:16px;font-weight:400;letter-spacing:1px;margin-bottom:6px}
+.merch-price{font-size:13px;color:var(--gold);margin-bottom:16px;font-weight:500}
+.merch-size{
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:8px 12px;font-size:12px;margin-bottom:16px;width:100%;
+  outline:none;font-family:inherit;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  -webkit-appearance:none;appearance:none;padding-right:36px;
+}
+.merch-size:focus{border-color:var(--gold)}
+.merch-btn{
+  margin-top:auto;background:transparent;border:1px solid var(--border);
+  color:var(--muted);padding:10px;font-size:10px;letter-spacing:2px;
+  text-transform:uppercase;cursor:pointer;transition:all .3s;
+}
+.merch-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* CART */
+.nav-cart{
+  position:relative;cursor:pointer;background:none;border:none;
+  color:var(--text);font-size:18px;padding:6px 10px;
+  display:flex;align-items:center;
+}
+.cart-badge{
+  position:absolute;top:0;right:0;
+  background:var(--gold);color:#000;
+  font-size:9px;font-weight:700;
+  width:16px;height:16px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  display:none;
+}
+.cart-badge.show{display:flex}
+.cart-drawer{
+  position:fixed;top:0;right:-420px;width:400px;max-width:100vw;
+  height:100%;background:var(--surface);z-index:600;
+  display:flex;flex-direction:column;
+  transition:right .35s cubic-bezier(.4,0,.2,1);
+  border-left:1px solid var(--border);
+}
+.cart-drawer.open{right:0}
+.cart-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px;border-bottom:1px solid var(--border);
+}
+.cart-title{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold)}
+.cart-close{background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;line-height:1}
+.cart-items{flex:1;overflow-y:auto;padding:16px 24px}
+.cart-empty{color:var(--muted);font-size:13px;text-align:center;padding:40px 0}
+.cart-item{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:16px 0;border-bottom:1px solid var(--border);gap:12px;
+}
+.cart-item-info{flex:1}
+.cart-item-name{font-size:13px;margin-bottom:4px}
+.cart-item-sub{font-size:11px;color:var(--muted)}
+.cart-item-price{font-size:13px;color:var(--gold);white-space:nowrap}
+.cart-item-remove{
+  background:none;border:none;color:var(--muted);
+  cursor:pointer;font-size:16px;padding:0 4px;
+}
+.cart-item-remove:hover{color:var(--text)}
+.cart-footer{
+  padding:24px;border-top:1px solid var(--border);
+}
+.cart-subtotal{
+  display:flex;justify-content:space-between;
+  font-size:12px;letter-spacing:1px;margin-bottom:20px;
+}
+.cart-subtotal span:last-child{color:var(--gold);font-weight:600}
+.cart-confirm{
+  width:100%;background:var(--gold);color:#000;border:none;
+  padding:16px;font-size:11px;letter-spacing:3px;
+  text-transform:uppercase;font-weight:700;cursor:pointer;
+  transition:background .2s;
+}
+.cart-confirm:hover{background:var(--gold-light)}
+.cart-overlay{
+  display:none;position:fixed;inset:0;z-index:599;
+  background:rgba(0,0,0,0.6);
+}
+.cart-overlay.open{display:block}
+
+/* DINING */
+.dining-cards{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:2px;max-width:1200px;margin:0 auto;
+}
+.dining-card{
+  background:var(--surface);padding:40px 36px;
+  display:flex;flex-direction:column;gap:12px;
+  transition:background .3s;cursor:pointer;
+}
+.dining-card:hover{background:var(--surface2)}
+.dining-icon{font-size:28px;opacity:.7}
+.dining-name{font-size:20px;font-weight:300;letter-spacing:1px}
+.dining-time{font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
+.dining-note{font-size:13px;color:var(--muted);line-height:1.7}
+.dining-book-btn{
+  margin-top:8px;align-self:flex-start;
+  background:transparent;border:1px solid var(--border);
+  color:var(--muted);padding:10px 24px;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .3s;
+}
+.dining-book-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* PRIVILEGE */
+#privilege{background:var(--surface)}
+.privilege-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:2px;max-width:1200px;margin:0 auto;
+}
+.privilege-card{
+  background:var(--bg);padding:40px 32px;
+  position:relative;overflow:hidden;
+  transition:background .3s;
+}
+.privilege-card:hover{background:var(--surface2)}
+.privilege-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  transform:scaleX(0);transition:transform .4s;
+}
+.privilege-card:hover::before{transform:scaleX(1)}
+.priv-num{
+  font-size:64px;font-weight:700;color:rgba(196,168,98,0.05);
+  line-height:1;position:absolute;right:24px;top:24px;
+}
+.priv-icon{font-size:28px;margin-bottom:20px;opacity:.7}
+.priv-name{font-size:18px;font-weight:400;letter-spacing:1px;margin-bottom:12px}
+.priv-desc{font-size:13px;color:var(--muted);line-height:1.8}
+.priv-btn{
+  margin-top:20px;background:transparent;border:1px solid var(--border);
+  color:var(--muted);padding:10px 24px;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .3s;
+}
+.priv-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* MODAL */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:700;
+  background:rgba(0,0,0,0.75);
+  align-items:center;justify-content:center;
+  padding:24px;
+}
+.modal-overlay.open{display:flex}
+.modal-box{
+  background:var(--surface);width:100%;max-width:480px;
+  padding:40px;position:relative;
+  max-height:90vh;overflow-y:auto;
+}
+.modal-close{
+  position:absolute;top:20px;right:20px;
+  background:none;border:none;color:var(--muted);
+  font-size:22px;cursor:pointer;line-height:1;
+}
+.modal-close:hover{color:var(--text)}
+.modal-title{font-size:18px;font-weight:300;letter-spacing:1px;margin-bottom:8px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+
+/* TOAST */
+.app-toast{
+  position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));
+  left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--surface2);border:1px solid var(--gold);
+  padding:14px 24px;z-index:900;
+  font-size:12px;letter-spacing:1px;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;
+}
+.app-toast.show{transform:translateX(-50%) translateY(0)}
+
+/* CHAT */
+#chat-btn{
+  position:fixed;bottom:calc(28px + env(safe-area-inset-bottom));
+  right:24px;z-index:500;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--gold);color:#000;border:none;
+  font-size:22px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 24px rgba(196,168,98,0.35);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+}
+#chat-btn:hover{transform:scale(1.07);box-shadow:0 6px 32px rgba(196,168,98,0.5)}
+.chat-panel{
+  position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));
+  right:24px;z-index:500;
+  width:380px;max-width:calc(100vw - 32px);
+  height:520px;max-height:calc(100vh - 140px);
+  background:var(--surface);
+  border:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transform:translateY(20px) scale(0.97);
+  opacity:0;pointer-events:none;
+  transition:transform .25s,opacity .25s;
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
+}
+.chat-panel.open{transform:none;opacity:1;pointer-events:auto}
+.chat-head{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.chat-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--gold);color:#000;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;
+}
+.chat-agent-name{font-size:13px;font-weight:500;margin-bottom:2px}
+.chat-agent-title{font-size:11px;color:var(--muted)}
+.chat-status{font-size:10px;color:#4caf50;margin-top:2px;display:flex;align-items:center;gap:4px}
+.chat-status::before{content:'';width:6px;height:6px;border-radius:50%;background:#4caf50;display:inline-block}
+.chat-minimize{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;margin-left:auto;line-height:1}
+.chat-minimize:hover{color:var(--text)}
+.chat-msgs{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.chat-msg{
+  max-width:82%;display:flex;flex-direction:column;gap:4px;
+}
+.chat-msg.bot{align-self:flex-start}
+.chat-msg.user{align-self:flex-end;align-items:flex-end}
+.chat-bubble{
+  padding:10px 14px;font-size:13px;line-height:1.5;
+  border-radius:0;
+}
+.chat-msg.bot .chat-bubble{
+  background:rgba(196,168,98,0.12);border:1px solid rgba(196,168,98,0.2);
+  color:var(--text);
+}
+.chat-msg.user .chat-bubble{
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);
+}
+.chat-time{font-size:10px;color:var(--muted)}
+.typing-dots{
+  display:flex;gap:4px;padding:12px 14px;
+  background:rgba(196,168,98,0.08);border:1px solid rgba(196,168,98,0.15);
+  width:fit-content;align-self:flex-start;
+}
+.typing-dots span{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--gold);opacity:.6;
+  animation:typingBounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes typingBounce{
+  0%,60%,100%{transform:translateY(0)}
+  30%{transform:translateY(-6px)}
+}
+.chat-input-row{
+  display:flex;gap:8px;padding:12px 16px;
+  border-top:1px solid var(--border);flex-shrink:0;
+}
+.chat-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);
+  color:var(--text);padding:10px 14px;font-size:13px;
+  outline:none;font-family:inherit;
+}
+.chat-input:focus{border-color:var(--gold)}
+.chat-send{
+  background:var(--gold);color:#000;border:none;
+  padding:10px 16px;font-size:11px;letter-spacing:1px;
+  text-transform:uppercase;font-weight:700;cursor:pointer;
+  transition:background .2s;white-space:nowrap;
+}
+.chat-send:hover{background:var(--gold-light)}
+
+/* VISIT INLINE FLOW */
+.visit-inline{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.visit-branch-grid{display:flex;flex-wrap:wrap;gap:6px}
+.visit-branch-btn{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--muted);padding:6px 12px;font-size:11px;
+  cursor:pointer;transition:all .2s;
+}
+.visit-branch-btn:hover,.visit-branch-btn.sel{border-color:var(--gold);color:var(--gold)}
+.visit-inline select,.visit-inline input[type=date]{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--text);padding:8px 12px;font-size:12px;
+  outline:none;font-family:inherit;width:100%;
+  -webkit-appearance:none;appearance:none;
+}
+.visit-inline select:focus,.visit-inline input[type=date]:focus{border-color:var(--gold)}
+.visit-radio-row{display:flex;flex-wrap:wrap;gap:6px}
+.visit-radio-btn{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--muted);padding:6px 12px;font-size:11px;
+  cursor:pointer;transition:all .2s;
+}
+.visit-radio-btn:hover,.visit-radio-btn.sel{border-color:var(--gold);color:var(--gold)}
+.visit-confirm-btn{
+  background:var(--gold);color:#000;border:none;
+  padding:10px;font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;font-weight:700;cursor:pointer;
+  transition:background .2s;
+}
+.visit-confirm-btn:hover{background:var(--gold-light)}
+
 /* RESPONSIVE */
 @media(max-width:900px){
   .nav-links,.nav-cta{display:none}
@@ -374,11 +689,14 @@ footer{
   .exp-item.large{grid-column:span 1}
   .footer-grid{grid-template-columns:1fr 1fr}
   .form-row{grid-template-columns:1fr}
+  .dining-cards{grid-template-columns:1fr}
+  .chat-panel{right:16px;bottom:calc(88px + env(safe-area-inset-bottom))}
 }
 @media(max-width:600px){
   section{padding:64px 16px}
   .footer-grid{grid-template-columns:1fr}
   .footer-bottom{flex-direction:column;text-align:center}
+  .modal-box{padding:28px 20px}
 }
 </style>
 </head>
@@ -390,10 +708,18 @@ footer{
   <ul class="nav-links">
     <li><a href="#models">Models</a></li>
     <li><a href="#experience">Experience</a></li>
+    <li><a href="#lifestyle">Lifestyle</a></li>
+    <li><a href="#privilege">Privilege</a></li>
     <li><a href="#testdrive">Test Drive</a></li>
     <li><a href="#dealers">Dealers</a></li>
   </ul>
-  <button class="nav-cta" onclick="scrollTo('#testdrive')">Book a Test Drive</button>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="nav-cart" onclick="openCart()" title="Cart">
+      <span>&#128722;</span>
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+    <button class="nav-cta" onclick="scrollTo('#testdrive')">Book a Test Drive</button>
+  </div>
   <div class="hamburger" onclick="toggleMenu()" id="hamburger">
     <span></span><span></span><span></span>
   </div>
@@ -404,6 +730,8 @@ footer{
   <button class="mobile-close" onclick="toggleMenu()">&#x2715;</button>
   <a href="#models" onclick="toggleMenu()">Models</a>
   <a href="#experience" onclick="toggleMenu()">Experience</a>
+  <a href="#lifestyle" onclick="toggleMenu()">Lifestyle</a>
+  <a href="#privilege" onclick="toggleMenu()">Privilege</a>
   <a href="#testdrive" onclick="toggleMenu()">Test Drive</a>
   <a href="#dealers" onclick="toggleMenu()">Dealers</a>
 </div>
@@ -504,6 +832,48 @@ footer{
       <div class="exp-desc">As a Lexus owner in Indonesia, enjoy exclusive benefits: complimentary scheduled service, 24/7 roadside assistance, dedicated concierge, and access to Lexus owner events across the archipelago.</div>
     </div>
   </div>
+</section>
+
+<!-- LIFESTYLE -->
+<section id="lifestyle">
+  <div class="section-header fade-in">
+    <div class="section-eyebrow">Lexus Lifestyle</div>
+    <h2 class="section-title">Merchandise &amp; <strong>Experiences</strong></h2>
+    <p class="section-sub">Carry the Lexus spirit beyond the road — curated goods and exclusive dining for discerning owners.</p>
+  </div>
+
+  <div class="lifestyle-grid" id="merchGrid"></div>
+
+  <div class="section-header fade-in" style="margin-top:64px;margin-bottom:32px">
+    <div class="section-eyebrow">Lexus Lounge</div>
+    <h2 class="section-title" style="font-size:clamp(24px,3vw,36px)">Reserve Your <strong>Table</strong></h2>
+  </div>
+  <div class="dining-cards fade-in">
+    <div class="dining-card" onclick="openDiningModal('lunch')">
+      <div class="dining-icon">&#9749;</div>
+      <div class="dining-name">Lexus Lounge Lunch</div>
+      <div class="dining-time">12:00 – 14:00</div>
+      <div class="dining-note">Complimentary for Lexus owners &bull; Rp 350.000 for guests. Curated Japanese-Indonesian fusion menu crafted by our resident chef.</div>
+      <button class="dining-book-btn">Reserve a Table</button>
+    </div>
+    <div class="dining-card" onclick="openDiningModal('dinner')">
+      <div class="dining-icon">&#127863;</div>
+      <div class="dining-name">Lexus Lounge Dinner</div>
+      <div class="dining-time">18:00 – 21:00</div>
+      <div class="dining-note">Exclusive 6-course experience &bull; Rp 750.000 per pax. Sommelier-curated pairing. Private dining rooms available for groups.</div>
+      <button class="dining-book-btn">Reserve a Table</button>
+    </div>
+  </div>
+</section>
+
+<!-- PRIVILEGE -->
+<section id="privilege">
+  <div class="section-header fade-in">
+    <div class="section-eyebrow">Astra Lexus Privilege</div>
+    <h2 class="section-title">Owner <strong>Benefits</strong></h2>
+    <p class="section-sub">Exclusive privileges across the Astra Group ecosystem — designed for the way you live.</p>
+  </div>
+  <div class="privilege-grid" id="privilegeGrid"></div>
 </section>
 
 <!-- TEST DRIVE -->
@@ -646,6 +1016,158 @@ footer{
     <span class="footer-legal">lexus.co.id</span>
   </div>
 </footer>
+
+<!-- CART OVERLAY -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+
+<!-- CART DRAWER -->
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-header">
+    <div class="cart-title">Your Cart</div>
+    <button class="cart-close" onclick="closeCart()">&#x2715;</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <div class="cart-empty" id="cartEmpty">Your cart is empty.</div>
+  </div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <span id="cartSubtotal">Rp 0</span>
+    </div>
+    <button class="cart-confirm" onclick="confirmOrder()">Confirm Order</button>
+  </div>
+</div>
+
+<!-- DINING MODAL -->
+<div class="modal-overlay" id="diningModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('diningModal')">&#x2715;</button>
+    <div class="modal-title" id="diningModalTitle">Reserve a Table</div>
+    <div class="modal-sub" id="diningModalSub">Select your preferred branch, date, and party size.</div>
+    <form onsubmit="submitDining(event)">
+      <div class="form-group">
+        <label>Branch</label>
+        <select required class="form-group select">
+          <option value="">Select a branch</option>
+          <option>Lexus Jakarta Selatan</option>
+          <option>Lexus Jakarta Barat</option>
+          <option>Lexus Surabaya</option>
+          <option>Lexus Bandung</option>
+          <option>Lexus Bali</option>
+          <option>Lexus Medan</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" required id="diningDate">
+        </div>
+        <div class="form-group">
+          <label>Party Size</label>
+          <select required>
+            <option value="">Guests</option>
+            <option>1</option><option>2</option><option>3</option>
+            <option>4</option><option>5</option><option>6</option>
+            <option>7+</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" placeholder="Budi Santoso" required>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" placeholder="+62 812 …" required>
+        </div>
+      </div>
+      <button type="submit" class="form-submit">Confirm Reservation</button>
+    </form>
+  </div>
+</div>
+
+<!-- MEETING ROOM MODAL -->
+<div class="modal-overlay" id="meetingModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('meetingModal')">&#x2715;</button>
+    <div class="modal-title">Book a Meeting Room</div>
+    <div class="modal-sub">Premium boardroom with AV equipment. Capacity 4–12 pax. Complimentary refreshments included.</div>
+    <form onsubmit="submitMeeting(event)">
+      <div class="form-group">
+        <label>Branch</label>
+        <select required>
+          <option value="">Select a branch</option>
+          <option>Lexus Jakarta Selatan</option>
+          <option>Lexus Jakarta Barat</option>
+          <option>Lexus Surabaya</option>
+          <option>Lexus Bandung</option>
+          <option>Lexus Bali</option>
+          <option>Lexus Medan</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" required id="meetingDate">
+        </div>
+        <div class="form-group">
+          <label>Time Slot</label>
+          <select required>
+            <option value="">Select time</option>
+            <option>08:00 – 09:00</option><option>09:00 – 10:00</option>
+            <option>10:00 – 11:00</option><option>11:00 – 12:00</option>
+            <option>13:00 – 14:00</option><option>14:00 – 15:00</option>
+            <option>15:00 – 16:00</option><option>16:00 – 17:00</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Capacity Required</label>
+        <select required>
+          <option value="">Select capacity</option>
+          <option>4 pax</option><option>6 pax</option>
+          <option>8 pax</option><option>10 pax</option><option>12 pax</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" placeholder="Budi Santoso" required>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" placeholder="+62 812 …" required>
+        </div>
+      </div>
+      <button type="submit" class="form-submit">Book Meeting Room</button>
+    </form>
+  </div>
+</div>
+
+<!-- APP TOAST -->
+<div class="app-toast" id="appToast"></div>
+
+<!-- CHAT BUTTON -->
+<button id="chat-btn" onclick="toggleChat()" title="Chat with your concierge">L</button>
+
+<!-- CHAT PANEL -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-head">
+    <div class="chat-avatar">RK</div>
+    <div style="flex:1">
+      <div class="chat-agent-name">Ratih Kusuma</div>
+      <div class="chat-agent-title">Your Lexus Concierge, Astra Indonesia</div>
+      <div class="chat-status">Online &mdash; responds instantly</div>
+    </div>
+    <button class="chat-minimize" onclick="toggleChat()">&#x2715;</button>
+  </div>
+  <div class="chat-msgs" id="chatMsgs"></div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">Send</button>
+  </div>
+</div>
 
 <!-- INSTALL TOAST -->
 <div id="install-toast">
@@ -845,10 +1367,495 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register(url).catch(()=>{});
 }
 
+// ─── MERCHANDISE DATA ─────────────────────────────────────────────────────────
+const MERCH = [
+  {name:'Lexus Premium Cap',price:'Rp 750.000',priceNum:750000,sizes:['S/M','L/XL'],
+   svg:`<svg viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" width="100" height="70">
+    <ellipse cx="60" cy="58" rx="50" ry="14" fill="#1A1A1A" stroke="#C4A862" stroke-width="1.2"/>
+    <path d="M20 55 Q30 25 60 22 Q90 25 100 55Z" fill="#222" stroke="#C4A862" stroke-width="1.2"/>
+    <path d="M10 57 Q8 55 20 55" stroke="#C4A862" stroke-width="1.2" stroke-linecap="round"/>
+    <text x="60" y="45" font-family="Arial" font-size="9" fill="#C4A862" text-anchor="middle" font-weight="bold">L</text>
+   </svg>`},
+  {name:'Lexus Leather Tote Bag',price:'Rp 1.850.000',priceNum:1850000,sizes:[],
+   svg:`<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="100" height="80">
+    <path d="M35 35 Q35 25 50 25 L70 25 Q85 25 85 35 L90 80 Q90 85 85 85 L35 85 Q30 85 30 80Z" fill="#1A1A1A" stroke="#C4A862" stroke-width="1.2"/>
+    <path d="M50 25 Q50 15 60 15 Q70 15 70 25" stroke="#C4A862" stroke-width="1.5" fill="none"/>
+    <line x1="30" y1="50" x2="90" y2="50" stroke="#C4A862" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="70" font-family="Arial" font-size="8" fill="#C4A862" text-anchor="middle" font-weight="bold">LEXUS</text>
+   </svg>`},
+  {name:'Lexus Polo Shirt',price:'Rp 1.200.000',priceNum:1200000,sizes:['S','M','L','XL','XXL'],
+   svg:`<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="100" height="80">
+    <path d="M40 20 L20 35 L30 42 L38 36 L38 80 L82 80 L82 36 L90 42 L100 35 L80 20 Q75 28 60 28 Q45 28 40 20Z" fill="#1A1A1A" stroke="#C4A862" stroke-width="1.2"/>
+    <path d="M53 20 Q58 24 60 28 Q62 24 67 20" stroke="#C4A862" stroke-width="0.8" fill="none"/>
+    <text x="60" y="58" font-family="Arial" font-size="8" fill="#C4A862" text-anchor="middle" font-weight="bold">L</text>
+   </svg>`},
+  {name:'Lexus Paddle Bag',price:'Rp 3.500.000',priceNum:3500000,sizes:[],
+   svg:`<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="100" height="80">
+    <rect x="25" y="25" width="70" height="50" rx="6" fill="#1A1A1A" stroke="#C4A862" stroke-width="1.2"/>
+    <rect x="35" y="33" width="50" height="34" rx="3" fill="#222" stroke="#C4A862" stroke-width="0.7" opacity="0.6"/>
+    <line x1="25" y1="38" x2="95" y2="38" stroke="#C4A862" stroke-width="0.8" opacity="0.4"/>
+    <path d="M45 20 L45 25 M75 20 L75 25" stroke="#C4A862" stroke-width="1.5" stroke-linecap="round"/>
+    <text x="60" y="57" font-family="Arial" font-size="8" fill="#C4A862" text-anchor="middle" font-weight="bold">LEXUS</text>
+   </svg>`},
+  {name:'Lexus Compact Umbrella',price:'Rp 650.000',priceNum:650000,sizes:[],
+   svg:`<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="100" height="80">
+    <path d="M60 20 Q25 22 22 48 L60 48 L98 48 Q95 22 60 20Z" fill="#1A1A1A" stroke="#C4A862" stroke-width="1.2"/>
+    <line x1="60" y1="20" x2="60" y2="80" stroke="#C4A862" stroke-width="1.5"/>
+    <path d="M60 80 Q55 82 55 77" stroke="#C4A862" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <line x1="60" y1="48" x2="38" y2="20" stroke="#C4A862" stroke-width="0.6" opacity="0.3"/>
+    <line x1="60" y1="48" x2="82" y2="20" stroke="#C4A862" stroke-width="0.6" opacity="0.3"/>
+    <text x="60" y="38" font-family="Arial" font-size="8" fill="#C4A862" text-anchor="middle" font-weight="bold">L</text>
+   </svg>`},
+  {name:'Lexus Keychain',price:'Rp 350.000',priceNum:350000,sizes:[],
+   svg:`<svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg" width="100" height="80">
+    <circle cx="60" cy="55" r="24" fill="#1A1A1A" stroke="#C4A862" stroke-width="1.5"/>
+    <circle cx="60" cy="55" r="18" fill="#111" stroke="#C4A862" stroke-width="0.8" opacity="0.5"/>
+    <text x="60" y="60" font-family="Arial" font-size="14" fill="#C4A862" text-anchor="middle" font-weight="bold">L</text>
+    <circle cx="60" cy="28" r="5" fill="none" stroke="#C4A862" stroke-width="1.5"/>
+    <line x1="60" y1="23" x2="60" y2="31" stroke="#C4A862" stroke-width="1.5"/>
+    <path d="M56 18 Q60 12 64 18" stroke="#C4A862" stroke-width="1.5" fill="none"/>
+   </svg>`},
+];
+
+const PRIVILEGES = [
+  {icon:'&#9733;',name:'Astra Group Loyalty',
+   desc:'Points shared across Astra brands — Toyota, Daihatsu, BMW, Isuzu, Peugeot, rental, and insurance. Earn & redeem for services, fuel, and accessories across 3,000+ touchpoints.',
+   btn:null},
+  {icon:'&#127963;',name:'Free Parking',
+   desc:'Complimentary parking at all 6 Astra Lexus branches and 200+ Astra-partnered locations nationwide. Simply scan the QR code at entry — no ticket, no charge.',
+   btn:null},
+  {icon:'&#9889;',name:'Free EV Charging',
+   desc:'Priority access to Astra EV charging stations at branches and select partner locations. Lexus owners skip the queue. Compatible with all Lexus electrified models.',
+   btn:null},
+  {icon:'&#128101;',name:'Meeting Room Booking',
+   desc:'Book premium boardrooms at any Lexus branch. Capacity 4–12 pax. Full AV suite, high-speed Wi-Fi, and complimentary refreshments. Perfect for off-site executive sessions.',
+   btn:'Book a Room'},
+  {icon:'&#128663;',name:'Priority Service Lane',
+   desc:'Skip the queue with your dedicated Lexus service bay. Complimentary refreshments and Wi-Fi in the Lexus Lounge while our technicians care for your vehicle.',
+   btn:null},
+];
+
+// ─── CART STATE ────────────────────────────────────────────────────────────────
+let cart = [];
+
+// ─── RENDER MERCH ─────────────────────────────────────────────────────────────
+function renderMerch(){
+  document.getElementById('merchGrid').innerHTML = MERCH.map((m,i)=>`
+    <div class="merch-card fade-in">
+      <div class="merch-svg">${m.svg}</div>
+      <div class="merch-name">${m.name}</div>
+      <div class="merch-price">${m.price}</div>
+      ${m.sizes.length?`<select class="merch-size" id="size${i}">
+        <option value="">Select size</option>
+        ${m.sizes.map(s=>`<option>${s}</option>`).join('')}
+      </select>`:'<div style="height:8px"></div>'}
+      <button class="merch-btn" onclick="addToCart(${i})">Add to Cart</button>
+    </div>
+  `).join('');
+}
+
+// ─── RENDER PRIVILEGE ─────────────────────────────────────────────────────────
+function renderPrivilege(){
+  document.getElementById('privilegeGrid').innerHTML = PRIVILEGES.map((p,i)=>`
+    <div class="privilege-card fade-in">
+      <div class="priv-num">0${i+1}</div>
+      <div class="priv-icon">${p.icon}</div>
+      <div class="priv-name">${p.name}</div>
+      <div class="priv-desc">${p.desc}</div>
+      ${p.btn?`<button class="priv-btn" onclick="openModal('meetingModal')">${p.btn}</button>`:''}
+    </div>
+  `).join('');
+}
+
+// ─── CART ─────────────────────────────────────────────────────────────────────
+function addToCart(idx){
+  const m = MERCH[idx];
+  const sizeEl = document.getElementById('size'+idx);
+  const size = sizeEl ? sizeEl.value : '';
+  if(sizeEl && !size){showToast('Please select a size first.');return;}
+  const existing = cart.find(c=>c.idx===idx&&c.size===size);
+  if(existing){existing.qty++;}
+  else{cart.push({idx,size,qty:1});}
+  updateCartUI();
+  showToast(m.name+' added to cart.');
+}
+
+function updateCartUI(){
+  const badge = document.getElementById('cartBadge');
+  const total = cart.reduce((s,c)=>s+c.qty,0);
+  if(total>0){badge.textContent=total;badge.classList.add('show');}
+  else{badge.classList.remove('show');}
+
+  const itemsEl = document.getElementById('cartItems');
+  const emptyEl = document.getElementById('cartEmpty');
+  const footerEl = document.getElementById('cartFooter');
+
+  if(cart.length===0){
+    emptyEl.style.display='block';
+    footerEl.style.display='none';
+    itemsEl.innerHTML='<div class="cart-empty" id="cartEmpty">Your cart is empty.</div>';
+    return;
+  }
+  emptyEl.style.display='none';
+  footerEl.style.display='block';
+
+  itemsEl.innerHTML = cart.map((c,i)=>{
+    const m = MERCH[c.idx];
+    return `<div class="cart-item">
+      <div class="cart-item-info">
+        <div class="cart-item-name">${m.name}</div>
+        <div class="cart-item-sub">${c.size?'Size: '+c.size+' · ':''} Qty: ${c.qty}</div>
+      </div>
+      <div class="cart-item-price">${formatIDR(m.priceNum*c.qty)}</div>
+      <button class="cart-item-remove" onclick="removeFromCart(${i})">&#x2715;</button>
+    </div>`;
+  }).join('');
+
+  const subtotal = cart.reduce((s,c)=>s+MERCH[c.idx].priceNum*c.qty,0);
+  document.getElementById('cartSubtotal').textContent = formatIDR(subtotal);
+}
+
+function removeFromCart(i){
+  cart.splice(i,1);
+  updateCartUI();
+}
+
+function formatIDR(n){
+  return 'Rp '+n.toLocaleString('id-ID');
+}
+
+function openCart(){
+  document.getElementById('cartDrawer').classList.add('open');
+  document.getElementById('cartOverlay').classList.add('open');
+}
+
+function closeCart(){
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('cartOverlay').classList.remove('open');
+}
+
+function confirmOrder(){
+  cart=[];
+  updateCartUI();
+  closeCart();
+  showToast('Order confirmed! Your Lexus concierge will contact you shortly.');
+}
+
+// ─── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+}
+function openDiningModal(type){
+  const modal = document.getElementById('diningModal');
+  document.getElementById('diningModalTitle').textContent =
+    type==='lunch' ? 'Reserve — Lexus Lounge Lunch' : 'Reserve — Lexus Lounge Dinner';
+  document.getElementById('diningModalSub').textContent =
+    type==='lunch'
+    ? 'Complimentary for owners · Rp 350.000 for guests · 12:00–14:00'
+    : 'Exclusive 6-course experience · Rp 750.000 per pax · 18:00–21:00';
+  modal.classList.add('open');
+}
+function submitDining(e){
+  e.preventDefault();
+  closeModal('diningModal');
+  showToast('Reservation confirmed! See you at the Lexus Lounge.');
+}
+function submitMeeting(e){
+  e.preventDefault();
+  closeModal('meetingModal');
+  showToast('Meeting room booked. A confirmation will be sent to your email.');
+}
+
+// ─── TOAST ─────────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('appToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ─── CHAT ─────────────────────────────────────────────────────────────────────
+const CUSTOMER = {
+  name:'Budi Santoso',
+  since:2019,
+  points:48250,
+  tier:'Lexus Gold',
+  cars:[
+    {model:'2021 Lexus ES 300h',plate:'B 1234 LEX',lastService:'January 2025'},
+    {model:'2023 Lexus RX 450h+',plate:'B 5678 LEX',lastService:'November 2024',dueWeeks:3},
+  ]
+};
+
+let chatOpen = false;
+let chatStarted = false;
+let visitState = null; // tracks inline visit booking state
+
+function toggleChat(){
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chatPanel');
+  if(chatOpen){
+    panel.classList.add('open');
+    if(!chatStarted){
+      chatStarted = true;
+      setTimeout(()=>addBotMsg(
+        `Welcome back, ${CUSTOMER.name}! How can I assist you today? Your ${CUSTOMER.cars[1].model} service is due in ${CUSTOMER.cars[1].dueWeeks} weeks.`
+      ),400);
+    }
+    setTimeout(()=>document.getElementById('chatInput').focus(),300);
+  } else {
+    panel.classList.remove('open');
+  }
+}
+
+function sendChat(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value='';
+  addUserMsg(text);
+
+  // handle visit flow
+  if(visitState){
+    handleVisitFlow(text);
+    return;
+  }
+
+  showTyping();
+  setTimeout(()=>{
+    removeTyping();
+    const reply = getBotReply(text.toLowerCase());
+    addBotMsg(reply.text, reply.widget);
+    if(reply.startVisit) visitState = {step:'branch'};
+  },820);
+}
+
+function getBotReply(txt){
+  if(/servis|service/i.test(txt)){
+    return {text:
+      `Here's your service history:\n\n` +
+      CUSTOMER.cars.map(c=>`${c.model} (${c.plate})\nLast service: ${c.lastService}`+(c.dueWeeks?`\nNext service: due in ${c.dueWeeks} weeks ⚠️`:'') ).join('\n\n') +
+      `\n\nWould you like to book a service appointment?`
+    };
+  }
+  if(/poin|points/i.test(txt)){
+    return {text:
+      `Your loyalty balance:\n\nTier: ${CUSTOMER.tier}\nPoints: ${CUSTOMER.points.toLocaleString('id-ID')} pts\n\nRedeem at any Astra service center, Astra Daihatsu, Toyota outlets, or Astra insurance. Would you like to see redemption options?`
+    };
+  }
+  if(/parking|charge|charging/i.test(txt)){
+    return {text:
+      `As a ${CUSTOMER.tier} member, you have:\n\n✓ Free parking at all 6 Lexus branches\n✓ Free parking at 200+ Astra partner locations\n✓ Priority EV charging at Lexus & partner stations\n\nSimply scan the QR code at the gate. See the Privilege section for full details.`
+    };
+  }
+  if(/merch|merchandise/i.test(txt)){
+    return {text:
+      `Our Lexus merchandise collection is available in the Lifestyle section — caps, bags, polo shirts, paddle bags, umbrellas, and keychains. Shall I scroll you there?`
+    };
+  }
+  if(/meeting|room/i.test(txt)){
+    return {text:
+      `I can open the meeting room booking form for you right away.`
+    };
+  }
+  if(/visit|branch|showroom/i.test(txt)){
+    return {
+      text:`I'd be happy to schedule a visit for you. Which branch would you like to visit?`,
+      widget:'branches',
+      startVisit:true
+    };
+  }
+  if(/test.?drive/i.test(txt)){
+    return {text:`I'll take you to our Test Drive booking section now. You can pick your model and preferred date there.`};
+  }
+  if(/dinner|lunch|dining/i.test(txt)){
+    return {text:`Our Lexus Lounge offers exclusive dining — a complimentary lunch (12:00–14:00) and a 6-course dinner experience (18:00–21:00). I can open a reservation for you. Just say "book lunch" or "book dinner".`};
+  }
+  if(/book lunch/i.test(txt)){
+    return {text:`Opening the lunch reservation form for you.`};
+  }
+  if(/book dinner/i.test(txt)){
+    return {text:`Opening the dinner reservation form for you.`};
+  }
+  if(/hello|hi|halo|hei/i.test(txt)){
+    return {text:`Hello, ${CUSTOMER.name}! Great to hear from you. How can I assist you today? Ask me about your service history, loyalty points, parking, merchandise, or visit booking.`};
+  }
+  return {text:`I'll connect you directly with Ratih — please leave your message and she'll respond within minutes. You can also reach us at +62 21 7278 3388.`};
+}
+
+function addBotMsg(text, widget){
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className='chat-msg bot';
+  const lines = text.replace(/\n/g,'<br>');
+  div.innerHTML = `<div class="chat-bubble">${lines}</div><div class="chat-time">Ratih · now</div>`;
+
+  if(widget==='branches'){
+    const wdiv = document.createElement('div');
+    wdiv.className='visit-inline';
+    const grid = document.createElement('div');
+    grid.className='visit-branch-grid';
+    ['Jakarta Selatan','Jakarta Barat','Surabaya','Bandung','Bali','Medan'].forEach(b=>{
+      const btn = document.createElement('button');
+      btn.className='visit-branch-btn';
+      btn.textContent=b;
+      btn.onclick=()=>selectVisitBranch(b,btn,wdiv);
+      grid.appendChild(btn);
+    });
+    wdiv.appendChild(grid);
+    div.appendChild(wdiv);
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMsg(text){
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className='chat-msg user';
+  div.innerHTML=`<div class="chat-bubble">${text}</div><div class="chat-time">You · now</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function showTyping(){
+  const msgs = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.id='typingDots';d.className='typing-dots';
+  d.innerHTML='<span></span><span></span><span></span>';
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function removeTyping(){
+  const d=document.getElementById('typingDots');
+  if(d)d.remove();
+}
+
+// ─── VISIT INLINE FLOW ─────────────────────────────────────────────────────────
+function selectVisitBranch(branch, btn, container){
+  if(visitState.step !== 'branch') return;
+  container.querySelectorAll('.visit-branch-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  visitState.branch = branch;
+  visitState.step = 'datetime';
+
+  showTyping();
+  setTimeout(()=>{
+    removeTyping();
+    addBotMsg(`Great! When would you like to visit Lexus ${branch}?`);
+    // Render date/time picker in a new bot msg
+    appendVisitDatePicker();
+  },600);
+}
+
+function appendVisitDatePicker(){
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className='chat-msg bot';
+  div.id='visitDateWidget';
+
+  const tmr = new Date(); tmr.setDate(tmr.getDate()+1);
+  const minDate = tmr.toISOString().split('T')[0];
+
+  div.innerHTML=`<div class="visit-inline">
+    <input type="date" id="visitDate" min="${minDate}" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-size:12px;outline:none;font-family:inherit;width:100%">
+    <select id="visitTime" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;font-size:12px;outline:none;font-family:inherit;width:100%;-webkit-appearance:none;appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' fill='none' stroke-width='1.5'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px">
+      <option value="">Select time</option>
+      <option>09:00</option><option>10:00</option><option>11:00</option>
+      <option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option>
+    </select>
+    <button class="visit-confirm-btn" onclick="confirmVisitDateTime()">Next</button>
+  </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function confirmVisitDateTime(){
+  const date = document.getElementById('visitDate').value;
+  const time = document.getElementById('visitTime').value;
+  if(!date||!time){showToast('Please select a date and time.');return;}
+  visitState.date=date;visitState.time=time;visitState.step='purpose';
+  document.getElementById('visitDateWidget').remove();
+
+  showTyping();
+  setTimeout(()=>{
+    removeTyping();
+    addBotMsg('And what is the purpose of your visit?');
+    appendVisitPurposePicker();
+  },600);
+}
+
+function appendVisitPurposePicker(){
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className='chat-msg bot';
+  div.id='visitPurposeWidget';
+
+  div.innerHTML=`<div class="visit-inline">
+    <div class="visit-radio-row" id="visitPurposeRow">
+      ${['Showroom Tour','Service Consultation','Handover','Meeting Room','Other'].map(p=>
+        `<button class="visit-radio-btn" onclick="selectPurpose('${p}',this)">${p}</button>`
+      ).join('')}
+    </div>
+    <button class="visit-confirm-btn" id="visitFinalBtn" style="display:none;margin-top:8px" onclick="finalizeVisit()">Confirm Visit</button>
+  </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function selectPurpose(purpose, btn){
+  document.querySelectorAll('.visit-radio-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  visitState.purpose=purpose;
+  document.getElementById('visitFinalBtn').style.display='block';
+}
+
+function finalizeVisit(){
+  if(!visitState.purpose){showToast('Please select a purpose.');return;}
+  const {branch,date,time,purpose}=visitState;
+  const dateStr = new Date(date).toLocaleDateString('en-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('visitPurposeWidget').remove();
+  visitState=null;
+
+  showTyping();
+  setTimeout(()=>{
+    removeTyping();
+    addBotMsg(`Your visit to Lexus ${branch} on ${dateStr} at ${time} is confirmed.\n\nPurpose: ${purpose}\n\nRatih will meet you at the reception. We look forward to welcoming you, ${CUSTOMER.name}.`);
+  },700);
+}
+
+function handleVisitFlow(text){
+  // Visit flow is handled via inline widgets, not text parsing
+  showTyping();
+  setTimeout(()=>{
+    removeTyping();
+    addBotMsg(`Please use the options above to complete your visit booking, or type "cancel" to start over.`);
+    if(/cancel/i.test(text)){visitState=null;}
+  },600);
+}
+
+// ─── SET DATE MINIMUMS ─────────────────────────────────────────────────────────
+function setModalDateMins(){
+  const tmr = new Date();
+  tmr.setDate(tmr.getDate()+1);
+  const min = tmr.toISOString().split('T')[0];
+  ['diningDate','meetingDate'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.min = min;
+  });
+}
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 renderModels();
 renderDealers();
+renderMerch();
+renderPrivilege();
 setDateMin();
+setModalDateMins();
 // Observer after DOM painted
 requestAnimationFrame(()=>requestAnimationFrame(initObserver));
 </script>
