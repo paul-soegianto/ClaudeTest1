@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sari — Asisten Belanja Matahari</title>
+<meta name="description" content="Chatbot rekomendasi hadiah dari Matahari berdasarkan budget dan momen spesialmu.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --red:#C8102E;--red2:#A00D24;
+  --gold:#F5C518;--gold2:#E6B800;
+  --bg:#FFF8F0;--surface:#FFFFFF;
+  --text:#1A1A1A;--muted:#777;--border:#E8E0D8;
+  --bot-bubble:#FFF3F5;--bot-border:#F5CDD3;
+  --user-bubble:#C8102E;--user-text:#FFFFFF;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;
+}
+
+/* ── HEADER ── */
+header{
+  background:var(--red);
+  color:#fff;
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;
+  padding-top:calc(14px + env(safe-area-inset-top));
+  flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.header-avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;color:var(--red);
+  flex-shrink:0;
+}
+.header-info{flex:1}
+.header-name{font-size:15px;font-weight:700;letter-spacing:.3px}
+.header-sub{font-size:11px;opacity:.85;margin-top:1px}
+.header-status{
+  font-size:10px;display:flex;align-items:center;gap:4px;
+  opacity:.9;margin-top:3px;
+}
+.header-status::before{
+  content:'';width:7px;height:7px;border-radius:50%;
+  background:#4caf50;display:inline-block;flex-shrink:0;
+}
+.header-badge{
+  background:var(--gold);color:var(--red);
+  font-size:10px;font-weight:800;letter-spacing:.5px;
+  padding:4px 10px;border-radius:100px;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-bar{
+  background:rgba(200,16,46,.12);
+  height:4px;flex-shrink:0;
+  position:relative;
+}
+.progress-fill{
+  height:100%;background:var(--gold);
+  transition:width .4s ease;
+  width:0%;
+}
+
+/* ── CHAT AREA ── */
+.chat-area{
+  flex:1;overflow-y:auto;
+  padding:20px 16px 12px;
+  display:flex;flex-direction:column;gap:14px;
+  scroll-behavior:smooth;
+}
+
+/* ── MESSAGES ── */
+.msg-row{
+  display:flex;align-items:flex-end;gap:10px;
+  max-width:88%;
+}
+.msg-row.bot{align-self:flex-start}
+.msg-row.user{align-self:flex-end;flex-direction:row-reverse}
+
+.msg-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--gold);color:var(--red);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;flex-shrink:0;
+  margin-bottom:2px;
+}
+
+.bubble{
+  padding:12px 16px;
+  font-size:14px;line-height:1.55;
+  max-width:100%;
+}
+.msg-row.bot .bubble{
+  background:var(--bot-bubble);
+  border:1px solid var(--bot-border);
+  border-radius:0 16px 16px 16px;
+  color:var(--text);
+}
+.msg-row.user .bubble{
+  background:var(--user-bubble);
+  border:1px solid var(--red2);
+  border-radius:16px 0 16px 16px;
+  color:var(--user-text);
+}
+.bubble strong{color:var(--red)}
+.msg-row.user .bubble strong{color:var(--gold)}
+.bubble .occasion-badge{
+  display:inline-block;
+  background:var(--gold);color:var(--red);
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;
+  margin-bottom:6px;
+}
+
+/* ── TYPING INDICATOR ── */
+.typing-row{
+  display:flex;align-items:flex-end;gap:10px;
+  align-self:flex-start;
+}
+.typing-dots{
+  display:flex;gap:5px;
+  padding:14px 18px;
+  background:var(--bot-bubble);
+  border:1px solid var(--bot-border);
+  border-radius:0 16px 16px 16px;
+}
+.typing-dots span{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--red);opacity:.5;
+  animation:bounce 1.2s infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{
+  0%,60%,100%{transform:translateY(0)}
+  30%{transform:translateY(-7px);opacity:1}
+}
+
+/* ── QUICK REPLIES ── */
+.quick-replies{
+  display:flex;flex-wrap:wrap;gap:8px;
+  padding:0 0 4px;
+  align-self:flex-start;
+  margin-left:42px;
+}
+.qr{
+  background:#fff;border:1.5px solid var(--red);
+  color:var(--red);font-size:13px;font-weight:600;
+  padding:9px 16px;border-radius:100px;
+  cursor:pointer;transition:all .18s;
+  white-space:nowrap;
+}
+.qr:hover,.qr.selected{background:var(--red);color:#fff}
+.qr:disabled{opacity:.4;pointer-events:none}
+
+/* ── OCCASION CHIPS ── */
+.occasion-chips{
+  display:flex;flex-wrap:wrap;gap:8px;
+  align-self:flex-start;
+  margin-left:42px;
+  padding-bottom:4px;
+}
+.chip{
+  display:flex;align-items:center;gap:6px;
+  background:#fff;border:1.5px solid var(--border);
+  color:var(--text);font-size:13px;font-weight:600;
+  padding:9px 16px;border-radius:12px;
+  cursor:pointer;transition:all .18s;
+}
+.chip:hover,.chip.selected{
+  background:var(--red);border-color:var(--red);color:#fff;
+}
+.chip-icon{font-size:16px;line-height:1}
+
+/* ── PRODUCT CARDS ── */
+.products-wrap{
+  align-self:flex-start;
+  margin-left:42px;
+  width:calc(100% - 42px);
+}
+.products-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:10px;
+}
+.prod-card{
+  background:#fff;border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+  display:flex;flex-direction:column;
+  transition:box-shadow .2s,transform .2s;
+}
+.prod-card:hover{box-shadow:0 4px 16px rgba(200,16,46,.15);transform:translateY(-2px)}
+.prod-img{
+  width:100%;height:110px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#FFF0F3,#FFF8E7);
+  flex-shrink:0;
+}
+.prod-body{padding:10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.prod-cat{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.prod-name{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+.prod-price{font-size:13px;font-weight:800;color:var(--red);margin-top:2px}
+.prod-link{
+  display:block;margin-top:auto;padding:7px;text-align:center;
+  background:var(--red);color:#fff;font-size:11px;font-weight:700;
+  text-decoration:none;letter-spacing:.5px;
+  transition:background .18s;
+  border-radius:0 0 10px 10px;
+  margin:-10px;margin-top:6px;
+}
+.prod-link:hover{background:var(--red2)}
+
+/* ── RESTART / MORE BUTTONS ── */
+.action-btns{
+  display:flex;gap:8px;
+  align-self:flex-start;
+  margin-left:42px;
+  flex-wrap:wrap;
+  padding-bottom:4px;
+}
+.action-btn{
+  background:#fff;border:1.5px solid var(--border);
+  color:var(--text);font-size:13px;font-weight:600;
+  padding:9px 18px;border-radius:100px;
+  cursor:pointer;transition:all .18s;
+}
+.action-btn:hover{border-color:var(--red);color:var(--red)}
+.action-btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.action-btn.primary:hover{background:var(--red2)}
+
+/* ── INPUT ROW ── */
+.input-area{
+  flex-shrink:0;
+  padding:12px 16px;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  background:#fff;
+  border-top:1px solid var(--border);
+  display:flex;gap:10px;
+  align-items:center;
+}
+.chat-input{
+  flex:1;border:1.5px solid var(--border);
+  padding:11px 16px;font-size:14px;
+  border-radius:100px;outline:none;
+  font-family:inherit;color:var(--text);
+  background:var(--bg);
+  transition:border-color .2s;
+}
+.chat-input:focus{border-color:var(--red)}
+.chat-input::placeholder{color:#bbb}
+.send-btn{
+  width:44px;height:44px;border-radius:50%;
+  background:var(--red);border:none;color:#fff;
+  font-size:18px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .18s,transform .15s;
+}
+.send-btn:hover{background:var(--red2);transform:scale(1.07)}
+.send-btn:active{transform:scale(.95)}
+
+/* ── FESTIVAL BANNER ── */
+.fest-banner{
+  text-align:center;padding:6px 16px;
+  background:linear-gradient(90deg,var(--red),#E8183A,var(--red));
+  color:#fff;font-size:11px;font-weight:600;letter-spacing:.5px;
+  flex-shrink:0;
+}
+
+/* ── SEPARATOR ── */
+.separator{
+  align-self:center;
+  font-size:10px;color:var(--muted);letter-spacing:1px;
+  display:flex;align-items:center;gap:10px;
+}
+.separator::before,.separator::after{
+  content:'';flex:1;width:40px;height:1px;background:var(--border);
+}
+
+@media(max-width:480px){
+  .products-grid{grid-template-columns:repeat(2,1fr)}
+  .prod-img{height:90px}
+}
+</style>
+</head>
+<body>
+
+<!-- FESTIVAL BANNER -->
+<div class="fest-banner">🎊 Temukan hadiah terbaik untuk setiap momen spesialmu bersama Matahari!</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-avatar">S</div>
+  <div class="header-info">
+    <div class="header-name">Sari</div>
+    <div class="header-sub">Asisten Belanja Matahari</div>
+    <div class="header-status">Online — siap membantu</div>
+  </div>
+  <div class="header-badge">MATAHARI</div>
+</header>
+
+<!-- PROGRESS -->
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+<!-- CHAT -->
+<div class="chat-area" id="chatArea"></div>
+
+<!-- INPUT -->
+<div class="input-area">
+  <input class="chat-input" id="chatInput" placeholder="Ketik pesan atau pilih di atas…" autocomplete="off" onkeydown="if(event.key==='Enter')handleTextInput()">
+  <button class="send-btn" onclick="handleTextInput()" title="Kirim">&#10148;</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// PRODUCT DATABASE
+// Each product has: name, price (IDR), category, search keyword (for matahari.com), svg icon
+// Organised by occasion → budget tier
+// ══════════════════════════════════════════════════════════════════════════════
+const DB = {
+
+  lebaran: {
+    // < 50 rb
+    tiny:[
+      {name:'Kaos Kaki Batik 3 Pasang',price:39000,cat:'Fashion',q:'kaos kaki batik',icon:'🧦'},
+      {name:'Sapu Tangan Motif Islami',price:29000,cat:'Aksesori',q:'sapu tangan motif',icon:'🏳️'},
+      {name:'Pita Rambut Lebaran',price:25000,cat:'Aksesori Anak',q:'pita rambut anak',icon:'🎀'},
+      {name:'Dompet Koin Mini Batik',price:45000,cat:'Aksesori',q:'dompet koin batik',icon:'👛'},
+    ],
+    // 50–200 rb
+    low:[
+      {name:'Mukena Bordir Simpel',price:149000,cat:'Fashion Muslim',q:'mukena bordir',icon:'🕌'},
+      {name:'Parfum Roll-On Islami',price:89000,cat:'Kecantikan',q:'parfum roll on',icon:'🌹'},
+      {name:'Kemeja Batik Anak',price:119000,cat:'Fashion Anak',q:'kemeja batik anak',icon:'👕'},
+      {name:'Jilbab Voal Motif',price:75000,cat:'Fashion Muslim',q:'jilbab voal motif',icon:'🧕'},
+      {name:'Peci Premium Songkok',price:99000,cat:'Aksesori Pria',q:'peci songkok premium',icon:'🎩'},
+    ],
+    // 200–500 rb
+    mid:[
+      {name:'Baju Koko Premium Pria',price:299000,cat:'Fashion Pria',q:'baju koko premium',icon:'👔'},
+      {name:'Gamis Batik Wanita',price:349000,cat:'Fashion Wanita',q:'gamis batik wanita',icon:'👗'},
+      {name:'Setelan Baju Tidur Keluarga',price:269000,cat:'Fashion',q:'piyama keluarga lebaran',icon:'🌙'},
+      {name:'Dompet Kulit Pria',price:239000,cat:'Aksesori',q:'dompet kulit pria',icon:'👜'},
+      {name:'Set Parfum Mini Hampers',price:285000,cat:'Kecantikan',q:'set parfum mini hampers',icon:'✨'},
+      {name:'Tunik Batik Wanita',price:259000,cat:'Fashion Wanita',q:'tunik batik wanita',icon:'👘'},
+    ],
+    // 500–1.5 jt
+    high:[
+      {name:'Hampers Parfum & Skincare',price:699000,cat:'Kecantikan',q:'hampers parfum skincare',icon:'🎁'},
+      {name:'Kemkemba Batik Couple',price:589000,cat:'Fashion',q:'kemeja batik couple',icon:'💑'},
+      {name:'Tas Selempang Wanita Premium',price:849000,cat:'Tas',q:'tas selempang wanita premium',icon:'👜'},
+      {name:'Jam Tangan Pria Formal',price:1200000,cat:'Aksesori',q:'jam tangan pria formal',icon:'⌚'},
+      {name:'Sepatu Pantofel Pria',price:799000,cat:'Sepatu',q:'sepatu pantofel pria',icon:'👞'},
+    ],
+    // > 1.5 jt
+    premium:[
+      {name:'Tas Kulit Wanita Premium',price:2199000,cat:'Tas',q:'tas kulit wanita premium',icon:'👜'},
+      {name:'Jam Tangan Wanita Elegan',price:1899000,cat:'Aksesori',q:'jam tangan wanita elegan',icon:'⌚'},
+      {name:'Set Hampers Luxury Lebaran',price:1750000,cat:'Gift Set',q:'hampers luxury lebaran',icon:'🎊'},
+      {name:'Setelan Baju Lebaran Keluarga',price:2500000,cat:'Fashion',q:'setelan keluarga lebaran premium',icon:'👨‍👩‍👧‍👦'},
+    ],
+  },
+
+  natal: {
+    tiny:[
+      {name:'Gantungan Kunci Natal',price:29000,cat:'Dekorasi',q:'gantungan kunci natal',icon:'🎄'},
+      {name:'Stocking Natal Mini',price:35000,cat:'Dekorasi',q:'stocking natal',icon:'🧦'},
+      {name:'Lilin Natal Mini Set',price:45000,cat:'Dekorasi',q:'lilin natal mini',icon:'🕯️'},
+      {name:'Pita Kado Natal',price:20000,cat:'Aksesori',q:'pita kado natal',icon:'🎀'},
+    ],
+    low:[
+      {name:'Kaus Natal Unisex',price:129000,cat:'Fashion',q:'kaus natal motif',icon:'🎅'},
+      {name:'Lilin Aromaterapi Set 3pcs',price:149000,cat:'Rumah',q:'lilin aromaterapi set',icon:'🕯️'},
+      {name:'Mug Natal Motif Rusa',price:89000,cat:'Rumah',q:'mug natal rusa',icon:'☕'},
+      {name:'Kaus Kaki Natal Lucu',price:59000,cat:'Fashion',q:'kaus kaki natal lucu',icon:'🦌'},
+      {name:'Bando Natal',price:49000,cat:'Aksesori',q:'bando natal',icon:'🎄'},
+    ],
+    mid:[
+      {name:'Piyama Natal Couple',price:349000,cat:'Fashion',q:'piyama natal couple',icon:'🎄'},
+      {name:'Selimut Lembut Motif Natal',price:279000,cat:'Rumah',q:'selimut motif natal',icon:'🧸'},
+      {name:'Set Mug & Coaster Natal',price:229000,cat:'Rumah',q:'set mug coaster natal',icon:'☕'},
+      {name:'Hampers Body Lotion Natal',price:349000,cat:'Kecantikan',q:'hampers body lotion natal',icon:'🎁'},
+      {name:'Topi Natal Sekeluarga',price:199000,cat:'Fashion',q:'topi natal keluarga',icon:'🎅'},
+    ],
+    high:[
+      {name:'Parfum Edisi Natal Limited',price:849000,cat:'Kecantikan',q:'parfum edisi natal',icon:'✨'},
+      {name:'Hampers Hamper Natal Eksklusif',price:999000,cat:'Gift Set',q:'hampers natal eksklusif',icon:'🎁'},
+      {name:'Sepatu Bot Musim Dingin',price:699000,cat:'Sepatu',q:'sepatu bot wanita',icon:'👢'},
+      {name:'Sweater Premium Rajut',price:589000,cat:'Fashion',q:'sweater rajut premium',icon:'🧶'},
+    ],
+    premium:[
+      {name:'Jam Tangan Edisi Natal',price:1999000,cat:'Aksesori',q:'jam tangan edisi natal',icon:'⌚'},
+      {name:'Set Bedding Premium Natal',price:2299000,cat:'Rumah',q:'set bedding premium',icon:'🛏️'},
+      {name:'Luxury Gift Set Natal',price:1799000,cat:'Gift Set',q:'luxury gift set natal',icon:'🎊'},
+    ],
+  },
+
+  tahun_baru: {
+    tiny:[
+      {name:'Confetti & Terompet Set',price:35000,cat:'Dekorasi',q:'confetti terompet tahun baru',icon:'🎊'},
+      {name:'Kacamata Pesta Tahun Baru',price:29000,cat:'Aksesori',q:'kacamata pesta tahun baru',icon:'🥂'},
+      {name:'Glitter Body Gel',price:49000,cat:'Kecantikan',q:'glitter body gel',icon:'✨'},
+    ],
+    low:[
+      {name:'Clutch Pesta Berkilau',price:139000,cat:'Tas',q:'clutch pesta glitter',icon:'👛'},
+      {name:'Kalung Statement Party',price:99000,cat:'Aksesori',q:'kalung statement party',icon:'📿'},
+      {name:'Lipstik Merah Pesta',price:129000,cat:'Kecantikan',q:'lipstik merah pesta',icon:'💄'},
+      {name:'Dasi Pesta Pria',price:89000,cat:'Aksesori Pria',q:'dasi pesta formal',icon:'👔'},
+    ],
+    mid:[
+      {name:'Dress Pesta Mini Wanita',price:399000,cat:'Fashion Wanita',q:'dress pesta mini wanita',icon:'👗'},
+      {name:'Kemeja Formal Slim Fit',price:299000,cat:'Fashion Pria',q:'kemeja formal slim fit',icon:'👔'},
+      {name:'Tas Clutch Premium Pesta',price:349000,cat:'Tas',q:'tas clutch premium',icon:'👜'},
+      {name:'Parfum Floral Modern',price:279000,cat:'Kecantikan',q:'parfum floral wanita',icon:'🌸'},
+      {name:'Sepatu Heels Block Wanita',price:449000,cat:'Sepatu',q:'sepatu heels block wanita',icon:'👠'},
+    ],
+    high:[
+      {name:'Blazer Formal Premium Pria',price:899000,cat:'Fashion Pria',q:'blazer formal premium pria',icon:'🕴️'},
+      {name:'Dress Maxi Mewah Wanita',price:1299000,cat:'Fashion Wanita',q:'dress maxi mewah wanita',icon:'👗'},
+      {name:'Jam Tangan Pesta Wanita',price:1199000,cat:'Aksesori',q:'jam tangan pesta wanita',icon:'⌚'},
+      {name:'Set Parfum Mewah Couple',price:799000,cat:'Kecantikan',q:'set parfum couple mewah',icon:'✨'},
+    ],
+    premium:[
+      {name:'Tas Kulit Premium Wanita',price:2899000,cat:'Tas',q:'tas kulit premium wanita',icon:'👜'},
+      {name:'Jas Formal Pria Premium',price:3500000,cat:'Fashion Pria',q:'jas formal premium pria',icon:'🎩'},
+      {name:'Jam Tangan Swiss Movement',price:4200000,cat:'Aksesori',q:'jam tangan premium pria',icon:'⌚'},
+    ],
+  },
+
+  ultah: {
+    tiny:[
+      {name:'Gantungan Kunci Lucu',price:25000,cat:'Aksesori',q:'gantungan kunci lucu',icon:'🔑'},
+      {name:'Bando Mahkota Ulang Tahun',price:35000,cat:'Aksesori',q:'bando mahkota birthday',icon:'👑'},
+      {name:'Kaos Kaki Motif Lucu',price:45000,cat:'Fashion',q:'kaos kaki motif lucu',icon:'🎂'},
+    ],
+    low:[
+      {name:'Parfum Tubuh Ceria',price:129000,cat:'Kecantikan',q:'parfum tubuh wanita',icon:'🌸'},
+      {name:'Dompet Kartu Warna-warni',price:99000,cat:'Aksesori',q:'dompet kartu warna warni',icon:'🎨'},
+      {name:'Buku Jurnal Estetik',price:89000,cat:'Stationery',q:'buku jurnal estetik',icon:'📔'},
+      {name:'Set Body Lotion Gift',price:159000,cat:'Kecantikan',q:'body lotion gift set',icon:'🧴'},
+    ],
+    mid:[
+      {name:'Tas Ransel Casual Wanita',price:299000,cat:'Tas',q:'tas ransel casual wanita',icon:'🎒'},
+      {name:'Set Skincare Dasar',price:379000,cat:'Kecantikan',q:'set skincare dasar',icon:'✨'},
+      {name:'Sandal Selop Premium',price:249000,cat:'Sepatu',q:'sandal selop premium wanita',icon:'🩴'},
+      {name:'Kemeja Casual Pria Trendy',price:279000,cat:'Fashion Pria',q:'kemeja casual pria trendy',icon:'👕'},
+      {name:'Kacamata Sunglasses Trendi',price:229000,cat:'Aksesori',q:'kacamata sunglasses trendi',icon:'🕶️'},
+    ],
+    high:[
+      {name:'Tas Wanita Premium Branded',price:1199000,cat:'Tas',q:'tas wanita premium',icon:'👜'},
+      {name:'Jam Tangan Fashion Wanita',price:899000,cat:'Aksesori',q:'jam tangan fashion wanita',icon:'⌚'},
+      {name:'Set Parfum + Skincare Luxury',price:749000,cat:'Kecantikan',q:'set parfum skincare luxury',icon:'🎁'},
+      {name:'Sneakers Trendy',price:699000,cat:'Sepatu',q:'sneakers trendy unisex',icon:'👟'},
+    ],
+    premium:[
+      {name:'Tas Kulit Desainer',price:2599000,cat:'Tas',q:'tas kulit desainer wanita',icon:'👜'},
+      {name:'Jam Tangan Mewah Pria',price:3200000,cat:'Aksesori',q:'jam tangan mewah pria',icon:'⌚'},
+      {name:'Set Luxury Skincare Premium',price:1899000,cat:'Kecantikan',q:'luxury skincare premium set',icon:'✨'},
+    ],
+  },
+
+  pernikahan: {
+    tiny:[
+      {name:'Pigura Foto Mini',price:45000,cat:'Rumah',q:'pigura foto mini',icon:'🖼️'},
+      {name:'Lilin Aromaterapi Kecil',price:39000,cat:'Rumah',q:'lilin aromaterapi kecil',icon:'🕯️'},
+    ],
+    low:[
+      {name:'Set Handuk Premium Couple',price:189000,cat:'Rumah',q:'set handuk premium couple',icon:'🛁'},
+      {name:'Wadah Penyimpan Estetik',price:149000,cat:'Rumah',q:'wadah penyimpan estetik',icon:'🏺'},
+      {name:'Parfum Ruangan Mewah',price:169000,cat:'Rumah',q:'parfum ruangan mewah',icon:'✨'},
+    ],
+    mid:[
+      {name:'Set Gelas Minum Premium',price:349000,cat:'Rumah',q:'set gelas minum premium',icon:'🥂'},
+      {name:'Bantal Sofa Dekoratif',price:299000,cat:'Rumah',q:'bantal sofa dekoratif',icon:'🛋️'},
+      {name:'Set Parfum Couple Mewah',price:449000,cat:'Kecantikan',q:'set parfum couple mewah',icon:'💑'},
+      {name:'Album Foto Hardcover',price:279000,cat:'Aksesori',q:'album foto premium hardcover',icon:'📷'},
+    ],
+    high:[
+      {name:'Set Bedding Premium Queen',price:1299000,cat:'Rumah',q:'set bedding premium queen',icon:'🛏️'},
+      {name:'Dinner Set Keramik 6 Orang',price:899000,cat:'Rumah',q:'dinner set keramik premium',icon:'🍽️'},
+      {name:'Hampers Luxury Pengantin',price:1199000,cat:'Gift Set',q:'hampers luxury pengantin',icon:'💍'},
+      {name:'Parfum Couple Luxury',price:749000,cat:'Kecantikan',q:'parfum couple luxury mewah',icon:'✨'},
+    ],
+    premium:[
+      {name:'Set Peralatan Dapur Premium',price:2999000,cat:'Rumah',q:'peralatan dapur premium set',icon:'🍳'},
+      {name:'Luxury Hampers Couple',price:2500000,cat:'Gift Set',q:'luxury hampers couple premium',icon:'🎁'},
+      {name:'Set Handuk & Bedding Mewah',price:3500000,cat:'Rumah',q:'set handuk bedding mewah',icon:'🛁'},
+    ],
+  },
+
+  wisuda: {
+    tiny:[
+      {name:'Pen Mewah Ukiran',price:49000,cat:'Stationery',q:'pen mewah ukiran',icon:'✒️'},
+      {name:'Bookmark Elegan',price:29000,cat:'Stationery',q:'bookmark elegan',icon:'📚'},
+    ],
+    low:[
+      {name:'Dompet Kulit Tipis',price:149000,cat:'Aksesori',q:'dompet kulit tipis pria',icon:'💳'},
+      {name:'Tas Selempang Formal',price:179000,cat:'Tas',q:'tas selempang formal',icon:'💼'},
+      {name:'Set Alat Tulis Eksklusif',price:129000,cat:'Stationery',q:'set alat tulis eksklusif',icon:'✏️'},
+    ],
+    mid:[
+      {name:'Jam Tangan Formal Pria',price:449000,cat:'Aksesori',q:'jam tangan formal pria muda',icon:'⌚'},
+      {name:'Tas Kerja Wanita Elegan',price:379000,cat:'Tas',q:'tas kerja wanita elegan',icon:'💼'},
+      {name:'Kemeja Formal Slim Fit',price:299000,cat:'Fashion Pria',q:'kemeja formal slim fit',icon:'👔'},
+      {name:'Sepatu Formal Casual',price:349000,cat:'Sepatu',q:'sepatu formal casual pria',icon:'👞'},
+    ],
+    high:[
+      {name:'Tas Kulit Kerja Premium',price:1199000,cat:'Tas',q:'tas kulit kerja premium',icon:'💼'},
+      {name:'Jam Tangan Swiss Pria',price:1499000,cat:'Aksesori',q:'jam tangan swiss pria',icon:'⌚'},
+      {name:'Set Parfum Profesional',price:699000,cat:'Kecantikan',q:'set parfum profesional',icon:'✨'},
+    ],
+    premium:[
+      {name:'Jam Tangan Mewah Unisex',price:2799000,cat:'Aksesori',q:'jam tangan mewah unisex',icon:'⌚'},
+      {name:'Tas Kulit Luxury',price:3200000,cat:'Tas',q:'tas kulit luxury premium',icon:'💼'},
+    ],
+  },
+
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONVERSATION STATE
+// ══════════════════════════════════════════════════════════════════════════════
+let state = {
+  step: 'greeting',   // greeting → budget → occasion → results → done
+  budgetTier: null,   // tiny | low | mid | high | premium
+  budgetLabel: null,
+  occasion: null,
+  occasionLabel: null,
+  shownProducts: [],
+  allTierProducts: [],
+};
+
+const BUDGET_TIERS = [
+  {id:'tiny',   label:'< Rp 50rb',     range:'di bawah Rp 50.000'},
+  {id:'low',    label:'Rp 50–200rb',   range:'Rp 50.000 – 200.000'},
+  {id:'mid',    label:'Rp 200–500rb',  range:'Rp 200.000 – 500.000'},
+  {id:'high',   label:'Rp 500rb–1,5jt',range:'Rp 500.000 – 1.500.000'},
+  {id:'premium',label:'> Rp 1,5jt',   range:'di atas Rp 1.500.000'},
+];
+
+const OCCASIONS = [
+  {id:'lebaran',     label:'Lebaran',    icon:'🌙'},
+  {id:'natal',       label:'Natal',      icon:'🎄'},
+  {id:'tahun_baru',  label:'Tahun Baru', icon:'🎊'},
+  {id:'ultah',       label:'Ulang Tahun',icon:'🎂'},
+  {id:'pernikahan',  label:'Pernikahan', icon:'💍'},
+  {id:'wisuda',      label:'Wisuda',     icon:'🎓'},
+];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CHAT ENGINE
+// ══════════════════════════════════════════════════════════════════════════════
+const chat = document.getElementById('chatArea');
+const progress = document.getElementById('progress');
+
+function setProgress(pct){
+  progress.style.width = pct + '%';
+}
+
+function scrollBottom(){
+  setTimeout(()=>{chat.scrollTop = chat.scrollHeight;},50);
+}
+
+// Append a bot message row
+function botMsg(html, delay=0){
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      const row = document.createElement('div');
+      row.className='msg-row bot';
+      row.innerHTML=`<div class="msg-avatar">S</div><div class="bubble">${html}</div>`;
+      chat.appendChild(row);
+      scrollBottom();
+      resolve();
+    },delay);
+  });
+}
+
+// Append user message row
+function userMsg(text){
+  const row = document.createElement('div');
+  row.className='msg-row user';
+  row.innerHTML=`<div class="bubble">${text}</div>`;
+  chat.appendChild(row);
+  scrollBottom();
+}
+
+// Append typing indicator, return element reference
+function showTyping(delay=0){
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      const row = document.createElement('div');
+      row.className='typing-row';
+      row.id='typing';
+      row.innerHTML=`<div class="msg-avatar">S</div><div class="typing-dots"><span></span><span></span><span></span></div>`;
+      chat.appendChild(row);
+      scrollBottom();
+      resolve(row);
+    },delay);
+  });
+}
+
+function removeTyping(){
+  const t = document.getElementById('typing');
+  if(t) t.remove();
+}
+
+// Append a custom element below messages
+function appendWidget(el, marginLeft=true){
+  if(marginLeft) el.style.marginLeft='42px';
+  chat.appendChild(el);
+  scrollBottom();
+}
+
+// ── BUDGET QUICK REPLIES ──
+function renderBudgetButtons(){
+  const wrap = document.createElement('div');
+  wrap.className='quick-replies';
+  BUDGET_TIERS.forEach(t=>{
+    const btn = document.createElement('button');
+    btn.className='qr';btn.textContent=t.label;
+    btn.onclick=()=>selectBudget(t, wrap);
+    wrap.appendChild(btn);
+  });
+  chat.appendChild(wrap);
+  scrollBottom();
+}
+
+async function selectBudget(tier, wrap){
+  wrap.querySelectorAll('.qr').forEach(b=>{b.disabled=true;if(b.textContent===tier.label)b.classList.add('selected');});
+  userMsg(tier.label);
+  state.budgetTier=tier.id;
+  state.budgetLabel=tier.label+' ('+tier.range+')';
+  setProgress(40);
+
+  const t = await showTyping(300);
+  await new Promise(r=>setTimeout(r,800));
+  removeTyping();
+
+  await botMsg(`Siap! Budget <strong>${tier.range}</strong> — bisa dapat hadiah yang bagus! 🎁<br><br>Sekarang, ini untuk acara apa? Pilih di bawah ya!`);
+  renderOccasionChips();
+  state.step='occasion';
+}
+
+// ── OCCASION CHIPS ──
+function renderOccasionChips(){
+  const wrap = document.createElement('div');
+  wrap.className='occasion-chips';
+  OCCASIONS.forEach(o=>{
+    const chip = document.createElement('div');
+    chip.className='chip';
+    chip.innerHTML=`<span class="chip-icon">${o.icon}</span>${o.label}`;
+    chip.onclick=()=>selectOccasion(o, wrap);
+    wrap.appendChild(chip);
+  });
+  chat.appendChild(wrap);
+  scrollBottom();
+}
+
+async function selectOccasion(occ, wrap){
+  wrap.querySelectorAll('.chip').forEach(c=>{
+    c.onclick=null;
+    if(c.textContent.trim().includes(occ.label)) c.classList.add('selected');
+  });
+  userMsg(occ.icon+' '+occ.label);
+  state.occasion=occ.id;
+  state.occasionLabel=occ.label;
+  setProgress(70);
+
+  const t = await showTyping(300);
+  await new Promise(r=>setTimeout(r,900));
+  removeTyping();
+
+  await botMsg(`${occ.icon} <strong>${occ.label}</strong> — pilihan yang bagus! Tunggu sebentar, Sari cariin rekomendasi terbaik dari Matahari untuk kamu…`);
+
+  await showTyping(200);
+  await new Promise(r=>setTimeout(r,1200));
+  removeTyping();
+
+  showProducts();
+}
+
+// ── PRODUCT RESULTS ──
+function getBudgetProducts(){
+  const pool = DB[state.occasion];
+  if(!pool) return [];
+  const tier = pool[state.budgetTier] || [];
+  // If current tier is empty, try adjacent tiers
+  if(tier.length) return tier;
+  const order = ['tiny','low','mid','high','premium'];
+  const idx = order.indexOf(state.budgetTier);
+  for(let delta=1;delta<=4;delta++){
+    if(idx+delta<=4 && pool[order[idx+delta]]?.length) return pool[order[idx+delta]];
+    if(idx-delta>=0 && pool[order[idx-delta]]?.length) return pool[order[idx-delta]];
+  }
+  return [];
+}
+
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
+
+function formatPrice(p){
+  if(p>=1000000) return 'Rp '+(p/1000000).toFixed(p%1000000===0?0:1)+' jt';
+  if(p>=1000) return 'Rp '+(p/1000).toFixed(0)+' rb';
+  return 'Rp '+p;
+}
+
+function productSVG(icon){
+  return `<span style="font-size:40px;line-height:1">${icon}</span>`;
+}
+
+async function showProducts(showMore=false){
+  const allProducts = getBudgetProducts();
+  state.allTierProducts = allProducts;
+
+  if(allProducts.length===0){
+    await botMsg(`Hmm, Sari belum punya rekomendasi untuk kombinasi ini. Coba ganti budget atau acara ya! 😊`);
+    renderRestartBtn();
+    return;
+  }
+
+  const pool = showMore
+    ? allProducts.filter(p=>!state.shownProducts.includes(p.name))
+    : allProducts;
+
+  const toShow = shuffle(pool).slice(0,4);
+
+  if(!showMore){
+    state.shownProducts = toShow.map(p=>p.name);
+    const occ = OCCASIONS.find(o=>o.id===state.occasion);
+    await botMsg(
+      `<span class="occasion-badge">${occ?.icon} ${state.occasionLabel}</span><br>` +
+      `Ini <strong>${toShow.length} rekomendasi</strong> dari Matahari untuk kamu dengan budget <strong>${state.budgetLabel}</strong>:`
+    );
+  } else {
+    toShow.forEach(p=>state.shownProducts.push(p.name));
+    await botMsg(`Ini pilihan lainnya yang mungkin kamu suka:`);
+  }
+
+  // Product grid
+  const wrap = document.createElement('div');
+  wrap.className='products-wrap';
+  const grid = document.createElement('div');
+  grid.className='products-grid';
+
+  toShow.forEach(p=>{
+    const card = document.createElement('div');
+    card.className='prod-card';
+    const searchUrl = `https://www.matahari.com/search?q=${encodeURIComponent(p.q)}`;
+    card.innerHTML=`
+      <div class="prod-img">${productSVG(p.icon)}</div>
+      <div class="prod-body">
+        <div class="prod-cat">${p.cat}</div>
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-price">${formatPrice(p.price)}</div>
+      </div>
+      <a class="prod-link" href="${searchUrl}" target="_blank" rel="noopener">Lihat di Matahari →</a>
+    `;
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+  chat.appendChild(wrap);
+  scrollBottom();
+  setProgress(100);
+
+  await new Promise(r=>setTimeout(r,600));
+  await botMsg(`Klik <strong>"Lihat di Matahari"</strong> untuk langsung belanja! Mau lihat pilihan lain atau cari untuk budget/momen berbeda? 😊`);
+
+  renderActionButtons(pool.length > toShow.length);
+  state.step='done';
+}
+
+function renderActionButtons(hasMore=true){
+  const wrap = document.createElement('div');
+  wrap.className='action-btns';
+
+  if(hasMore){
+    const moreBtn = document.createElement('button');
+    moreBtn.className='action-btn primary';
+    moreBtn.textContent='✨ Lihat Pilihan Lain';
+    moreBtn.onclick=()=>{
+      wrap.remove();
+      showProducts(true);
+    };
+    wrap.appendChild(moreBtn);
+  }
+
+  const changeOccBtn = document.createElement('button');
+  changeOccBtn.className='action-btn';
+  changeOccBtn.textContent='🔄 Ganti Momen';
+  changeOccBtn.onclick=()=>{
+    wrap.remove();
+    changeMomen();
+  };
+  wrap.appendChild(changeOccBtn);
+
+  const restartBtn = document.createElement('button');
+  restartBtn.className='action-btn';
+  restartBtn.textContent='🏠 Mulai dari Awal';
+  restartBtn.onclick=()=>{
+    wrap.remove();
+    restartChat();
+  };
+  wrap.appendChild(restartBtn);
+
+  chat.appendChild(wrap);
+  scrollBottom();
+}
+
+function renderRestartBtn(){
+  const wrap = document.createElement('div');
+  wrap.className='action-btns';
+  const btn = document.createElement('button');
+  btn.className='action-btn primary';btn.textContent='🏠 Mulai dari Awal';
+  btn.onclick=()=>{wrap.remove();restartChat();};
+  wrap.appendChild(btn);
+  chat.appendChild(wrap);scrollBottom();
+}
+
+// ── CHANGE OCCASION (KEEP BUDGET) ──
+async function changeMomen(){
+  state.shownProducts=[];
+  state.occasion=null;
+  setProgress(40);
+  const t = await showTyping(200);
+  await new Promise(r=>setTimeout(r,600));
+  removeTyping();
+  await botMsg(`Oke! Budget tetap <strong>${state.budgetLabel}</strong>. Kali ini untuk acara apa?`);
+  renderOccasionChips();
+  state.step='occasion';
+}
+
+// ── RESTART ──
+async function restartChat(){
+  chat.innerHTML='';
+  state={step:'greeting',budgetTier:null,budgetLabel:null,occasion:null,occasionLabel:null,shownProducts:[],allTierProducts:[]};
+  setProgress(0);
+  startConversation();
+}
+
+// ── TEXT INPUT HANDLER ──
+function handleTextInput(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value='';
+
+  // Try to parse a budget number from free text
+  const num = parseBudget(text);
+  if(num!==null && state.step==='budget'){
+    const tier = numToTier(num);
+    const fakeBtn = document.querySelector('.quick-replies');
+    if(fakeBtn){
+      selectBudget(tier, fakeBtn);
+    }
+    return;
+  }
+
+  // Try to match an occasion from free text
+  if(state.step==='occasion'){
+    const occ = parseOccasion(text);
+    if(occ){
+      const fakeWrap = document.querySelector('.occasion-chips');
+      if(fakeWrap) selectOccasion(occ, fakeWrap);
+      return;
+    }
+  }
+
+  // Generic fallback echo
+  userMsg(text);
+  setTimeout(async()=>{
+    const t = await showTyping(100);
+    await new Promise(r=>setTimeout(r,700));
+    removeTyping();
+    if(state.step==='budget'){
+      await botMsg(`Pilih budget kamu dari tombol di atas ya, atau ketik angkanya (contoh: "300000") 😊`);
+    } else if(state.step==='occasion'){
+      await botMsg(`Pilih momennya dari tombol di atas ya! Atau ketik salah satu: Lebaran, Natal, Tahun Baru, Ulang Tahun, Pernikahan, atau Wisuda 🎉`);
+    } else {
+      await botMsg(`Mau cari hadiah lagi? Klik <strong>Mulai dari Awal</strong> di bawah! 😊`);
+      renderRestartBtn();
+    }
+  },0);
+}
+
+function parseBudget(text){
+  const clean = text.replace(/[^0-9]/g,'');
+  const n = parseInt(clean,10);
+  return isNaN(n)?null:n;
+}
+
+function numToTier(n){
+  if(n<50000)  return BUDGET_TIERS[0];
+  if(n<200000) return BUDGET_TIERS[1];
+  if(n<500000) return BUDGET_TIERS[2];
+  if(n<1500000)return BUDGET_TIERS[3];
+  return BUDGET_TIERS[4];
+}
+
+function parseOccasion(text){
+  const t=text.toLowerCase();
+  if(/lebaran|idul|fitri|eid/i.test(t))     return OCCASIONS[0];
+  if(/natal|christmas|xmas/i.test(t))       return OCCASIONS[1];
+  if(/tahun.?baru|new.?year/i.test(t))      return OCCASIONS[2];
+  if(/ulang.?tahun|birthday|ultah|ultah/i.test(t)) return OCCASIONS[3];
+  if(/nikah|wedding|pernikahan/i.test(t))   return OCCASIONS[4];
+  if(/wisuda|graduation|lulus/i.test(t))    return OCCASIONS[5];
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STARTUP
+// ══════════════════════════════════════════════════════════════════════════════
+async function startConversation(){
+  setProgress(15);
+  const t = await showTyping(400);
+  await new Promise(r=>setTimeout(r,900));
+  removeTyping();
+
+  await botMsg(`Halo! Saya <strong>Sari</strong>, asisten belanja Matahari kamu 🛍️`);
+
+  await showTyping(300);
+  await new Promise(r=>setTimeout(r,800));
+  removeTyping();
+
+  await botMsg(`Saya bisa bantu kamu menemukan hadiah yang pas dari <strong>Matahari</strong> — untuk Lebaran, Natal, Tahun Baru, ulang tahun, dan masih banyak lagi! 🎁`);
+
+  await showTyping(300);
+  await new Promise(r=>setTimeout(r,700));
+  removeTyping();
+
+  await botMsg(`Pertama, <strong>berapa budget</strong> yang kamu punya? Pilih salah satu ya:`);
+  renderBudgetButtons();
+  state.step='budget';
+  setProgress(20);
+}
+
+startConversation();
+</script>
+</body>
+</html>
