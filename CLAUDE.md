@@ -14,6 +14,7 @@ A collection of standalone browser games. Each game is a **single self-contained
 | `greenlantern.html` | Green Lantern — side-scrolling cave platformer with 6 enemy types |
 | `idx-stock-predictor.html` | IDX Stock Predictor — predict top 5 stocks by sector (financial, mining, manufacturing, etc.) using history and order demand |
 | `us-tech-predictor.html` | US Tech Stock Predictor — top 5 buy/sell signals across NASDAQ tech sectors (Mega Cap, Semiconductors, Cloud, Fintech, AI) |
+| `matahari-pwa.html` | Matahari E-Commerce PWA — iOS-installable shopping app with smart recommendations, CRM/loyalty, flash sale timer, wishlist, cart, and 16 products across 8 categories |
 
 ## Development workflow
 
