@@ -435,7 +435,7 @@
     }
     let json;
     try { json = await get(url); }
-    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+    catch (_) { json = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); }
 
     const res = json.chart.result && json.chart.result[0];
     if (!res) throw new Error('No chart result: ' + symbol);
@@ -467,7 +467,7 @@
       if (r.ok) { _yfCrumb = await r.text(); return _yfCrumb; }
     } catch (_) {}
     try {
-      const r = await fetch('https://corsproxy.io/?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v1/test/getcrumb'), { cache: 'no-store' });
+      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v1/test/getcrumb'), { cache: 'no-store' });
       if (r.ok) { _yfCrumb = await r.text(); return _yfCrumb; }
     } catch (_) {}
     return null;
@@ -489,7 +489,7 @@
       }
       let json;
       try { json = await get(url); }
-      catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+      catch (_) { json = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); }
       const trends = json.quoteSummary.result[0].recommendationTrend.trend;
       const t = trends && trends[0];
       if (t) {
@@ -513,7 +513,7 @@
     }
     let q;
     try { q = await get(qUrl); }
-    catch (_) { q = await get('https://corsproxy.io/?url=' + encodeURIComponent(qUrl)); }
+    catch (_) { q = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(qUrl)); }
     if (!q.c || q.c === 0) throw new Error('Finnhub: no quote for ' + symbol);
 
     const price    = q.c;
@@ -527,7 +527,7 @@
       const aUrl = 'https://finnhub.io/api/v1/stock/recommendation?symbol=' + symbol + '&token=' + encodeURIComponent(apiKey);
       let aj;
       try { aj = await get(aUrl); }
-      catch (_) { aj = await get('https://corsproxy.io/?url=' + encodeURIComponent(aUrl)); }
+      catch (_) { aj = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(aUrl)); }
       if (Array.isArray(aj) && aj.length > 0) {
         const t = aj[0];
         const bull  = (t.strongBuy || 0) * 2 + (t.buy || 0);
@@ -556,7 +556,7 @@
     }
     let json;
     try { json = await get(url); }
-    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+    catch (_) { json = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); }
     if (json['Note'])        throw new Error('Alpha Vantage daily limit reached. Try again tomorrow.');
     if (json['Information']) throw new Error('Alpha Vantage: ' + json['Information'].substring(0, 60));
     const ts = json['Time Series (Daily)'];

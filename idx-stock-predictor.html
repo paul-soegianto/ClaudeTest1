@@ -441,7 +441,7 @@
     } catch (e) {
       if (e instanceof TypeError) {
         // CORS blocked — try via proxy (API key will pass through corsproxy.io)
-        json = await post('https://corsproxy.io/?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages'));
+        json = await post('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages'));
       } else { throw e; }
     }
 
@@ -574,7 +574,7 @@
     }
     let json;
     try { json = await get(url); }
-    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+    catch (_) { json = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); }
 
     const res = json.chart.result && json.chart.result[0];
     if (!res) throw new Error('No chart result: ' + symbol);
@@ -612,7 +612,7 @@
     } catch (_) {}
     // Step 3: fallback — try via corsproxy which may carry its own Yahoo session
     try {
-      const r = await fetch('https://corsproxy.io/?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v1/test/getcrumb'), { cache: 'no-store' });
+      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v1/test/getcrumb'), { cache: 'no-store' });
       if (r.ok) { _yfCrumb = await r.text(); return _yfCrumb; }
     } catch (_) {}
     return null;
@@ -634,7 +634,7 @@
       }
       let json;
       try { json = await get(url); }
-      catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+      catch (_) { json = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); }
       const trends = json.quoteSummary.result[0].recommendationTrend.trend;
       const t = trends && trends[0];
       if (t) {
@@ -672,7 +672,7 @@
     catch (e) {
       if (e instanceof TypeError) {
         // CORS — proxy (note: custom headers pass through corsproxy.io via query params in headers)
-        json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url), hdrs);
+        json = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), hdrs);
       } else { throw e; }
     }
     const d = Array.isArray(json) ? json[0] : json;
@@ -701,7 +701,7 @@
     }
     let json;
     try { json = await get(url); }
-    catch (_) { json = await get('https://corsproxy.io/?url=' + encodeURIComponent(url)); }
+    catch (_) { json = await get('https://api.allorigins.win/raw?url=' + encodeURIComponent(url)); }
     if (json['Note'])        throw new Error('Alpha Vantage API limit tercapai. Coba lagi besok.');
     if (json['Information']) throw new Error('Alpha Vantage: ' + json['Information'].substring(0, 60));
     const ts = json['Time Series (Daily)'];
@@ -740,7 +740,7 @@
     let json = null;
     for (var i = 0; i < endpoints.length; i++) {
       try { json = await tryGet(endpoints[i]); break; } catch (_) {}
-      try { json = await tryGet('https://corsproxy.io/?url=' + encodeURIComponent(endpoints[i])); break; } catch (_) {}
+      try { json = await tryGet('https://api.allorigins.win/raw?url=' + encodeURIComponent(endpoints[i])); break; } catch (_) {}
     }
     if (!json) throw new Error('IDX Pulse: tidak ada data untuk ' + code);
     const price = parseFloat(json.price || json.close || json.lastPrice || json.last_price || 0);
